@@ -8,8 +8,8 @@
         "microphone": "*",
         "datalogger": "*",
         "settings": "*",
-        "pxt-arcadeshield": "github:microsoft/pxt-arcadeshield#v0.1.0"
-      },
+        "pxt-arcadeshield": "github:microsoft/pxt-arcadeshield#v0.1.4"
+    },
     "files": [
         "analytics.ts",
         "config.ts",
@@ -47,15 +47,13 @@
         "pointerevents.ts",
         "tooltips.ts",
         "utils.ts",
-         "protocol.ts"
+        "protocol.ts"
     ],
     "testFiles": [],
     "targetVersions": {
         "target": "7.1.2",
         "targetId": "microbit"
     },
-    "supportedTargets": [
-        "microbit"
-    ],
+    "supportedTargets": ["microbit"],
     "preferredEditor": "tsprj"
 }

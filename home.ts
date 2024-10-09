@@ -86,7 +86,7 @@ namespace microcode {
         }
 
         private drawVersion() {
-            const font = bitmap.font5
+            const font = bitmaps.font5
             Screen.print(
                 microcode.VERSION,
                 Screen.RIGHT_EDGE - font.charWidth * microcode.VERSION.length,
