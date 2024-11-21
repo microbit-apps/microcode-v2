@@ -162,7 +162,7 @@ namespace docs {
             const rulesEditor = pageEditor.ruleEditors
             rulesEditor.forEach((ruleEditor, ri) => {
                 const bound = ruleEditor.bounds
-                const imgr = bitmap.create(bound.width, bound.height)
+                const imgr = bitmaps.create(bound.width, bound.height)
                 imgr.fill(loader.color)
                 imgr.blit(
                     0,
@@ -182,7 +182,7 @@ namespace docs {
             app.popScene()
         })
 
-        const res = bitmap.create(w, h)
+        const res = bitmaps.create(w, h)
         r["app"] = res
         res.fill(loader.color)
         let y = 0
