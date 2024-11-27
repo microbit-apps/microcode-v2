@@ -165,8 +165,8 @@ namespace docs {
             const rulesEditor = pageEditor.ruleEditors
             rulesEditor.forEach((ruleEditor, ri) => {
                 const bound = ruleEditor.bounds
-                const imgr = bitmaps.create(bound.width, bound.height)
-                imgr.fill(loader.backgroundColor)
+                const imgr = bitmap.create(bound.width, bound.height)
+                imgr.fill(loader.color)
                 imgr.blit(
                     0,
                     0,

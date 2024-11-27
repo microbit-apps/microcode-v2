@@ -37,7 +37,7 @@
     ],
     "testFiles": [],
     "targetVersions": {
-        "target": "7.1.2",
+        "target": "7.1.13",
         "targetId": "microbit"
     },
     "supportedTargets": ["microbit"],
