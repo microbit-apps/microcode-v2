@@ -1,6 +1,12 @@
 // screen for selecting from samples
 
 namespace microcode {
+    import Screen = user_interface_base.Screen
+    import CursorScene = user_interface_base.CursorScene
+    import CursorDir = user_interface_base.CursorDir
+    import Button = user_interface_base.Button
+    import ButtonStyles = user_interface_base.ButtonStyles
+
     export class SamplesGallery extends CursorScene {
         sampleButtons: Button[]
 
@@ -29,7 +35,7 @@ namespace microcode {
                             reportEvent("samples.open", {
                                 name: sample.label,
                             })
-                            this.app.saveBuffer(SAVESLOT_AUTO, sample.source)
+                            this.app.save(SAVESLOT_AUTO, sample.source)
                             this.app.popScene()
                             this.app.pushScene(new Editor(this.app))
                         },
@@ -58,7 +64,7 @@ namespace microcode {
         }
         /* override */ activate() {
             super.activate()
-            this.color = 15
+            this.backgroundColor = 15
         }
 
         /* override */ draw() {

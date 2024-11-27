@@ -1,10 +1,18 @@
 namespace microcode {
+    import Screen = user_interface_base.Screen
+    import CursorScene = user_interface_base.CursorScene
+    import PickerButtonDef = user_interface_base.PickerButtonDef
+    import Button = user_interface_base.Button
+    import ButtonStyles = user_interface_base.ButtonStyles
+    import AppInterface = user_interface_base.AppInterface
+    import font = user_interface_base.font
+
     export class Home extends CursorScene {
         samplesBtn: Button
         editBtn: Button
         diskBtn: Button
 
-        constructor(app: App) {
+        constructor(app: AppInterface) {
             super(app)
         }
 
@@ -81,7 +89,7 @@ namespace microcode {
 
         /* override */ activate() {
             super.activate()
-            this.color = 15
+            this.backgroundColor = 15
             docs.setup(this.app)
         }
 
@@ -124,13 +132,14 @@ namespace microcode {
                 y - wordLogo.height + this.yOffset + margin
             )
             if (!this.yOffset) {
-                const tagline = resolveTooltip("tagline")
+                // const tagline = resolveTooltip("tagline")
+                const tagline = "foo" // TODO: fix this
                 Screen.print(
                     tagline,
                     Screen.LEFT_EDGE +
                         ((Screen.WIDTH + wordLogo.width) >> 1) +
                         dy -
-                        microcode.font.charWidth * tagline.length,
+                        font.charWidth * tagline.length,
                     Screen.TOP_EDGE +
                         OFFSET +
                         wordLogo.height +
@@ -138,7 +147,7 @@ namespace microcode {
                         this.yOffset +
                         1,
                     0xb,
-                    microcode.font
+                    font
                 )
             }
 

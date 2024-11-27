@@ -1,4 +1,7 @@
 namespace docs {
+    import Screen = user_interface_base.Screen
+    import AppInterface = user_interface_base.AppInterface
+
     function imageToBuffer(img: Bitmap) {
         const w = img.width
         const h = img.height
@@ -13,8 +16,8 @@ namespace docs {
         return buf
     }
 
-    let app: microcode.App
-    export function setup(theApp: microcode.App) {
+    let app: AppInterface
+    export function setup(theApp: AppInterface) {
         app = theApp
         _setup()
     }
@@ -71,7 +74,7 @@ namespace docs {
             console.log(`render sample ${sample.label}`)
             const icon = microcode.icons.get(sample.icon, true)
             if (icon) appendImage(images, "icon_sample", sample.label, icon)
-            app.saveBuffer(microcode.SAVESLOT_AUTO, sample.source)
+            app.save(microcode.SAVESLOT_AUTO, sample.source)
 
             const res = _renderProgram()
             Object.keys(res).forEach(iname => {
@@ -85,7 +88,7 @@ namespace docs {
 
             app.popScene()
         }
-        microcode.Screen.resetScreenImage()
+        Screen.resetScreenImage()
         return samples
     }
 
@@ -101,7 +104,7 @@ namespace docs {
                 res[iname]
             )
         )
-        microcode.Screen.resetScreenImage()
+        Screen.resetScreenImage()
         control.simmessages.send(
             "docs",
             Buffer.fromUTF8(
@@ -142,15 +145,15 @@ namespace docs {
         loader.nonEmptyPages().forEach(p => {
             loader.switchToPage(p)
             loader.pageEditor.layout()
-            microcode.Screen.setImageSize(pw, loader.pageHeight())
+            Screen.setImageSize(pw, loader.pageHeight())
             const editor = new microcode.Editor(app)
             editor.rendering = true
             app.pushScene(editor)
             editor.cursor.visible = false
             pause(500)
-            microcode.Screen.image.fill(editor.color)
+            Screen.image.fill(editor.backgroundColor)
             editor.renderPage(p)
-            const img = microcode.Screen.image.clone()
+            const img = Screen.image.clone()
             imgs.push(img)
             w = Math.max(w, img.width)
             h += img.height + margin
@@ -163,7 +166,7 @@ namespace docs {
             rulesEditor.forEach((ruleEditor, ri) => {
                 const bound = ruleEditor.bounds
                 const imgr = bitmaps.create(bound.width, bound.height)
-                imgr.fill(loader.color)
+                imgr.fill(loader.backgroundColor)
                 imgr.blit(
                     0,
                     0,
@@ -184,7 +187,7 @@ namespace docs {
 
         const res = bitmaps.create(w, h)
         r["app"] = res
-        res.fill(loader.color)
+        res.fill(loader.backgroundColor)
         let y = 0
         for (let i = 0; i < imgs.length; ++i) {
             const img = imgs[i]

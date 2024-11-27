@@ -1,6 +1,21 @@
 namespace microcode {
-    const TOOLBAR_HEIGHT = 17
-    const TOOLBAR_MARGIN = 2
+    import Screen = user_interface_base.Screen
+    import Button = user_interface_base.Button
+    import ButtonStyles = user_interface_base.ButtonStyles
+    import AppInterface = user_interface_base.AppInterface
+    import Scene = user_interface_base.Scene
+    import Cursor = user_interface_base.Cursor
+    import Placeable = user_interface_base.Placeable
+    import Picker = user_interface_base.Picker
+    import PickerButtonDef = user_interface_base.PickerButtonDef
+    import Vec2 = user_interface_base.Vec2
+    import CursorDir = user_interface_base.CursorDir
+    import IComponent = user_interface_base.IComponent
+    import Affine = user_interface_base.Affine
+    import IPlaceable = user_interface_base.IPlaceable
+    import Bounds = user_interface_base.Bounds
+    import BACK_BUTTON_ERROR_KIND = user_interface_base.BACK_BUTTON_ERROR_KIND
+    import FORWARD_BUTTON_ERROR_KIND = user_interface_base.FORWARD_BUTTON_ERROR_KIND
 
     //% shim=TD_NOOP
     function connectJacdac() {
@@ -22,6 +37,9 @@ namespace microcode {
         return ["disk1", "disk2", "disk3"]
     }
 
+    const TOOLBAR_HEIGHT = 17
+    const TOOLBAR_MARGIN = 2
+
     export class Editor extends Scene {
         navigator: RuleRowNavigator
         private progdef: ProgramDefn
@@ -38,9 +56,9 @@ namespace microcode {
         public rendering = false
         private dirty = false
 
-        constructor(app: App) {
+        constructor(app: AppInterface) {
             super(app, "editor")
-            this.color = 6
+            this.backgroundColor = 6
         }
 
         public changed() {
@@ -86,7 +104,7 @@ namespace microcode {
         }
 
         public saveAndCompileProgram() {
-            this.app.save(SAVESLOT_AUTO, this.progdef)
+            this.app.save(SAVESLOT_AUTO, this.progdef.toBuffer())
             // new jacs.TopWriter().emitProgram(this.progdef)
         }
 
@@ -100,7 +118,7 @@ namespace microcode {
             this.picker.show({
                 title: accessibility.ariaToTooltip("disk"),
                 onClick: index => {
-                    this.app.save(btns[index].icon, this.progdef)
+                    this.app.save(btns[index].icon, this.progdef.toBuffer())
                 },
             })
         }
@@ -267,14 +285,15 @@ namespace microcode {
                 y: 8,
                 onClick: () => this.pickPage(),
             })
-            this.progdef = this.app.load(SAVESLOT_AUTO)
+            const buf = this.app.load(SAVESLOT_AUTO)
+            this.progdef = ProgramDefn.fromBuffer(new BufferReader(buf))
             if (!this.progdef) {
                 // onboarding experience
                 // load first sample if this is the first program being loaded
                 this.progdef = ProgramDefn.fromBuffer(
                     new BufferReader(samples(true)[1].source)
                 )
-                this.app.save(SAVESLOT_AUTO, this.progdef)
+                this.app.save(SAVESLOT_AUTO, this.progdef.toBuffer())
             }
             this.configureP1Keys()
             this.configureP2Keys()
@@ -453,7 +472,7 @@ namespace microcode {
 
         draw() {
             if (this.dirty) {
-                Screen.image.fill(this.color)
+                Screen.image.fill(this.backgroundColor)
                 if (!this.backgroundCaptured) {
                     this.drawBackground()
                     this.drawEditor()

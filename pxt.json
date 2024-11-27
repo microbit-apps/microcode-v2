@@ -8,54 +8,38 @@
         "microphone": "*",
         "datalogger": "*",
         "settings": "*",
-        "pxt-arcadeshield": "github:microsoft/pxt-arcadeshield#v0.1.10"
+        "user-interface-base": "github:microbit-apps/user-interface-base#v0.0.9"
     },
     "files": [
         "analytics.ts",
         "config.ts",
         "main.ts",
-        "keymap.ts",
         "README.md",
-        "accessibility.ts",
-        "button.ts",
-        "component.ts",
         "assets.ts",
-        "scene.ts",
         "language.ts",
         "tiles.ts",
         "app.ts",
-        "sprite.ts",
         "editor.ts",
         "ruleeditor.ts",
-        "cursor.ts",
         "home.ts",
-        "bounds.ts",
-        "picker.ts",
-        "affine.ts",
-        "math.ts",
-        "screen.ts",
         "binlib.ts",
         "version.ts",
         "jacs.ts",
         "fieldeditors.ts",
-        "navigator.ts",
-        "cursorscene.ts",
         "options.ts",
         "samples.ts",
         "docs.ts",
         "gallery.ts",
         "pointerevents.ts",
-        "tooltips.ts",
         "utils.ts",
-        "protocol.ts"
+        "protocol.ts",
+        "navigator.ts"
     ],
     "testFiles": [],
     "targetVersions": {
         "target": "7.1.13",
         "targetId": "microbit"
     },
-    "supportedTargets": [
-        "microbit"
-    ],
+    "supportedTargets": ["microbit"],
     "preferredEditor": "tsprj"
 }

@@ -1,4 +1,8 @@
 namespace microcode {
+    import AppInterface = user_interface_base.AppInterface
+    import Scene = user_interface_base.Scene
+    import SceneManager = user_interface_base.SceneManager
+
     // Auto-save slot
     export const SAVESLOT_AUTO = "sa"
 
@@ -7,7 +11,7 @@ namespace microcode {
         version?: string
     }
 
-    export class App {
+    export class App implements AppInterface {
         sceneManager: SceneManager
 
         constructor() {
@@ -22,23 +26,17 @@ namespace microcode {
             this.pushScene(home)
         }
 
-        public saveBuffer(slot: string, buf: Buffer) {
+        public save(slot: string, buf: Buffer) {
             reportEvent("app.save", { slot: slot, size: buf.length })
             console.log(`save to ${slot}: ${buf.length}b`)
             profile()
             settings.writeBuffer(slot, buf)
+            return true
         }
 
-        public save(slot: string, prog: ProgramDefn) {
-            this.saveBuffer(slot, prog.toBuffer())
-        }
-
-        public load(slot: string): ProgramDefn {
+        public load(slot: string): Buffer {
             try {
-                let buf = settings.readBuffer(slot)
-                if (buf) {
-                    return ProgramDefn.fromBuffer(new BufferReader(buf))
-                }
+                return settings.readBuffer(slot)
             } catch (e) {
                 console.log(e)
             }
