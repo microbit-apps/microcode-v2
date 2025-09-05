@@ -16,3 +16,4 @@ codal-jacdac
 Gemfile.lock
 .jekyll-metadata
 .DS_Store
+.pxt
