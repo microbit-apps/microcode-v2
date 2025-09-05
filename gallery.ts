@@ -14,7 +14,7 @@ namespace microcode {
             super.shutdown()
         }
 
-        /* override */ startup() {
+        /* override */ startup(setup: () => void) {
             super.startup()
 
             let x = -72,

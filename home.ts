@@ -20,7 +20,7 @@ namespace microcode {
             super(app)
         }
 
-        /* override */ startup() {
+        /* override */ startup(setup: () => void) {
             super.startup()
 
             this.editBtn = new Button({

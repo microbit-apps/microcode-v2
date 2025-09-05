@@ -227,7 +227,7 @@ namespace microcode {
             this.moveTo(target)
         }
 
-        /* override */ startup() {
+        /* override */ startup(setup: () => void) {
             const makeOnEvent = (id: number, dir: CursorDir) => {
                 control.onEvent(ControllerButtonEvent.Pressed, id, () =>
                     this.scrollAndMove(dir)
@@ -450,7 +450,7 @@ namespace microcode {
             this.navigator.setBtns([
                 this.connectBtn.visible()
                     ? [this.diskBtn, this.connectBtn, this.pageBtn]
-                    : [this.diskBtn, this.pageBtn]
+                    : [this.diskBtn, this.pageBtn],
             ])
 
             this.pageEditor.addToNavigator()
