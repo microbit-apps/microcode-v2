@@ -12,17 +12,22 @@ namespace microcode {
     }
 
     export class App implements AppInterface {
-        sceneManager: SceneManager
+        private sceneManager: SceneManager
 
         constructor() {
             // One interval delay to ensure all static constructors have executed.
             basic.pause(500)
             reportEvent("app.start")
 
+            // Application configuration
+            user_interface_base.getIcon = id => icons.get(id)
+            user_interface_base.resolveTooltip = (ariaId: string) => ariaId
             controller.setRepeatDefault(250, 30)
             // keymap.setupKeys()
+
             this.sceneManager = new SceneManager()
-            const home = new Home(this)
+          
+            const home = new Home(this);
             this.pushScene(home)
         }
 
