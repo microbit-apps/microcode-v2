@@ -8,9 +8,9 @@ namespace microcode {
     import font = user_interface_base.font
 
     // application configuration
-    user_interface_base.getIcon = (id) => icons.get(id)
+    user_interface_base.getIcon = id => icons.get(id)
     user_interface_base.resolveTooltip = (ariaId: string) => ariaId
-    
+
     export class Home extends CursorScene {
         samplesBtn: Button
         editBtn: Button
@@ -63,7 +63,7 @@ namespace microcode {
 
             const btns: Button[] = [this.editBtn, this.samplesBtn, this.diskBtn]
 
-            this.navigator.addButtons(btns)
+            this.navigator.setBtns([btns])
             // handle menu?
         }
 

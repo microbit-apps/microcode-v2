@@ -437,7 +437,7 @@ namespace microcode {
         }
 
         public addButtons(btns: Button[]) {
-            this.navigator.addButtons(btns)
+            this.navigator.setBtns([btns])
         }
 
         private rebuildNavigator() {
@@ -447,11 +447,11 @@ namespace microcode {
                 this.navigator.clear()
             } else this.navigator = new RuleRowNavigator()
 
-            this.navigator.addButtons(
+            this.navigator.setBtns([
                 this.connectBtn.visible()
                     ? [this.diskBtn, this.connectBtn, this.pageBtn]
                     : [this.diskBtn, this.pageBtn]
-            )
+            ])
 
             this.pageEditor.addToNavigator()
 

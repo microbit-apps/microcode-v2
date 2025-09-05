@@ -44,16 +44,16 @@ namespace microcode {
                     rowButtons.push(btn)
                     x += 38
                     if (x + 32 > 75) {
-                        this.navigator.addButtons(rowButtons)
+                        this.navigator.setBtns([rowButtons])
                         rowButtons = []
                         y += 38
                         x = -72
                     }
                 })
-            if (rowButtons.length > 0) this.navigator.addButtons(rowButtons)
+            if (rowButtons.length > 0) this.navigator.setBtns([rowButtons])
         }
 
-        protected moveCursor(dir: CursorDir) {
+        public moveCursor(dir: CursorDir) {
             if (dir == CursorDir.Back) {
                 // go back to home screen
                 this.app.popScene()
