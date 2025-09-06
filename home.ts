@@ -126,7 +126,7 @@ namespace microcode {
             )
             if (!this.yOffset) {
                 // const tagline = resolveTooltip("tagline")
-                const tagline = "foo" // TODO: fix this
+                const tagline = "" // TODO: fix this
                 Screen.print(
                     tagline,
                     Screen.LEFT_EDGE +

@@ -153,7 +153,7 @@ namespace microcode {
                 Screen.TOP_EDGE + TOOLBAR_HEIGHT + 2
             )
             this.rebuildNavigator()
-            // this.snapCursorTo(this.navigator.initialCursor(startRow, startCol))
+            this.snapCursorTo(this.navigator.initialCursor(startRow, startCol))
         }
 
         public snapCursorTo(btn: Button) {
