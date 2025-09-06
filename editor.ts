@@ -286,7 +286,7 @@ namespace microcode {
                 onClick: () => this.pickPage(),
             })
             const buf = this.app.load(SAVESLOT_AUTO)
-            // this.progdef = ProgramDefn.fromBuffer(new BufferReader(buf))
+            this.progdef = ProgramDefn.fromBuffer(new BufferReader(buf))
             if (!this.progdef) {
                 // onboarding experience
                 // load first sample if this is the first program being loaded
@@ -651,4 +651,3 @@ namespace microcode {
         }
     }
 }
-

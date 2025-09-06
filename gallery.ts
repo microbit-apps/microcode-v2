@@ -44,13 +44,13 @@ namespace microcode {
                     rowButtons.push(btn)
                     x += 38
                     if (x + 32 > 75) {
-                        this.navigator.setBtns([rowButtons])
+                        this.navigator.addRow(rowButtons)
                         rowButtons = []
                         y += 38
                         x = -72
                     }
                 })
-            if (rowButtons.length > 0) this.navigator.setBtns([rowButtons])
+            if (rowButtons.length > 0) this.navigator.addRow(rowButtons)
         }
 
         public moveCursor(dir: CursorDir) {
