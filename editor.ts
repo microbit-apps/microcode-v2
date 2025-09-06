@@ -437,7 +437,7 @@ namespace microcode {
         }
 
         public addButtons(btns: Button[]) {
-            this.navigator.setBtns([btns])
+            this.navigator.addRow(btns)
         }
 
         private rebuildNavigator() {
