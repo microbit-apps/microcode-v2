@@ -7,10 +7,6 @@ namespace microcode {
     import AppInterface = user_interface_base.AppInterface
     import font = user_interface_base.font
 
-    // Application configuration
-    user_interface_base.getIcon = id => icons.get(id)
-    user_interface_base.resolveTooltip = (ariaId: string) => ariaId
-
     export class Home extends CursorScene {
         constructor(app: AppInterface) {
             super(app)
@@ -18,44 +14,46 @@ namespace microcode {
 
         /* override */ startup(setup: () => void) {
             super.startup()
-            
-            this.navigator.setBtns([[
-                new Button({
-                    parent: null,
-                    style: ButtonStyles.Transparent,
-                    icon: "edit_program",
-                    ariaId: "Edit program",
-                    x: -50,
-                    y: 30,
-                    onClick: () => {
-                        this.app.popScene()
-                        this.app.pushScene(new Editor(this.app))
-                    },
-                }),
-                new Button({
-                    parent: null,
-                    style: ButtonStyles.Transparent,
-                    icon: "smiley_buttons",
-                    ariaId: "Sample programs",
-                    x: 0,
-                    y: 30,
-                    onClick: () => {
-                        this.app.popScene()
-                        this.app.pushScene(new SamplesGallery(this.app))
-                    },
-                }),
-                new Button({
-                    parent: null,
-                    style: ButtonStyles.Transparent,
-                    icon: "largeDisk",
-                    ariaId: "Load program",
-                    x: 50,
-                    y: 30,
-                    onClick: () => {
-                        this.pickDiskSLot()
-                    },
-                })
-            ]])
+
+            this.navigator.setBtns([
+                [
+                    new Button({
+                        parent: null,
+                        style: ButtonStyles.Transparent,
+                        icon: "edit_program",
+                        ariaId: "C0",
+                        x: -50,
+                        y: 30,
+                        onClick: () => {
+                            this.app.popScene()
+                            this.app.pushScene(new Editor(this.app))
+                        },
+                    }),
+                    new Button({
+                        parent: null,
+                        style: ButtonStyles.Transparent,
+                        icon: "smiley_buttons",
+                        ariaId: "C1",
+                        x: 0,
+                        y: 30,
+                        onClick: () => {
+                            this.app.popScene()
+                            this.app.pushScene(new SamplesGallery(this.app))
+                        },
+                    }),
+                    new Button({
+                        parent: null,
+                        style: ButtonStyles.Transparent,
+                        icon: "largeDisk",
+                        ariaId: "Load program",
+                        x: 50,
+                        y: 30,
+                        onClick: () => {
+                            this.pickDiskSLot()
+                        },
+                    }),
+                ],
+            ])
         }
 
         private pickDiskSLot() {
@@ -146,7 +144,7 @@ namespace microcode {
                 )
             }
 
-            this.navigator.drawComponents();
+            this.navigator.drawComponents()
             this.drawVersion()
             super.draw()
         }

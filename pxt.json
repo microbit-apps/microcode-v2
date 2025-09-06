@@ -33,7 +33,8 @@
         "pointerevents.ts",
         "utils.ts",
         "protocol.ts",
-        "navigator.ts"
+        "navigator.ts",
+        "tooltips.ts"
     ],
     "testFiles": [],
     "targetVersions": {
