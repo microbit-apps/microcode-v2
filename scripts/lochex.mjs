@@ -111,6 +111,26 @@ ${Object.keys(translations)
 }`
     writeFileSync("./tooltips.ts", ts, { encoding: "utf8" })
 
+    // create reverse tooltips for just strings that have integer TIDs
+    const rts = `// auto-generated, run 'node scripts/lochex.mjs' to refresh
+namespace microcode {
+    const toLower = (s: string) => s ? s.toLowerCase() : s;
+    export function reverseTooltip(text: string): string {
+        let res: string = ""
+        if (!text) return text;
+${Object.keys(translations)
+    // don't emit sample names in hardware
+    .filter(k => !/^N/.test(k))
+    .map(
+        key =>
+            `        else if (toLower(text) === toLower("${translations[key]}")) res = "${key}";`
+    )
+    .join("\n")}        
+        return res;
+    }
+}`
+    writeFileSync("./reverse_tooltips.ts", rts, { encoding: "utf8" })
+
     // build js
     console.log(`  build js`)
     exec("makecode --java-script")
