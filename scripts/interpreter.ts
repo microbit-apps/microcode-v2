@@ -156,12 +156,13 @@ namespace microcode {
         }
 
         private getAddSeq(
-            mods: microcode.Tile[],
+            current: number,
+            mods: Tile[],
             defl: number = 0,
             clear = true
         ): number {
             // make this functional
-            let result: number = 0
+            let result: number = current
 
             const addOrSet = (vv: number) => {
                 if (clear) result = vv
@@ -173,7 +174,7 @@ namespace microcode {
 
             if (mods.length == 0) return defl
             else {
-                if (microcode.jdKind(mods[0]) == microcode.JdKind.RandomToss) {
+                if (jdKind(mods[0]) == JdKind.RandomToss) {
                     mods = mods.slice(1)
                     let rnd: number
                     let folded = this.constantFold(mods, 5)
@@ -199,22 +200,27 @@ namespace microcode {
             return result
         }
 
-        private breaksValSeq(mod: microcode.Tile) {
-            switch (microcode.jdKind(mod)) {
-                case microcode.JdKind.RandomToss:
+        private breaksValSeq(mod: Tile) {
+            switch (jdKind(mod)) {
+                case JdKind.RandomToss:
                     return true
                 default:
                     return false
             }
         }
 
-        private getValue(modifiers: microcode.Tile[], defl: number) {
-            let currSeq: microcode.Tile[] = []
+        // do we need to take initial value into account?
+        private getValue(
+            current: number,
+            modifiers: Tile[],
+            defl: number
+        ): number {
+            let currSeq: Tile[] = []
             let first = true
-            let result: number = 0
+            let result: number = current
 
             for (const m of modifiers) {
-                const cat = microcode.getCategory(m)
+                const cat = getCategory(m)
                 // TODO: make the following a function
                 if (
                     cat == "value_in" ||
@@ -224,7 +230,7 @@ namespace microcode {
                     cat == "on_off"
                 ) {
                     if (this.breaksValSeq(m) && currSeq.length) {
-                        result += this.getAddSeq(currSeq, 0, first)
+                        result = this.getAddSeq(result, currSeq, 0, first)
                         currSeq = []
                         first = false
                     }
@@ -233,12 +239,26 @@ namespace microcode {
             }
 
             if (currSeq.length) {
-                result += this.getAddSeq(currSeq, 0, first)
+                result = this.getAddSeq(result, currSeq, 0, first)
                 first = false
             }
 
             if (first) result = defl
             return result
+        }
+
+        private baseModifiers(rule: RuleDefn) {
+            let modifiers = rule.modifiers
+            if (modifiers.length == 0) {
+                const actuator = rule.actuators[0]
+                const defl = defaultModifier(actuator)
+                if (defl != undefined) return [defl]
+            } else {
+                for (let i = 0; i < modifiers.length; ++i)
+                    if (jdKind(modifiers[i]) == JdKind.Loop)
+                        return modifiers.slice(0, i)
+            }
+            return modifiers
         }
     }
 }
