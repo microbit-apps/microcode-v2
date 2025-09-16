@@ -175,18 +175,9 @@ namespace microcode {
             if (mods.length == 0) return defl
             else {
                 if (jdKind(mods[0]) == JdKind.RandomToss) {
-                    mods = mods.slice(1)
-                    let rnd: number
-                    let folded = this.constantFold(mods, 5)
-                    if (folded != undefined) {
-                        if (folded <= 2) folded = 2
-                        rnd = Math.floor(Math.random() * folded)
-                    } else {
-                        let rndBnd = this.getAddSeq(mods, 5)
-                        if (!rndBnd || rndBnd <= 2) rndBnd = 2
-                        rnd = Math.floor(Math.random() * rndBnd)
-                    }
-                    addOrSet(rnd)
+                    let rndBnd = this.getAddSeq(0, mods.slice(1), 5)
+                    if (!rndBnd || rndBnd <= 2) rndBnd = 2
+                    addOrSet(Math.floor(Math.random() * rndBnd))
                 } else {
                     const folded = this.constantFold(mods, defl)
                     if (folded != undefined) {
@@ -259,6 +250,23 @@ namespace microcode {
                         return modifiers.slice(0, i)
             }
             return modifiers
+        }
+
+        // 0-max inclusive
+        private randomInt(max: number) {
+            if (max <= 0) return 0
+            return Math.floor(Math.random() * (max + 1))
+        }
+
+        private add(a: number, off: number) {
+            return a + off
+        }
+
+        private loopModifierIdx(rule: RuleDefn) {
+            for (let i = 0; i < rule.modifiers.length; ++i) {
+                if (jdKind(rule.modifiers[i]) == JdKind.Loop) return i
+            }
+            return -1
         }
     }
 }
