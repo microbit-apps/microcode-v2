@@ -155,11 +155,11 @@ namespace microcode {
             }
         }
 
-        private emitAddSeq(
+        private getAddSeq(
             mods: microcode.Tile[],
             defl: number = 0,
             clear = true
-        ) {
+        ): number {
             // make this functional
             let result: number = 0
 
@@ -181,7 +181,7 @@ namespace microcode {
                         if (folded <= 2) folded = 2
                         rnd = Math.floor(Math.random() * folded)
                     } else {
-                        let rndBnd = this.emitAddSeq(mods, 5)
+                        let rndBnd = this.getAddSeq(mods, 5)
                         if (!rndBnd || rndBnd <= 2) rndBnd = 2
                         rnd = Math.floor(Math.random() * rndBnd)
                     }
@@ -189,14 +189,56 @@ namespace microcode {
                 } else {
                     const folded = this.constantFold(mods, defl)
                     if (folded != undefined) {
-                        return addOrSet(folded)
+                        addOrSet(folded)
                     } else {
                         for (let i = 0; i < mods.length; ++i)
                             addOrSet(this.getExprValue(mods[i]))
                     }
                 }
-                return result
             }
+            return result
+        }
+
+        private breaksValSeq(mod: microcode.Tile) {
+            switch (microcode.jdKind(mod)) {
+                case microcode.JdKind.RandomToss:
+                    return true
+                default:
+                    return false
+            }
+        }
+
+        private getValue(modifiers: microcode.Tile[], defl: number) {
+            let currSeq: microcode.Tile[] = []
+            let first = true
+            let result: number = 0
+
+            for (const m of modifiers) {
+                const cat = microcode.getCategory(m)
+                // TODO: make the following a function
+                if (
+                    cat == "value_in" ||
+                    cat == "value_out" ||
+                    cat == "constant" ||
+                    cat == "line" ||
+                    cat == "on_off"
+                ) {
+                    if (this.breaksValSeq(m) && currSeq.length) {
+                        result += this.getAddSeq(currSeq, 0, first)
+                        currSeq = []
+                        first = false
+                    }
+                    currSeq.push(m)
+                }
+            }
+
+            if (currSeq.length) {
+                result += this.getAddSeq(currSeq, 0, first)
+                first = false
+            }
+
+            if (first) result = defl
+            return result
         }
     }
 }
