@@ -63,6 +63,8 @@ namespace microcode {
 
     class InterpreterEvent {}
 
+    // DEVICE_ID_ANY == DEVICE_EXT_ANY == 0
+
     export class Interpreter {
         private hasErrors: boolean = false
         private running: boolean = false
@@ -78,6 +80,16 @@ namespace microcode {
             // - pipes
             // - recall the last radio values and other sensor values
             // - sensor values (for changes? though maybe we can do without)
+
+            const microbitEvent = () => {
+                console.debug("microbit event " + control.eventValue())
+                // console.log("event: " + src + "/" + ev);
+            }
+            control.onEvent(
+                DAL.DEVICE_ID_ANY,
+                DAL.DEVICE_EVT_ANY,
+                microbitEvent
+            )
         }
 
         start() {
