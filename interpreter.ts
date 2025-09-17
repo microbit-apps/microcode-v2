@@ -23,13 +23,11 @@ namespace microcode {
         private getWakeTime() {
             this.wakeTime = 0
             const sensor = this.rule.sensor
-            let isTimer = sensor == microcode.Tid.TID_SENSOR_TIMER
+            let isTimer = sensor == Tid.TID_SENSOR_TIMER
             this.once = false
             if (
-                sensor == microcode.Tid.TID_SENSOR_START_PAGE &&
-                this.rule.filters.some(
-                    f => microcode.jdKind(f) == microcode.JdKind.Timespan
-                )
+                sensor == Tid.TID_SENSOR_START_PAGE &&
+                this.rule.filters.some(f => jdKind(f) == JdKind.Timespan)
             ) {
                 isTimer = true
                 this.once = true
@@ -39,8 +37,8 @@ namespace microcode {
                 let period = 0
                 let randomPeriod = 0
                 for (const m of this.rule.filters) {
-                    const mJdparam = microcode.jdParam(m)
-                    if (microcode.jdKind(m) == microcode.JdKind.Timespan) {
+                    const mJdparam = jdParam(m)
+                    if (jdKind(m) == JdKind.Timespan) {
                         if (mJdparam >= 0) period += mJdparam
                         else randomPeriod += -mJdparam
                     }
@@ -60,6 +58,13 @@ namespace microcode {
         // what else to remember about a running page?
     }
 
+    // encapsulate the variety of ways microbit/jacdac/timer events
+    // are exposed to the interpreter, as well as their values
+
+    class InterpreterEvent {}
+
+    // DEVICE_ID_ANY == DEVICE_EXT_ANY == 0
+
     export class Interpreter {
         private hasErrors: boolean = false
         private running: boolean = false
@@ -75,6 +80,16 @@ namespace microcode {
             // - pipes
             // - recall the last radio values and other sensor values
             // - sensor values (for changes? though maybe we can do without)
+
+            const microbitEvent = () => {
+                console.debug("microbit event " + control.eventValue())
+                // console.log("event: " + src + "/" + ev);
+            }
+            control.onEvent(
+                DAL.DEVICE_ID_ANY,
+                DAL.DEVICE_EVT_ANY,
+                microbitEvent
+            )
         }
 
         start() {
@@ -97,7 +112,7 @@ namespace microcode {
         private setupRule(rule: RuleDefn) {
             // for each sensor, set up event listeners or timers
             for (const sensor of rule.sensors) {
-                const tid = microcode.getTid(sensor)
+                const tid = getTid(sensor)
                 // Example: if tid is a timer, set up a timer
                 // If tid is a button press, set up an event listener
             }
@@ -112,9 +127,8 @@ namespace microcode {
             if (mods.length == 0) return defl
             let v = 0
             for (const m of mods) {
-                if (microcode.jdKind(m) != microcode.JdKind.Literal)
-                    return undefined
-                v += microcode.jdParam(m)
+                if (jdKind(m) != JdKind.Literal) return undefined
+                v += jdParam(m)
             }
             return v
         }
@@ -139,18 +153,132 @@ namespace microcode {
             const mKind = jdKind(expr)
             const mJdpararm = jdParam(expr)
             switch (mKind) {
-                case microcode.JdKind.Temperature:
+                case JdKind.Temperature:
                     return this.state["z_temp"] || 0
-                case microcode.JdKind.Literal:
+                case JdKind.Literal:
                     return mJdpararm
-                case microcode.JdKind.Variable:
+                case JdKind.Variable:
                     return this.state[this.pipeVar(mJdpararm)] || 0
-                case microcode.JdKind.RadioValue:
+                case JdKind.RadioValue:
                     return this.state["z_radio"] || 0
                 default:
                     this.error("can't emit kind: " + mKind)
                     return 0
             }
+        }
+
+        private getAddSeq(
+            current: number,
+            mods: Tile[],
+            defl: number = 0,
+            clear = true
+        ): number {
+            // make this functional
+            let result: number = current
+
+            const addOrSet = (vv: number) => {
+                if (clear) result = vv
+                else {
+                    result += vv
+                }
+                clear = false
+            }
+
+            if (mods.length == 0) return defl
+            else {
+                if (jdKind(mods[0]) == JdKind.RandomToss) {
+                    let rndBnd = this.getAddSeq(0, mods.slice(1), 5)
+                    if (!rndBnd || rndBnd <= 2) rndBnd = 2
+                    addOrSet(Math.floor(Math.random() * rndBnd))
+                } else {
+                    const folded = this.constantFold(mods, defl)
+                    if (folded != undefined) {
+                        addOrSet(folded)
+                    } else {
+                        for (let i = 0; i < mods.length; ++i)
+                            addOrSet(this.getExprValue(mods[i]))
+                    }
+                }
+            }
+            return result
+        }
+
+        private breaksValSeq(mod: Tile) {
+            switch (jdKind(mod)) {
+                case JdKind.RandomToss:
+                    return true
+                default:
+                    return false
+            }
+        }
+
+        // do we need to take initial value into account?
+        private getValue(
+            current: number,
+            modifiers: Tile[],
+            defl: number
+        ): number {
+            let currSeq: Tile[] = []
+            let first = true
+            let result: number = current
+
+            for (const m of modifiers) {
+                const cat = getCategory(m)
+                // TODO: make the following a function
+                if (
+                    cat == "value_in" ||
+                    cat == "value_out" ||
+                    cat == "constant" ||
+                    cat == "line" ||
+                    cat == "on_off"
+                ) {
+                    if (this.breaksValSeq(m) && currSeq.length) {
+                        result = this.getAddSeq(result, currSeq, 0, first)
+                        currSeq = []
+                        first = false
+                    }
+                    currSeq.push(m)
+                }
+            }
+
+            if (currSeq.length) {
+                result = this.getAddSeq(result, currSeq, 0, first)
+                first = false
+            }
+
+            if (first) result = defl
+            return result
+        }
+
+        private baseModifiers(rule: RuleDefn) {
+            let modifiers = rule.modifiers
+            if (modifiers.length == 0) {
+                const actuator = rule.actuators[0]
+                const defl = defaultModifier(actuator)
+                if (defl != undefined) return [defl]
+            } else {
+                for (let i = 0; i < modifiers.length; ++i)
+                    if (jdKind(modifiers[i]) == JdKind.Loop)
+                        return modifiers.slice(0, i)
+            }
+            return modifiers
+        }
+
+        // 0-max inclusive
+        private randomInt(max: number) {
+            if (max <= 0) return 0
+            return Math.floor(Math.random() * (max + 1))
+        }
+
+        private add(a: number, off: number) {
+            return a + off
+        }
+
+        private loopModifierIdx(rule: RuleDefn) {
+            for (let i = 0; i < rule.modifiers.length; ++i) {
+                if (jdKind(rule.modifiers[i]) == JdKind.Loop) return i
+            }
+            return -1
         }
     }
 }
