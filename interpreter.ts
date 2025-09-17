@@ -65,6 +65,28 @@ namespace microcode {
 
     // DEVICE_ID_ANY == DEVICE_EXT_ANY == 0
 
+    type IdMap = { [id: number]: number }
+
+    // see DAL for these values
+    const matchPressReleaseTable: IdMap = {
+        1: Tid.TID_FILTER_BUTTON_A, // DAL.DEVICE_ID_BUTTON_A
+        2: Tid.TID_FILTER_BUTTON_B, // DAL.DEVICE_ID_BUTTON_B
+        121: Tid.TID_FILTER_LOGO, // DAL.DEVICE_ID_TOUCH_LOGO
+        100: Tid.TID_FILTER_PIN_0, // DAL.DEVICE_ID_IO_P0
+        101: Tid.TID_FILTER_PIN_1, // DAL.DEVICE_ID_IO_P1
+        102: Tid.TID_FILTER_PIN_2, // DAL.DEVICE_ID_IO_P2
+    }
+
+    const matchAccelerometerTable: IdMap = {
+        11: Tid.TID_FILTER_ACCEL_SHAKE,
+        1: Tid.TID_FILTER_ACCEL_TILT_UP,
+        2: Tid.TID_FILTER_ACCEL_TILT_DOWN,
+        3: Tid.TID_FILTER_ACCEL_TILT_LEFT,
+        4: Tid.TID_FILTER_ACCEL_TILT_RIGHT,
+        5: Tid.TID_FILTER_ACCEL_FACE_UP,
+        6: Tid.TID_FILTER_ACCEL_FACE_DOWN,
+    }
+
     export class Interpreter {
         private hasErrors: boolean = false
         private running: boolean = false
@@ -81,15 +103,54 @@ namespace microcode {
             // - recall the last radio values and other sensor values
             // - sensor values (for changes? though maybe we can do without)
 
-            const microbitEvent = () => {
-                console.debug("microbit event " + control.eventValue())
-                // console.log("event: " + src + "/" + ev);
-            }
-            control.onEvent(
-                DAL.DEVICE_ID_ANY,
-                DAL.DEVICE_EVT_ANY,
-                microbitEvent
+            control.onEvent(DAL.DEVICE_ID_BUTTON_A, DAL.DEVICE_EVT_ANY, () =>
+                this.onMicrobitEvent(
+                    DAL.DEVICE_ID_BUTTON_A,
+                    control.eventValue()
+                )
             )
+            control.onEvent(DAL.DEVICE_ID_BUTTON_B, DAL.DEVICE_EVT_ANY, () =>
+                this.onMicrobitEvent(
+                    DAL.DEVICE_ID_BUTTON_B,
+                    control.eventValue()
+                )
+            )
+        }
+
+        private onMicrobitEvent(src: number, ev: number) {
+            let activeRules: RuleDefn[] = []
+            this.program.pages[this.currentPage].rules.forEach(r => {
+                let match = false
+                if (
+                    (r.sensor == Tid.TID_SENSOR_PRESS &&
+                        ev == DAL.DEVICE_BUTTON_EVT_DOWN) ||
+                    (r.sensor == Tid.TID_SENSOR_RELEASE &&
+                        ev == DAL.DEVICE_BUTTON_EVT_UP)
+                ) {
+                    if (r.filters.length == 0) match = true
+                    else {
+                        const f = r.filters[0]
+                        match = f == matchPressReleaseTable[src]
+                    }
+                } else if (
+                    r.sensor == Tid.TID_SENSOR_ACCELEROMETER &&
+                    ev == DAL.DEVICE_ID_ACCELEROMETER
+                ) {
+                    // check which event
+                } else if (
+                    r.sensor == Tid.TID_SENSOR_RADIO_RECEIVE &&
+                    ev == DAL.DEVICE_ID_RADIO
+                ) {
+                    // record radio value
+                } else if (
+                    r.sensor == Tid.TID_SENSOR_MICROPHONE &&
+                    ev == DAL.DEVICE_ID_MICROPHONE
+                ) {
+                } else if (r.sensor == Tid.TID_SENSOR_LIGHT) {
+                } else if (r.sensor == Tid.TID_SENSOR_TEMP) {
+                }
+                if (match) activeRules.push(r)
+            })
         }
 
         start() {
