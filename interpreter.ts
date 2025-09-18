@@ -10,14 +10,60 @@ namespace microcode {
         private once: boolean = false
         private wakeTime: number = 0 // for timers
         private actionIndex: number = -1 // action not active
-        constructor(private rule: RuleDefn) {
+        constructor(private rule: RuleDefn, private parent: Interpreter) {
             this.getWakeTime()
         }
 
         reset() {
-            if (this.once) return
+            this.once = false
             this.actionIndex = -1
             this.getWakeTime()
+            control.runInBackground(() => {
+                while (true) {
+                    if (this.wakeTime > 0) {
+                        basic.pause(this.wakeTime)
+                        this.wakeTime = 0
+                        this.actionIndex = 0
+                    }
+                    if (this.actionIndex >= 0) {
+                        this.runAction()
+                    }
+                }
+            })
+        }
+
+        private runAction() {
+            // execute one step
+            const action = this.rule.actuators[0]
+            switch (action) {
+                case Tid.TID_ACTUATOR_PAINT: {
+                    break
+                }
+                case Tid.TID_ACTUATOR_CUP_X_ASSIGN: {
+                    break
+                }
+                case Tid.TID_ACTUATOR_CUP_Y_ASSIGN: {
+                    break
+                }
+                case Tid.TID_ACTUATOR_CUP_Z_ASSIGN: {
+                    break
+                }
+                case Tid.TID_ACTUATOR_RADIO_SEND: {
+                    break
+                }
+                case Tid.TID_ACTUATOR_RADIO_SET_GROUP: {
+                    break
+                }
+                case Tid.TID_ACTUATOR_MUSIC: {
+                    break
+                }
+                case Tid.TID_ACTUATOR_SPEAKER: {
+                    break
+                }
+                case Tid.TID_ACTUATOR_SWITCH_PAGE: {
+                    break
+                }
+            }
         }
 
         private getWakeTime() {
@@ -48,7 +94,7 @@ namespace microcode {
 
                 if (randomPeriod > 0)
                     period += Math.floor(Math.random() * randomPeriod)
-                this.wakeTime = control.millis() + period
+                this.wakeTime = period
             }
         }
     }
