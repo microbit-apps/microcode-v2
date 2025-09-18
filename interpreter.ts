@@ -127,27 +127,33 @@ namespace microcode {
                     (r.sensor == Tid.TID_SENSOR_RELEASE &&
                         ev == DAL.DEVICE_BUTTON_EVT_UP)
                 ) {
-                    if (r.filters.length == 0) match = true
-                    else {
-                        const f = r.filters[0]
-                        match = f == matchPressReleaseTable[src]
-                    }
+                    match =
+                        r.filters.length == 0 ||
+                        r.filters[0] == matchPressReleaseTable[src]
                 } else if (
                     r.sensor == Tid.TID_SENSOR_ACCELEROMETER &&
                     ev == DAL.DEVICE_ID_ACCELEROMETER
                 ) {
-                    // check which event
+                    match =
+                        r.filters.length == 0 ||
+                        r.filters[0] == matchAccelerometerTable[ev]
                 } else if (
                     r.sensor == Tid.TID_SENSOR_RADIO_RECEIVE &&
                     ev == DAL.DEVICE_ID_RADIO
                 ) {
-                    // record radio value
+                    // record radio value into state
+                    this.state["z_radio"] = radio.receiveNumber()
+                    // TODO: evaluate the filters
                 } else if (
                     r.sensor == Tid.TID_SENSOR_MICROPHONE &&
                     ev == DAL.DEVICE_ID_MICROPHONE
                 ) {
                 } else if (r.sensor == Tid.TID_SENSOR_LIGHT) {
+                    // TODO: light for change event
+                    this.state["z_light"] = input.lightLevel()
                 } else if (r.sensor == Tid.TID_SENSOR_TEMP) {
+                    // TODO: heck for change event
+                    this.state["z_temp"] = input.temperature()
                 }
                 if (match) activeRules.push(r)
             })
