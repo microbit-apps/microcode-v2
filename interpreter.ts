@@ -46,6 +46,7 @@ namespace microcode {
                     }
                     this.checkForLoopFinish()
                     this.runAction()
+                    basic.pause(0)
                 }
             })
         }
@@ -88,7 +89,8 @@ namespace microcode {
                 const mod = this.rule.modifiers[this.modifierIndex]
                 const fieldEditor = getFieldEditor(mod)
                 const modEditor = mod as ModifierEditor
-                basic.showLeds(fieldEditor.toString(modEditor.getField()))
+                // TODO: fix
+                // basic.showLeds(fieldEditor.toString(modEditor.getField()))
             }
         }
 
@@ -194,7 +196,7 @@ namespace microcode {
         6: Tid.TID_FILTER_ACCEL_FACE_DOWN,
     }
 
-    export class Interpreter {
+    class Interpreter {
         private hasErrors: boolean = false
         private running: boolean = false
         private currentPage: number = 0
@@ -449,5 +451,16 @@ namespace microcode {
             }
             return -1
         }
+    }
+
+    let theInterpreter: Interpreter = undefined
+    export function runProgram(prog: ProgramDefn) {
+        if (theInterpreter) theInterpreter.stop()
+        theInterpreter = new Interpreter(prog)
+    }
+
+    export function stopProgram() {
+        if (theInterpreter) theInterpreter.stop()
+        theInterpreter = undefined
     }
 }

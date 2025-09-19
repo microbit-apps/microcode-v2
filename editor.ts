@@ -105,7 +105,7 @@ namespace microcode {
 
         public saveAndCompileProgram() {
             this.app.save(SAVESLOT_AUTO, this.progdef.toBuffer())
-            // new jacs.TopWriter().emitProgram(this.progdef)
+            runProgram(this.progdef)
         }
 
         private pickDiskSLot() {
@@ -374,8 +374,8 @@ namespace microcode {
                     } else {
                         this.app.popScene()
                         this.app.pushScene(new Home(this.app))
-                        // back to home screen from editor, stop jacscript by running empty program
-                        // jacs.stop()
+                        // back to home screen from editor, stop program
+                        stopProgram()
                     }
                 } else {
                     if (this.navigator.atRuleStart()) {
