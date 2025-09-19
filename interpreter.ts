@@ -14,23 +14,16 @@ namespace microcode {
         private loopIndex: number = 0
         constructor(
             private index: number,
-            private rule: RuleDefn,
+            public rule: RuleDefn,
             private parent: Interpreter
-        ) {
-            this.getWakeTime()
-        }
+        ) {}
 
         kill() {
             this.actionRunning = false
-        }
-
-        reset() {
             this.once = false
             this.actionRunning = false
             this.modifierIndex = 0
             this.loopIndex = 0
-            this.getWakeTime()
-            if (this.wakeTime > 0) this.runDoSection()
         }
 
         public matchWhen(): boolean {
@@ -142,7 +135,7 @@ namespace microcode {
             }
         }
 
-        private getWakeTime() {
+        public getWakeTime() {
             this.wakeTime = 0
             const sensor = this.rule.sensor
             let isTimer = sensor == Tid.TID_SENSOR_TIMER
@@ -171,7 +164,9 @@ namespace microcode {
                 if (randomPeriod > 0)
                     period += Math.floor(Math.random() * randomPeriod)
                 this.wakeTime = period
+                return period
             }
+            return 0
         }
     }
 
@@ -209,6 +204,7 @@ namespace microcode {
         private state: StateMap = {}
 
         constructor(private program: ProgramDefn) {
+            this.running = true
             this.newPage()
             control.onEvent(DAL.DEVICE_ID_BUTTON_A, DAL.DEVICE_EVT_ANY, () =>
                 this.onMicrobitEvent(
@@ -224,20 +220,30 @@ namespace microcode {
             )
         }
 
-        private newPage() {
-            // kill all existing rules
+        private stopAllRules() {
             this.ruleClosures.forEach(r => r.kill())
-            // should we wait to make sure everything is settled down?
             this.ruleClosures = []
+        }
+
+        private newPage() {
+            this.stopAllRules()
             // set up new rule closures
             this.program.pages[this.currentPage].rules.forEach((r, index) => {
                 this.ruleClosures.push(new RuleClosure(index, r, this))
             })
+            // start up rules
+            this.ruleClosures.forEach(rc => {
+                const wake = rc.getWakeTime()
+                if (wake > 0) rc.runDoSection()
+            })
         }
 
         private onMicrobitEvent(src: number, ev: number) {
-            let activeRules: RuleDefn[] = []
-            this.program.pages[this.currentPage].rules.forEach(r => {
+            if (!this.running) return
+            // see if any rule matches
+            let activeRules: RuleClosure[] = []
+            this.ruleClosures.forEach(rc => {
+                const r = rc.rule
                 let match = false
                 if (
                     (r.sensor == Tid.TID_SENSOR_PRESS &&
@@ -273,39 +279,17 @@ namespace microcode {
                     // TODO: heck for change event
                     this.state["z_temp"] = input.temperature()
                 }
-                if (match) activeRules.push(r)
+                if (match) activeRules.push(rc)
+            })
+            activeRules.forEach(r => {
+                r.kill()
+                r.runDoSection()
             })
         }
 
-        start() {
-            this.running = true
-            this.currentPage = 0
-            this.runCurrentPage()
-        }
-
         stop() {
+            this.stopAllRules()
             this.running = false
-        }
-
-        private runCurrentPage() {
-            if (!this.running || this.currentPage >= this.program.pages.length)
-                return
-            const page = this.program.pages[this.currentPage]
-        }
-
-        // iterate over rules and start up timers, if needed
-        private setupRule(rule: RuleDefn) {
-            // for each sensor, set up event listeners or timers
-            for (const sensor of rule.sensors) {
-                const tid = getTid(sensor)
-                // Example: if tid is a timer, set up a timer
-                // If tid is a button press, set up an event listener
-            }
-        }
-
-        // stop currently executing rules
-        private teardownRule(rule: RuleDefn) {
-            // remove event listeners or stop timers
         }
 
         private constantFold(mods: Tile[], defl = 0) {
