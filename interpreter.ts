@@ -59,6 +59,19 @@ namespace microcode {
                         this.modifierIndex = 0
                     } else {
                         // get the loop bound
+                        const loopBound = this.parent.getValue(
+                            0,
+                            this.rule.modifiers.slice(this.modifierIndex + 1),
+                            0
+                        )
+                        this.loopIndex++
+                        if (this.loopIndex >= loopBound) {
+                            // end of loop
+                            this.actionRunning = false
+                        } else {
+                            // repeat
+                            this.modifierIndex = 0
+                        }
                     }
                 }
             } else {
