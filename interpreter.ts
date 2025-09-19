@@ -12,7 +12,11 @@ namespace microcode {
         private actionRunning: boolean = false
         private modifierIndex: number = 0
         private loopIndex: number = 0
-        constructor(private rule: RuleDefn, private parent: Interpreter) {
+        constructor(
+            private index: number,
+            private rule: RuleDefn,
+            private parent: Interpreter
+        ) {
             this.getWakeTime()
         }
 
@@ -52,7 +56,7 @@ namespace microcode {
         private checkForLoopFinish() {
             if (this.modifierIndex < this.rule.modifiers.length) {
                 const m = this.rule.modifiers[this.modifierIndex]
-                if (m == Tid.TID_MODIFIER_LOOP) {
+                if (getTid(m) == Tid.TID_MODIFIER_LOOP) {
                     if (this.modifierIndex == this.rule.modifiers.length - 1) {
                         // forever loop
                         this.modifierIndex = 0
@@ -81,6 +85,14 @@ namespace microcode {
 
         private displayLEDImage() {
             // extract the LED grid for the current modifier
+            if (this.rule.modifiers.length == 0) {
+                basic.showIcon(IconNames.Happy)
+            } else {
+                const mod = this.rule.modifiers[this.modifierIndex]
+                const fieldEditor = getFieldEditor(mod)
+                const modEditor = mod as ModifierEditor
+                basic.showLeds(fieldEditor.toString(modEditor.getField()))
+            }
         }
 
         private runAction() {
@@ -97,11 +109,11 @@ namespace microcode {
                     basic.showNumber(v)
                     break
                 }
-                case Tid.TID_ACTUATOR_CUP_X_ASSIGN: 
+                case Tid.TID_ACTUATOR_CUP_X_ASSIGN:
                 case Tid.TID_ACTUATOR_CUP_Y_ASSIGN:
                 case Tid.TID_ACTUATOR_CUP_Z_ASSIGN: {
                     const v = this.parent.getValue(this.rule.modifiers, 0)
-                    this.parent.notifyStateUpdate(action,v)
+                    this.parent.notifyStateUpdate(this.index, action, v)
                     break
                 }
                 case Tid.TID_ACTUATOR_RADIO_SEND: {
@@ -385,7 +397,7 @@ namespace microcode {
             }
         }
 
-        public notifyStateUpdate(tid: number, v: number) {
+        public notifyStateUpdate(ruleIndex: number, tid: number, v: number) {
             // TODO
         }
 

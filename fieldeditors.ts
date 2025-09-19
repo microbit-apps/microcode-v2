@@ -27,6 +27,9 @@ namespace microcode {
         toBuffer(field: any): Buffer {
             return undefined
         }
+        toString(field: any): string {
+            return ""
+        }
         fromBuffer(buf: BufferReader): any {
             return undefined
         }
@@ -45,9 +48,6 @@ namespace microcode {
             return null
         }
         getNewInstance(field: any = null): ModifierEditor {
-            return null
-        }
-        serviceCommandArg(): Buffer {
             return null
         }
     }
@@ -87,6 +87,16 @@ namespace microcode {
             }
             return ret
         }
+        toString(img: Bitmap) {
+            let s: string[] = []
+            for (let row = 0; row < 5; row++) {
+                for (let col = 0; col < 5; col++) {
+                    s.push(img.getPixel(col, row) ? "1" : ".")
+                }
+                if (row < 4) s.push("\n")
+            }
+            return s.join("")
+        }
         fromBuffer(br: BufferReader) {
             const buf = br.readBuffer(4)
             const img = bitmaps.create(5, 5)
@@ -123,18 +133,6 @@ namespace microcode {
 
         getNewInstance(field: any = null) {
             return new IconEditor(field ? field : this.field.clone())
-        }
-
-        serviceCommandArg() {
-            const buf = Buffer.create(5)
-            for (let col = 0; col < 5; ++col) {
-                let v = 0
-                for (let row = 0; row < 5; ++row) {
-                    if (this.field.getPixel(col, row)) v |= 1 << row
-                }
-                buf[col] = v
-            }
-            return buf
         }
     }
 
