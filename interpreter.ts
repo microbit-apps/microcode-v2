@@ -9,27 +9,46 @@ namespace microcode {
     class RuleClosure {
         private once: boolean = false
         private wakeTime: number = 0 // for timers
-        private actionIndex: number = -1 // action not active
+        private actionRunning: boolean = false
+        private modifierIndex: number = 0
+        private loopCount: number = 0
         constructor(private rule: RuleDefn, private parent: Interpreter) {
             this.getWakeTime()
         }
 
         reset() {
             this.once = false
-            this.actionIndex = -1
+            this.actionRunning = false
+            this.modifierIndex = 0
+            this.loopCount = 0
             this.getWakeTime()
+            if (this.wakeTime > 0) this.runDoSection()
+        }
+
+        public matchWhen(): boolean {
+            // evaluate the condition associated with the rule, if any
+            return false
+        }
+
+        public runDoSection() {
+            if (this.actionRunning) return
+            this.actionRunning = true
             control.runInBackground(() => {
-                while (true) {
+                while (this.actionRunning) {
                     if (this.wakeTime > 0) {
                         basic.pause(this.wakeTime)
                         this.wakeTime = 0
-                        this.actionIndex = 0
+                        this.modifierIndex = 0
                     }
-                    if (this.actionIndex >= 0) {
+                    if (this.modifierIndex >= 0) {
                         this.runAction()
                     }
                 }
             })
+        }
+
+        private checkForFinish() {
+            // do we have a loop, if so, repeat and keep track of count
         }
 
         private runAction() {
@@ -40,6 +59,9 @@ namespace microcode {
                     break
                 }
                 case Tid.TID_ACTUATOR_CUP_X_ASSIGN: {
+                    // compute the value to assign
+                    // notify the interpreter of new value (don't update state here)
+                    //
                     break
                 }
                 case Tid.TID_ACTUATOR_CUP_Y_ASSIGN: {
