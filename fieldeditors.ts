@@ -27,9 +27,6 @@ namespace microcode {
         toBuffer(field: any): Buffer {
             return undefined
         }
-        toString(field: any): string {
-            return ""
-        }
         fromBuffer(buf: BufferReader): any {
             return undefined
         }
@@ -52,7 +49,7 @@ namespace microcode {
         }
     }
 
-    class IconFieldEditor extends FieldEditor {
+    export class IconFieldEditor extends FieldEditor {
         init() {
             return bmp`
         . . . . .
@@ -87,15 +84,14 @@ namespace microcode {
             }
             return ret
         }
-        toString(img: Bitmap) {
+        toMicroBit(img: Bitmap) {
             let s: string[] = []
             for (let row = 0; row < 5; row++) {
                 for (let col = 0; col < 5; col++) {
-                    s.push(img.getPixel(col, row) ? "1" : ".")
+                    if (img.getPixel(col, row)) led.plot(col, row)
+                    else led.unplot(col, row)
                 }
-                if (row < 4) s.push("\n")
             }
-            return s.join("")
         }
         fromBuffer(br: BufferReader) {
             const buf = br.readBuffer(4)

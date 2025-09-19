@@ -7,7 +7,6 @@ namespace microcode {
     type StateMap = { [id: string]: number }
 
     class RuleClosure {
-        private once: boolean = false
         private wakeTime: number = 0 // for timers
         private actionRunning: boolean = false
         private modifierIndex: number = 0
@@ -19,8 +18,6 @@ namespace microcode {
         ) {}
 
         kill() {
-            this.actionRunning = false
-            this.once = false
             this.actionRunning = false
             this.modifierIndex = 0
             this.loopIndex = 0
@@ -44,14 +41,15 @@ namespace microcode {
                         this.wakeTime = 0
                         this.modifierIndex = 0
                     }
-                    this.checkForLoopFinish()
                     this.runAction()
+                    this.checkForLoopFinish()
                     basic.pause(0)
                 }
             })
         }
 
         private checkForLoopFinish() {
+            if (!this.actionRunning) return
             if (this.modifierIndex < this.rule.modifiers.length) {
                 const m = this.rule.modifiers[this.modifierIndex]
                 if (getTid(m) == Tid.TID_MODIFIER_LOOP) {
@@ -75,9 +73,14 @@ namespace microcode {
                     }
                 }
             } else {
-                // command is finished, restart only if not once
-                if (this.once) this.actionRunning = false
-                else this.getWakeTime()
+                this.kill()
+                // restart timer
+                if (this.rule.sensor == Tid.TID_SENSOR_TIMER) {
+                    const wake = this.getWakeTime()
+                    if (wake > 0) {
+                        this.actionRunning = true
+                    }
+                }
             }
         }
 
@@ -87,11 +90,11 @@ namespace microcode {
                 basic.showIcon(IconNames.Happy)
             } else {
                 const mod = this.rule.modifiers[this.modifierIndex]
-                const fieldEditor = getFieldEditor(mod)
+                const fieldEditor = getFieldEditor(mod) as IconFieldEditor
                 const modEditor = mod as ModifierEditor
-                // TODO: fix
-                // basic.showLeds(fieldEditor.toString(modEditor.getField()))
+                fieldEditor.toMicroBit(modEditor.getField())
             }
+            basic.pause(200)
         }
 
         private runAction() {
@@ -106,24 +109,27 @@ namespace microcode {
                 case Tid.TID_ACTUATOR_SHOW_NUMBER: {
                     const v = this.parent.getValue(this.rule.modifiers, 0)
                     basic.showNumber(v)
-                    break
+                    this.actionRunning = false
+                    return
                 }
                 case Tid.TID_ACTUATOR_CUP_X_ASSIGN:
                 case Tid.TID_ACTUATOR_CUP_Y_ASSIGN:
                 case Tid.TID_ACTUATOR_CUP_Z_ASSIGN: {
                     const v = this.parent.getValue(this.rule.modifiers, 0)
                     this.parent.notifyStateUpdate(this.index, action, v)
-                    break
+                    this.actionRunning = false
                 }
                 case Tid.TID_ACTUATOR_RADIO_SEND: {
                     const v = this.parent.getValue(this.rule.modifiers, 0)
                     radio.sendNumber(v)
-                    break
+                    this.actionRunning = false
+                    return
                 }
                 case Tid.TID_ACTUATOR_RADIO_SET_GROUP: {
                     const v = this.parent.getValue(this.rule.modifiers, 1)
                     radio.setGroup(v)
-                    break
+                    this.actionRunning = false
+                    return
                 }
                 case Tid.TID_ACTUATOR_MUSIC: {
                     break
@@ -135,19 +141,23 @@ namespace microcode {
                     break
                 }
             }
+            this.modifierIndex++
+        }
+
+        private isStartPage() {
+            const sensor = this.rule.sensor
+            return Tid.TID_SENSOR_START_PAGE
         }
 
         public getWakeTime() {
             this.wakeTime = 0
             const sensor = this.rule.sensor
             let isTimer = sensor == Tid.TID_SENSOR_TIMER
-            this.once = false
             if (
                 sensor == Tid.TID_SENSOR_START_PAGE &&
                 this.rule.filters.some(f => jdKind(f) == JdKind.Timespan)
             ) {
                 isTimer = true
-                this.once = true
             }
             if (isTimer) {
                 // const timer = this.addProc(name + "_timer")
