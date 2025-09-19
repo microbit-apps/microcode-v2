@@ -11,7 +11,7 @@ namespace microcode {
         private wakeTime: number = 0 // for timers
         private actionRunning: boolean = false
         private modifierIndex: number = 0
-        private loopCount: number = 0
+        private loopIndex: number = 0
         constructor(private rule: RuleDefn, private parent: Interpreter) {
             this.getWakeTime()
         }
@@ -20,7 +20,7 @@ namespace microcode {
             this.once = false
             this.actionRunning = false
             this.modifierIndex = 0
-            this.loopCount = 0
+            this.loopIndex = 0
             this.getWakeTime()
             if (this.wakeTime > 0) this.runDoSection()
         }
@@ -41,17 +41,35 @@ namespace microcode {
                         this.modifierIndex = 0
                     }
                     if (this.modifierIndex >= 0) {
+                        this.checkForLoopFinish()
                         this.runAction()
                     }
                 }
             })
         }
 
-        private checkForFinish() {
+        private checkForLoopFinish() {
             // do we have a loop, if so, repeat and keep track of count
+            if (this.modifierIndex < 0) return
+            if (this.modifierIndex < this.rule.modifiers.length) {
+                const m = this.rule.modifiers[this.modifierIndex]
+                if (m == Tid.TID_MODIFIER_LOOP) {
+                    if (this.modifierIndex == this.rule.modifiers.length - 1) {
+                        // forever loop
+                        this.modifierIndex = 0
+                    } else {
+                        // get the loop bound
+                    }
+                }
+            } else {
+                // command is finished, restart only if not once
+                if (this.once) this.actionRunning = false
+                else this.getWakeTime()
+            }
         }
 
         private runAction() {
+            if (this.wakeTime > 0 || !this.actionRunning) return
             // execute one step
             const action = this.rule.actuators[0]
             switch (action) {
@@ -348,7 +366,7 @@ namespace microcode {
         }
 
         // do we need to take initial value into account?
-        private getValue(
+        public getValue(
             current: number,
             modifiers: Tile[],
             defl: number
