@@ -20,6 +20,10 @@ namespace microcode {
             this.getWakeTime()
         }
 
+        kill() {
+            this.actionRunning = false
+        }
+
         reset() {
             this.once = false
             this.actionRunning = false
@@ -171,16 +175,6 @@ namespace microcode {
         }
     }
 
-    class PageClosure {
-        public rules: RuleClosure[] = []
-        // what else to remember about a running page?
-    }
-
-    // encapsulate the variety of ways microbit/jacdac/timer events
-    // are exposed to the interpreter, as well as their values
-
-    class InterpreterEvent {}
-
     // DEVICE_ID_ANY == DEVICE_EXT_ANY == 0
 
     type IdMap = { [id: number]: number }
@@ -209,18 +203,13 @@ namespace microcode {
         private hasErrors: boolean = false
         private running: boolean = false
         private currentPage: number = 0
-        private pageClosure: PageClosure = undefined
+        private ruleClosures: RuleClosure[] = []
 
         // state storage for variables and other temporary state
         private state: StateMap = {}
 
         constructor(private program: ProgramDefn) {
-            // need to set up the state variables
-            // - globals
-            // - pipes
-            // - recall the last radio values and other sensor values
-            // - sensor values (for changes? though maybe we can do without)
-
+            this.newPage()
             control.onEvent(DAL.DEVICE_ID_BUTTON_A, DAL.DEVICE_EVT_ANY, () =>
                 this.onMicrobitEvent(
                     DAL.DEVICE_ID_BUTTON_A,
@@ -233,6 +222,17 @@ namespace microcode {
                     control.eventValue()
                 )
             )
+        }
+
+        private newPage() {
+            // kill all existing rules
+            this.ruleClosures.forEach(r => r.kill())
+            // should we wait to make sure everything is settled down?
+            this.ruleClosures = []
+            // set up new rule closures
+            this.program.pages[this.currentPage].rules.forEach((r, index) => {
+                this.ruleClosures.push(new RuleClosure(index, r, this))
+            })
         }
 
         private onMicrobitEvent(src: number, ev: number) {
