@@ -31,6 +31,9 @@ namespace microcode {
         }
 
         public runDoSection() {
+            // make sure we have something to do
+            if (this.rule.actuators.length == 0) return
+            // prevent re-entrancy
             if (this.actionRunning) return
             this.actionRunning = true
             control.runInBackground(() => {
@@ -40,17 +43,13 @@ namespace microcode {
                         this.wakeTime = 0
                         this.modifierIndex = 0
                     }
-                    if (this.modifierIndex >= 0) {
-                        this.checkForLoopFinish()
-                        this.runAction()
-                    }
+                    this.checkForLoopFinish()
+                    this.runAction()
                 }
             })
         }
 
         private checkForLoopFinish() {
-            // do we have a loop, if so, repeat and keep track of count
-            if (this.modifierIndex < 0) return
             if (this.modifierIndex < this.rule.modifiers.length) {
                 const m = this.rule.modifiers[this.modifierIndex]
                 if (m == Tid.TID_MODIFIER_LOOP) {
@@ -60,7 +59,6 @@ namespace microcode {
                     } else {
                         // get the loop bound
                         const loopBound = this.parent.getValue(
-                            0,
                             this.rule.modifiers.slice(this.modifierIndex + 1),
                             0
                         )
@@ -81,30 +79,39 @@ namespace microcode {
             }
         }
 
+        private displayLEDImage() {
+            // extract the LED grid for the current modifier
+        }
+
         private runAction() {
             if (this.wakeTime > 0 || !this.actionRunning) return
             // execute one step
             const action = this.rule.actuators[0]
             switch (action) {
                 case Tid.TID_ACTUATOR_PAINT: {
+                    this.displayLEDImage()
                     break
                 }
-                case Tid.TID_ACTUATOR_CUP_X_ASSIGN: {
-                    // compute the value to assign
-                    // notify the interpreter of new value (don't update state here)
-                    //
+                case Tid.TID_ACTUATOR_SHOW_NUMBER: {
+                    const v = this.parent.getValue(this.rule.modifiers, 0)
+                    basic.showNumber(v)
                     break
                 }
-                case Tid.TID_ACTUATOR_CUP_Y_ASSIGN: {
-                    break
-                }
+                case Tid.TID_ACTUATOR_CUP_X_ASSIGN: 
+                case Tid.TID_ACTUATOR_CUP_Y_ASSIGN:
                 case Tid.TID_ACTUATOR_CUP_Z_ASSIGN: {
+                    const v = this.parent.getValue(this.rule.modifiers, 0)
+                    this.parent.notifyStateUpdate(action,v)
                     break
                 }
                 case Tid.TID_ACTUATOR_RADIO_SEND: {
+                    const v = this.parent.getValue(this.rule.modifiers, 0)
+                    radio.sendNumber(v)
                     break
                 }
                 case Tid.TID_ACTUATOR_RADIO_SET_GROUP: {
+                    const v = this.parent.getValue(this.rule.modifiers, 1)
+                    radio.setGroup(v)
                     break
                 }
                 case Tid.TID_ACTUATOR_MUSIC: {
@@ -378,15 +385,15 @@ namespace microcode {
             }
         }
 
+        public notifyStateUpdate(tid: number, v: number) {
+            // TODO
+        }
+
         // do we need to take initial value into account?
-        public getValue(
-            current: number,
-            modifiers: Tile[],
-            defl: number
-        ): number {
+        public getValue(modifiers: Tile[], defl: number): number {
             let currSeq: Tile[] = []
             let first = true
-            let result: number = current
+            let result: number = 0
 
             for (const m of modifiers) {
                 const cat = getCategory(m)
