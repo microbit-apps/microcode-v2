@@ -3,11 +3,11 @@
     "version": "2.5.47",
     "description": "Physical computing library for micro:bit V2",
     "dependencies": {
-        "core": "*",
-        "radio": "*",
-        "microphone": "*",
-        "datalogger": "*",
-        "settings": "*",
+        "core": "file:../core",
+        "radio": "file:../radio",
+        "microphone": "file:../microphone",
+        "datalogger": "file:../datalogger",
+        "settings": "file:../settings",
         "user-interface-base": "github:microbit-apps/user-interface-base#v0.0.24"
     },
     "files": [
@@ -44,6 +44,8 @@
         "target": "7.1.13",
         "targetId": "microbit"
     },
-    "supportedTargets": ["microbit"],
+    "supportedTargets": [
+        "microbit"
+    ],
     "preferredEditor": "tsprj"
 }
