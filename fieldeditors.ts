@@ -364,7 +364,7 @@ namespace microcode {
 
         const red = icons.get("solid_red")
         const black = icons.get("solid_black")
-
+        let stress = false
         picker.show(
             {
                 width: 5,
@@ -372,16 +372,40 @@ namespace microcode {
                     tidToString(Tid.TID_MODIFIER_ICON_EDITOR)
                 ),
                 onClick: (index: number) => {
-                    while (true) {
-                        for (let i = 0; i < 25; i++) {
-                            let row = Math.idiv(i, 5)
-                            let col = i % 5
-                            const on = image5x5.getPixel(col, row)
-                            image5x5.setPixel(col, row, on ? 0 : 1)
-                            defs[i].icon = getColor(col, row)
-                            picker.draw()
-                            basic.pause(50)
-                        }
+                    if (stress) {
+                        let row = Math.idiv(index, 5)
+                        let col = index % 5
+                        const on = image5x5.getPixel(col, row)
+                        image5x5.setPixel(col, row, on ? 0 : 1)
+                        defs[index].icon = getColor(col, row)
+                        picker.draw()
+                    } else {
+                        stress = true
+                        control.inBackground(() => {
+                            while (true) {
+                                // send events to stress
+                                for (let i = 0; i < 25; i++) {
+                                    controller.A.raiseButtonDown()
+                                    basic.pause(5)
+                                    controller.A.raiseButtonUp()
+                                    basic.pause(50)
+                                    controller.right.raiseButtonDown()
+                                    basic.pause(5)
+                                    controller.right.raiseButtonUp()
+                                    basic.pause(5)
+                                }
+                                for (let i = 0; i < 24; i++) {
+                                    controller.A.raiseButtonDown()
+                                    basic.pause(5)
+                                    controller.A.raiseButtonUp()
+                                    basic.pause(50)
+                                    controller.left.raiseButtonDown()
+                                    basic.pause(5)
+                                    controller.left.raiseButtonUp()
+                                    basic.pause(5)
+                                }
+                            }
+                        })
                     }
                 },
                 onHide,
