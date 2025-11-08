@@ -372,12 +372,17 @@ namespace microcode {
                     tidToString(Tid.TID_MODIFIER_ICON_EDITOR)
                 ),
                 onClick: (index: number) => {
-                    let row = Math.idiv(index, 5)
-                    let col = index % 5
-                    const on = image5x5.getPixel(col, row)
-                    image5x5.setPixel(col, row, on ? 0 : 1)
-                    defs[index].icon = getColor(col, row)
-                    picker.draw()
+                    while (true) {
+                        for (let i = 0; i < 25; i++) {
+                            let row = Math.idiv(i, 5)
+                            let col = i % 5
+                            const on = image5x5.getPixel(col, row)
+                            image5x5.setPixel(col, row, on ? 0 : 1)
+                            defs[i].icon = getColor(col, row)
+                            picker.draw()
+                            basic.pause(50)
+                        }
+                    }
                 },
                 onHide,
                 onDelete,
