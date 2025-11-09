@@ -10,4 +10,5 @@ namespace microcode {
 
     export let editorMode = EditorMode.Decimal
     export let jacdacEnabled = false
+    export let reportAria = false
 }
