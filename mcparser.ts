@@ -3,6 +3,7 @@
 // Page [num]
 // When [Event] Do [Action] [Loop]
 
+// TODO: need to make tokens have unique tids (filter/mod replication)
 // TODO: scripts reverse the tooltip
 
 namespace microcode {
