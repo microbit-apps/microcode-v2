@@ -76,21 +76,20 @@ for (const lang of languages.filter(l => l !== "pxt")) {
         { encoding: "utf-8" }
     )
 
-    // for (const fn of ["dialogs", "legal"]) {
-    //     const dialogs = await (
-    //         await fetch(
-    //             `${cdn}content/${lang}/microcode/${fn}.html?timestamp=${timestamp}`
-    //         )
-    //     ).text()
-    //     writeFileSync(`./_includes/${fn}-${lang}.html`, dialogs, {
-    //         encoding: "utf-8",
-    //     })
-    // }
-
     // merge translations
     Object.keys(tooltips)
         .filter(k => !translations[k])
         .forEach(k => (translations[k] = tooltips[k]))
+
+    // this is for english only (for now)
+    if (lang == "en") {
+        const reverseMap = Object.keys(tooltips).filter(k => tooltips[k])
+
+        const tooltip2tid = `
+        export function tooltip2tid(id: string): number {
+        }
+    `
+    }
 
     const ts = `// auto-generated, run 'node scripts/lochex.mjs' to refresh
 namespace microcode {
@@ -109,6 +108,7 @@ ${Object.keys(translations)
         return res
     }
 }`
+
     writeFileSync("./tooltips.ts", ts, { encoding: "utf8" })
 
     // build js
