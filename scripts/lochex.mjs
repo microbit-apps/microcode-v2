@@ -81,15 +81,23 @@ for (const lang of languages.filter(l => l !== "pxt")) {
         .filter(k => !translations[k])
         .forEach(k => (translations[k] = tooltips[k]))
 
-    // this is for english only (for now)
-    if (lang == "en") {
-        const reverseMap = Object.keys(tooltips).filter(k => tooltips[k])
-
-        const tooltip2tid = `
+    const tooltip2tid = `
         export function tooltip2tid(id: string): number {
+           let tid: number = undefined
+           if (!id) return id
+            ${Object.keys(translations)
+                // don't emit sample names in hardware
+                .filter(k => !/^N/.test(k))
+                // only Tids
+                .filter(k => /T\d+/.test(k))
+                .map(k => {
+                    const tid = parseInt(k.slice(1))
+                    return `        else if (id === "${translations[k]}") tid = ${tid};`
+                })
+                .join("\n")}        
+          return tid
         }
     `
-    }
 
     const ts = `// auto-generated, run 'node scripts/lochex.mjs' to refresh
 namespace microcode {
@@ -107,6 +115,8 @@ ${Object.keys(translations)
     .join("\n")}        
         return res
     }
+    
+    ${tooltip2tid}
 }`
 
     writeFileSync("./tooltips.ts", ts, { encoding: "utf8" })
