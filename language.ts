@@ -236,7 +236,14 @@ namespace microcode {
         public static fromBuffer(br: BufferReader) {
             const defn = new RuleDefn()
             const handleFieldEditor = (which: string) => {
-                const by = br.readByte()
+                let by = br.readByte()
+                // convert from old to new
+                if (isOldModifierCoin(by))
+                    by = Tid.TID_FILTER_COIN_1 + (by - Tid.TID_MODIFIER_COIN_1)
+                if (isOldModifierVar(by))
+                    by =
+                        Tid.TID_FILTER_CUP_X_READ +
+                        (by - Tid.TID_MODIFIER_CUP_X_READ)
                 const tile = getEditor(by)
                 if (tile instanceof ModifierEditor) {
                     const field = tile.fieldEditor.fromBuffer(br)
