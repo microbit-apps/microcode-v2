@@ -129,11 +129,11 @@ namespace microcode {
         TID_MODIFIER_PAGE_4 = 153,
         TID_MODIFIER_PAGE_5 = 154,
         //
-        TID_MODIFIER_COIN_1 = 155,
-        TID_MODIFIER_COIN_2 = 156,
-        TID_MODIFIER_COIN_3 = 157,
-        TID_MODIFIER_COIN_4 = 158,
-        TID_MODIFIER_COIN_5 = 159,
+        TID_MODIFIER_COIN_1 = 155, // deprecate
+        TID_MODIFIER_COIN_2 = 156, // ""
+        TID_MODIFIER_COIN_3 = 157, // ""
+        TID_MODIFIER_COIN_4 = 158, // ""
+        TID_MODIFIER_COIN_5 = 159, // ""
         //
         TID_MODIFIER_ICON_EDITOR = 160,
         TID_MODIFIER_COLOR_RED = 161,
@@ -153,9 +153,9 @@ namespace microcode {
         TID_MODIFIER_EMOJI_YAWN = 172,
         EMOJI_END = 172,
         //
-        TID_MODIFIER_CUP_X_READ = 173,
-        TID_MODIFIER_CUP_Y_READ = 174,
-        TID_MODIFIER_CUP_Z_READ = 175,
+        TID_MODIFIER_CUP_X_READ = 173, // deprecate
+        TID_MODIFIER_CUP_Y_READ = 174, // ""
+        TID_MODIFIER_CUP_Z_READ = 175, // ""
         TID_MODIFIER_RADIO_READ = 176,
         TID_MODIFIER_RANDOM_TOSS = 177,
         TID_MODIFIER_LOOP = 178,
@@ -254,6 +254,8 @@ namespace microcode {
     export function isModifier(tid: Tid) {
         return (
             (tid >= Tid.MODIFIER_START && tid <= Tid.MODIFER_END) ||
+            isConstant(tid) ||
+            isVariable(tid) ||
             isMathOperator(tid) ||
             tid == Tid.TID_DECIMAL_EDITOR ||
             tid == Tid.TID_POS_INT_EDITOR
@@ -300,27 +302,27 @@ namespace microcode {
         return Tid.LINE_START <= tidEnum && tidEnum <= Tid.LINE_END
     }
 
-    export function isFilterConstant(tidEnum: Tid) {
+    export function isConstant(tidEnum: Tid) {
         return (
             Tid.TID_FILTER_COIN_1 <= tidEnum && tidEnum <= Tid.TID_FILTER_COIN_5
         )
     }
 
-    function isFilterVariable(tidEnum: Tid) {
+    function isVariable(tidEnum: Tid) {
         return (
             Tid.TID_FILTER_CUP_X_READ <= tidEnum &&
             tidEnum <= Tid.TID_FILTER_CUP_Z_READ
         )
     }
 
-    export function isModifierConstant(tidEnum: Tid) {
+    export function isOldModifierCoin(tidEnum: Tid) {
         return (
             Tid.TID_MODIFIER_COIN_1 <= tidEnum &&
             tidEnum <= Tid.TID_MODIFIER_COIN_5
         )
     }
 
-    function isModifierVariable(tidEnum: Tid) {
+    export function isOldModifierVar(tidEnum: Tid) {
         return (
             Tid.TID_MODIFIER_CUP_X_READ <= tidEnum &&
             tidEnum <= Tid.TID_MODIFIER_CUP_Z_READ
@@ -394,9 +396,9 @@ namespace microcode {
         if (!isFilter(tid)) return false
         // the following filters are not terminal
         if (
-            isFilterConstant(tid) ||
+            isConstant(tid) ||
             isTimespan(tid) ||
-            isFilterVariable(tid) ||
+            isVariable(tid) ||
             isMathOperator(tid) ||
             isComparisonOperator(tid) ||
             tid == Tid.TID_DECIMAL_EDITOR
@@ -469,7 +471,7 @@ namespace microcode {
         if (isSensorEvent(tid)) return isSensorEvent(tid)
         if (isFilter(tid)) {
             // TODO: if event, put it last
-            if (isFilterConstant(tid)) return getParam(tid)
+            if (isConstant(tid)) return getParam(tid)
             if (isLineEvent(tid)) {
                 if (tid == Tid.TID_FILTER_LINE_BOTH) return 101
                 else return tid
@@ -600,7 +602,7 @@ namespace microcode {
     ]
 
     const filterMath: (string | number)[] = [
-        "value_in",
+        "variable",
         "comparison",
         "maths",
         "decimal_editor",
@@ -694,8 +696,8 @@ namespace microcode {
             case Tid.TID_ACTUATOR_CUP_Z_ASSIGN:
                 return {
                     only: microcodeClassic
-                        ? ["value_out", "constant"]
-                        : ["value_out", "maths", "decimal_editor"],
+                        ? ["variable", "constant"]
+                        : ["variable", "maths", "decimal_editor"],
                 }
             case Tid.TID_ACTUATOR_RGB_LED:
                 return { only: ["rgb_led", "loop"] }
@@ -732,11 +734,9 @@ namespace microcode {
         if (isMathOperator(tid)) return "maths"
         if (
             // isFilterConstant(tid) ||
-            isFilterVariable(tid)
+            isVariable(tid)
         )
-            return "value_in"
-        if (isModifierConstant(tid)) return "constant"
-        if (isModifierVariable(tid)) return "value_out"
+            return "variable"
         if (isPage(tid)) return "page"
         if (isCarModifier(tid)) return "car"
         if (isLedModifier(tid)) return "rgb_led"
@@ -772,7 +772,7 @@ namespace microcode {
             case Tid.TID_MODIFIER_MIC_READ:
             case Tid.TID_MODIFIER_LIGHT_READ:
             case Tid.TID_MODIFIER_MAGNET_READ:
-                return "value_out"
+                return "variable"
             case Tid.TID_OPERATOR_DIVIDE:
             case Tid.TID_OPERATOR_MINUS:
             case Tid.TID_OPERATOR_MULTIPLY:
@@ -794,8 +794,7 @@ namespace microcode {
 
     export function getKindTid(tid: number): TileKind {
         if (
-            isFilterConstant(tid) ||
-            isModifierConstant(tid) ||
+            isConstant(tid) ||
             tid == Tid.TID_DECIMAL_EDITOR ||
             tid == Tid.TID_POS_INT_EDITOR
         )
@@ -858,8 +857,7 @@ namespace microcode {
 
     export function getParam(tile: Tile): any {
         const tid = getTid(tile)
-        if (isModifierConstant(tid)) return tid - Tid.TID_MODIFIER_COIN_1 + 1
-        if (isFilterConstant(tid)) return tid - Tid.TID_FILTER_COIN_1 + 1
+        if (isConstant(tid)) return tid - Tid.TID_FILTER_COIN_1 + 1
         if (isPage(tid)) return tid - Tid.TID_MODIFIER_PAGE_1 + 1
         if (isAccelerometerEvent(tid) || isPressReleaseEvent(tid)) return tid
         switch (tid) {

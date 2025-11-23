@@ -103,10 +103,7 @@ namespace microcode {
 
             // math
             if (typeof name == "number") {
-                if (
-                    microcode.isModifierConstant(name) ||
-                    microcode.isFilterConstant(name)
-                ) {
+                if (microcode.isConstant(name)) {
                     return icondb.numberToImage(getParam(name))
                 }
             }

@@ -264,6 +264,7 @@ namespace microcode {
             defn.actuators.push(actuatorEnum)
             assert(!br.eof())
             while (isModifier(br.peekByte())) {
+                // TODO: convert old coin and old var
                 handleFieldEditor("modifiers")
                 assert(!br.eof())
             }

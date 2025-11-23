@@ -4,6 +4,9 @@
 // When [Event] Do [Action] [Loop]
 
 // TODO: need to make tokens have unique tids (filter/mod replication)
+// TID_MODIFIER_CUP_X_READ...
+// TID_MODIFIER_COIN_1...
+// translate
 // TODO: scripts reverse the tooltip
 
 namespace microcode {
