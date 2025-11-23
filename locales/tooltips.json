@@ -44,7 +44,7 @@
     "T12": "release",
     "T13": "move",
     "T14": "timer",
-    "T15": "light",
+    "T15": "light (external)",
     "T16": "temperature",
     "T17": "radio receive",
     "T18": "sound",
@@ -61,7 +61,7 @@
     "T28": "moisture",
     "T29": "distance",
 
-    "T30": "line",
+    "T30": "reflected light",
 
     "T40": "switch page",
     "T41": "play sound",
@@ -100,7 +100,7 @@
     "T86": "5 seconds",
     "T87": "loud",
     "T88": "quiet",
-    "T89": "NA",
+    "T89": "NA1",
 
     "T90": "shake",
     "T91": "tilt up",
@@ -123,8 +123,8 @@
     "T108": "face up",
     "T109": "face down",
 
-    "T110": "on",
-    "T111": "off",
+    "T110": "active",
+    "T111": "unactive",
 
     "T150": "page 1",
     "T151": "page 2",
@@ -133,8 +133,8 @@
     "T154": "page 5",
 
     "T160": "LED image",
-    "T161": "red",
-    "T162": "purple",
+    "T161": "NA5",
+    "T162": "NA6",
     "T163": "giggle",
     "T164": "happy",
     "T165": "hello",
@@ -151,8 +151,8 @@
     "T178": "repeat",
     "T179": "melody",
 
-    "T180": "temperature",
-    "T181": "NA",
+    "T180": "temp.",
+    "T181": "NA2",
     "T182": "red",
     "T183": "green",
     "T184": "blue",
@@ -164,8 +164,8 @@
 
     "T190": "forward",
     "T191": "reverse",
-    "T192": "turn left",
-    "T193": "turn right",
+    "T192": "NA3",
+    "T193": "NA4",
     "T194": "stop",
     "T195": "fast forward",
     "T196": "spin left",

@@ -85,12 +85,9 @@ for (const lang of languages.filter(l => l !== "pxt")) {
     const entries = {}
 
     /*
-        ERROR: already have entry for light
-        ERROR: already have entry for line
-        ERROR: already have entry for temperature
-        ERROR: already have entry for NA
         ERROR: already have entry for red
         ERROR: already have entry for purple
+
         ERROR: already have entry for turn-left
         ERROR: already have entry for turn-right
         ERROR: already have entry for on
