@@ -8,6 +8,7 @@ import {
 import fetch from "node-fetch"
 import { execSync } from "child_process"
 import process from "process"
+import { fail } from "assert"
 
 const tooltips = JSON.parse(
     readFileSync("./locales/tooltips.json", { encoding: "utf-8" })
@@ -81,10 +82,12 @@ for (const lang of languages.filter(l => l !== "pxt")) {
         .filter(k => !translations[k])
         .forEach(k => (translations[k] = tooltips[k]))
 
+    const entries = {}
+
     const tooltip2tid = `
         export function tooltip2tid(id: string): number {
            let tid: number = undefined
-           if (!id) return id
+           if (!id) return tid
             ${Object.keys(translations)
                 // don't emit sample names in hardware
                 .filter(k => !/^N/.test(k))
@@ -92,6 +95,11 @@ for (const lang of languages.filter(l => l !== "pxt")) {
                 .filter(k => /T\d+/.test(k))
                 .map(k => {
                     const tid = parseInt(k.slice(1))
+                    if (entries[translations[k]]) {
+                        console.log(
+                            `ERROR: already have entry for ${translations[k]}`
+                        )
+                    }
                     return `        else if (id === "${translations[k]}") tid = ${tid};`
                 })
                 .join("\n")}        
@@ -130,7 +138,7 @@ ${Object.keys(translations)
     )
     // build hex
     console.log(`  build hw`)
-    exec("makecode --hw n3", { shell: true })
+    exec("makecode", { shell: true })
     copyFileSync(
         "./built/n3/binary.hex",
         `./assets/hex/microcode-${lang.toLowerCase()}.hex`
