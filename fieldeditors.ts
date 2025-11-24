@@ -32,6 +32,12 @@ namespace microcode {
         fromBuffer(buf: BufferReader): any {
             return undefined
         }
+        toText(field: any): string {
+            return ""
+        }
+        fromText(text: string): any {
+            return undefined
+        }
     }
 
     export class ModifierEditor {
