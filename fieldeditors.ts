@@ -242,6 +242,16 @@ namespace microcode {
         return result
     }
 
+    function notesToMelody(txt: string) {
+        const seq = txt.split(" ")
+        let res = ""
+        seq.forEach((note, index) => {
+            if (note == "-") res += "."
+            else res += noteNames.indexOf(note).toString
+        })
+        return { notes: res, tempo: 120 }
+    }
+
     export const MELODY_LENGTH = 4
     export const NUM_NOTES = 5
 
@@ -302,8 +312,7 @@ namespace microcode {
             return melodyToNotes(melody)
         }
         fromText(txt: string): Melody {
-            // TODO
-            return undefined
+            return notesToMelody(txt)
         }
     }
 
