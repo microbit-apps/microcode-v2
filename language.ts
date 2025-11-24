@@ -278,6 +278,10 @@ namespace microcode {
             defn.fixup()
             return defn
         }
+
+        public toString() {
+            return ""
+        }
     }
 
     export class PageDefn {
@@ -329,6 +333,10 @@ namespace microcode {
             br.readByte()
             return defn
         }
+
+        public toString() {
+            return ""
+        }
     }
 
     export function PAGE_IDS() {
@@ -378,6 +386,11 @@ namespace microcode {
             }
             br.readByte()
             return defn
+        }
+
+        public toString() {
+            const res = this.pages.map(page => page.toString())
+            return res.map((ps, i) => `Page ${i + 1}\n${ps}`).join("\n")
         }
     }
 
