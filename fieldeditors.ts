@@ -32,10 +32,10 @@ namespace microcode {
         fromBuffer(buf: BufferReader): any {
             return undefined
         }
-        toText(field: any): string {
+        toString(field: any): string {
             return ""
         }
-        fromText(text: string): any {
+        fromString(text: string): any {
             return undefined
         }
     }
@@ -99,10 +99,10 @@ namespace microcode {
             const str = buf.readString()
             return { num: str }
         }
-        toText(field: BoxedNumAsStr) {
+        toString(field: BoxedNumAsStr) {
             return field.num
         }
-        fromText(txt: string) {
+        fromString(txt: string) {
             return { num: txt }
         }
     }
@@ -182,7 +182,7 @@ namespace microcode {
             }
             return img
         }
-        toText(img: Bitmap) {
+        toString(img: Bitmap) {
             let ret = ""
             for (let row = 0; row < 5; row++) {
                 for (let col = 0; col < 5; col++) {
@@ -192,7 +192,7 @@ namespace microcode {
             }
             return ret
         }
-        fromText(txt: string): Bitmap {
+        fromString(txt: string): Bitmap {
             let ret = bitmaps.create(5, 5)
             let seq = txt.split(" \n")
             seq.forEach((s, i) => {
@@ -247,7 +247,7 @@ namespace microcode {
         let res = ""
         seq.forEach((note, index) => {
             if (note == "-") res += "."
-            else res += noteNames.indexOf(note).toString
+            else res += noteNames.indexOf(note).toString()
         })
         return { notes: res, tempo: 120 }
     }
@@ -308,10 +308,10 @@ namespace microcode {
             }
             return { tempo, notes }
         }
-        toText(melody: Melody): string {
+        toString(melody: Melody): string {
             return melodyToNotes(melody)
         }
-        fromText(txt: string): Melody {
+        fromString(txt: string): Melody {
             return notesToMelody(txt)
         }
     }

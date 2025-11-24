@@ -279,19 +279,29 @@ namespace microcode {
             return defn
         }
 
-        // TODO: deal with field editors
         public toString() {
             const toToken = (tile: Tile) =>
                 resolveTooltip("T" + getTid(tile)).replaceAll(" ", "-")
-            return toToken(this.sensor) +
+            const tileToString = (tile: Tile) => {
+                const tok = toToken(tile)
+                if (tile instanceof ModifierEditor) {
+                    const mod = tile as ModifierEditor
+                    return tok + `\n` + mod.fieldEditor.toString(mod.getField())
+                }
+                return tok
+            }
+            return (
+                toToken(this.sensor) +
                 " " +
-                this.filters.map(toToken).join(" ") +
+                this.filters.map(tileToString).join(" ") +
                 " " +
-                this.actuators.length
-                ? toToken(this.actuators[0]) +
+                (this.actuators.length
+                    ? toToken(this.actuators[0]) +
                       " " +
-                      this.modifiers.map(toToken).join(" ")
-                : ""
+                      this.modifiers.map(tileToString).join(" ")
+                    : "") +
+                " EOR\n"
+            )
         }
     }
 
