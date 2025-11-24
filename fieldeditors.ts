@@ -232,6 +232,16 @@ namespace microcode {
         tempo: number
     }
 
+    export function melodyToNotes(melody: Melody) {
+        const notes = melody.notes.split("")
+        let result = ""
+        for (const n of notes) {
+            if (n == ".") result += "- "
+            else result += noteNames[parseInt(n)] + " "
+        }
+        return result
+    }
+
     export const MELODY_LENGTH = 4
     export const NUM_NOTES = 5
 
@@ -288,6 +298,12 @@ namespace microcode {
             }
             return { tempo, notes }
         }
+        toText(melody: Melody): string {
+            return melodyToNotes(melody)
+        }
+        fromText(txt: string): Melody {
+            return undefined
+        }
     }
 
     export class MelodyEditor extends ModifierEditor {
@@ -315,16 +331,6 @@ namespace microcode {
             return new MelodyEditor(
                 field ? field : this.fieldEditor.clone(this.field)
             )
-        }
-        // music.play(music.stringPlayable("C - E - G F E D ", 120), music.PlaybackMode.UntilDone)
-        getNoteSequence() {
-            const notes = this.field.notes.split("")
-            let result = ""
-            for (const n of notes) {
-                if (n == ".") result += "- "
-                else result += noteNames[parseInt(n)] + " "
-            }
-            return result
         }
     }
 
