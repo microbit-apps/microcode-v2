@@ -99,6 +99,12 @@ namespace microcode {
             const str = buf.readString()
             return { num: str }
         }
+        toText(field: BoxedNumAsStr) {
+            return field.num
+        }
+        fromText(txt: string) {
+            return { num: txt }
+        }
     }
 
     export class DigitEditor extends ModifierEditor {
@@ -175,6 +181,24 @@ namespace microcode {
                 img.setPixel(col, row, (buf[byte] >> bit) & 1)
             }
             return img
+        }
+        toText(img: Bitmap) {
+            let ret = ""
+            for (let row = 0; row < 5; row++) {
+                for (let col = 0; col < 5; col++) {
+                    ret += img.getPixel(col, row) ? `1 ` : `. `
+                }
+                ret += `\n`
+            }
+            return ret
+        }
+        fromText(txt: string): Bitmap {
+            let ret = bitmaps.create(5, 5)
+            let seq = txt.split(" \n")
+            seq.forEach((s, i) => {
+                ret.setPixel(i % 5, Math.idiv(i, 5), s == "1" ? 1 : 0)
+            })
+            return ret
         }
     }
 
