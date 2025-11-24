@@ -302,6 +302,7 @@ namespace microcode {
             return melodyToNotes(melody)
         }
         fromText(txt: string): Melody {
+            // TODO
             return undefined
         }
     }
