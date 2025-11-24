@@ -279,8 +279,19 @@ namespace microcode {
             return defn
         }
 
+        // TODO: deal with field editors
         public toString() {
-            return ""
+            const toToken = (tile: Tile) =>
+                resolveTooltip("T" + getTid(tile)).replaceAll(" ", "-")
+            return toToken(this.sensor) +
+                " " +
+                this.filters.map(toToken).join(" ") +
+                " " +
+                this.actuators.length
+                ? toToken(this.actuators[0]) +
+                      " " +
+                      this.modifiers.map(toToken).join(" ")
+                : ""
         }
     }
 
@@ -335,7 +346,8 @@ namespace microcode {
         }
 
         public toString() {
-            return ""
+            const res = this.rules.map(rule => rule.toString())
+            return res.join("\n")
         }
     }
 
