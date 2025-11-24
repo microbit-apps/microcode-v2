@@ -412,7 +412,7 @@ namespace microcode {
 
         public toString() {
             const res = this.pages.map(page => page.toString())
-            return res.map((ps, i) => `Page ${i + 1}\n${ps}`).join("\n")
+            return res.map((ps, i) => `Page ${i + 1}\n${ps}\nEOP`).join("\n")
         }
     }
 

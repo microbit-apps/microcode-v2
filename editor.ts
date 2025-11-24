@@ -94,9 +94,7 @@ namespace microcode {
             if (this.programChanged) {
                 this.programChanged = false
                 this.app.save(SAVESLOT_AUTO, this.progdef.toBuffer())
-                console.log(this.progdef.toString())
             }
-            // runProgram(this.progdef)
         }
 
         private pickDiskSLot() {
