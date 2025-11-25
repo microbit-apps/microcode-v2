@@ -496,12 +496,20 @@ namespace microcode {
         }
 
         private switchPage(page: number) {
+            // need to make sure outstanding events are dropped and no new events
+            this.eventQueue = []
+            this.allowEvents = false
+            // now stop existing rules
             this.stopAllRules()
             // set up new rule closures
             this.currentPage = page
             this.program.pages[this.currentPage].rules.forEach((r, index) => {
                 this.ruleClosures.push(new RuleClosure(index, r, this))
             })
+            // start up timer-based rules (should these be events as well?)
+            this.ruleClosures.forEach(rc => rc.start(true))
+            // restart events
+            this.allowEvents = true
             this.addEvent({
                 kind: MicroCodeEventKind.StartPage,
             } as StartPageEvent)
@@ -510,15 +518,15 @@ namespace microcode {
                 kind: MicroCodeEventKind.StateUpdate,
                 updatedVars: Object.keys(vars2tids),
             } as StateUpdateEvent)
-            // start up timer-based rules
-            this.ruleClosures.forEach(rc => rc.start(true))
         }
 
         public runAction(ruleIndex: number, action: Tile, param: any) {
             switch (action) {
                 case Tid.TID_ACTUATOR_SWITCH_PAGE:
+                    // no switch if no param
                     if (param) {
-                        // no switch if no param
+                        // when switching, drop any outstanding events
+                        this.eventQueue = []
                         this.addEvent({
                             kind: MicroCodeEventKind.SwitchPage,
                             index: param,
@@ -619,10 +627,11 @@ namespace microcode {
             })
         }
 
+        private allowEvents = false
         private eventQueueActive = false
         private eventQueue: MicroCodeEvent[] = []
         public addEvent(event: MicroCodeEvent) {
-            if (!this.running) return
+            if (!this.running || !this.allowEvents) return
             this.eventQueue.push(event)
         }
 
