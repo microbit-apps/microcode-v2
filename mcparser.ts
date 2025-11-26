@@ -38,21 +38,28 @@ namespace microcode {
             if (tokens.length == 0 || !tokens[0]) continue
             console.log(`tok1 = ${tokens[0]}`)
             if (tokens[0] == "Page") {
+                if (currPage) {
+                    if (currRule) currPage.rules.push(currRule)
+                    prog.pages.push(currPage)
+                    currRule = undefined
+                }
                 currPage = new PageDefn()
-            } else if (tokens[0] == "EOP") {
-                prog.pages.push(currPage)
-                currPage = undefined
+                continue
             } else if (tokens[0] == "When") {
+                control.assert(currPage != undefined)
                 if (currRule) currPage.rules.push(currRule)
-                currRule = new RuleDefn()
-            } else {
+                currRule = undefined
+                tokens.shift()
+            }
+            let tok = tokens.shift()
+            while (tok) {
                 if (!currRule) {
+                    currRule = new RuleDefn()
                     currRule.sensors.push(token2tile(tokens[0]) as number)
                     tokens.shift()
                 }
-                let tok = tokens.shift()
-                while (tok) {
-                    console.log(`tok2 = ${tok}`)
+                console.log(`tok2 = ${tok}`)
+                if (tok !== "Do") {
                     currTile = token2tile(tok)
                     addTile(currTile, currRule)
                     if (currTile instanceof IconEditor) {
@@ -68,10 +75,12 @@ namespace microcode {
                         currTile = undefined
                         break
                     }
-                    tok = tokens.shift()
                 }
+                tok = tokens.shift()
             }
         }
+        if (currRule) currPage.rules.push(currRule)
+        prog.pages.push(currPage)
         return prog
     }
 }

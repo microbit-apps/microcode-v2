@@ -296,8 +296,7 @@ namespace microcode {
                 this.progdef = ProgramDefn.fromBuffer(new BufferReader(buf))
                 // to string
                 const progAsString = this.progdef.toString()
-                console.log(progAsString)
-                // const progFromString = parse(progAsString)
+                const progFromString = parse(progAsString)
                 // const progAsBuf = progFromString.toBuffer()
                 // // compare buffers
                 // if (buf.length == progAsBuf.length) {
