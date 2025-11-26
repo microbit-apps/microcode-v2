@@ -35,8 +35,8 @@ namespace microcode {
                 continue
             }
             const tokens = lines[i].split(" ")
-            if (tokens.length == 0) continue
-            console.log(`tok = ${tokens[0]}`)
+            if (tokens.length == 0 || !tokens[0]) continue
+            console.log(`tok1 = ${tokens[0]}`)
             if (tokens[0] == "Page") {
                 currPage = new PageDefn()
             } else if (tokens[0] == "EOP") {
@@ -54,6 +54,7 @@ namespace microcode {
                 }
                 let tok = tokens.shift()
                 while (tok) {
+                    console.log(`tok2 = ${tok}`)
                     currTile = token2tile(tok)
                     addTile(currTile, currRule)
                     if (currTile instanceof IconEditor) {
