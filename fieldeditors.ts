@@ -186,7 +186,8 @@ namespace microcode {
             let ret = ""
             for (let row = 0; row < 5; row++) {
                 for (let col = 0; col < 5; col++) {
-                    ret += img.getPixel(col, row) ? `1 ` : `. `
+                    ret += img.getPixel(col, row) ? `1` : `.`
+                    if (col < 4) ret += " "
                 }
                 ret += `\n`
             }
@@ -194,7 +195,7 @@ namespace microcode {
         }
         fromString(txt: string): Bitmap {
             let ret = bitmaps.create(5, 5)
-            let seq = txt.split(" \n")
+            let seq = txt.split("\n").join(" ").split(" ")
             seq.forEach((s, i) => {
                 ret.setPixel(i % 5, Math.idiv(i, 5), s == "1" ? 1 : 0)
             })
