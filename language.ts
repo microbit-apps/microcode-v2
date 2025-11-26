@@ -288,7 +288,8 @@ namespace microcode {
                     const mod = tile as ModifierEditor
                     const field = mod.fieldEditor.toString(mod.getField())
                     if (mod instanceof IconEditor) return `${tok}\n${field}`
-                    else return `${tok} ${field}\n`
+                    if (mod instanceof MelodyEditor) return `${tok} ${field}\n`
+                    else return `${tok} ${field}`
                 }
                 return tok
             }

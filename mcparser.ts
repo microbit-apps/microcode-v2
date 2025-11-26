@@ -26,6 +26,7 @@ namespace microcode {
         let currRule: RuleDefn = undefined
         let currTile: Tile = undefined
         for (let i = 0; i < lines.length; i++) {
+            console.log(`lines[${i}] = ${lines[i]}`)
             if (currTile && currTile instanceof IconEditor) {
                 const all5 = lines.slice(i, i + 5).join("\n")
                 console.log(`get the image?\n${all5}`)
@@ -35,7 +36,8 @@ namespace microcode {
                 continue
             }
             const tokens = lines[i].split(" ")
-            if (tokens.length == 0 || !tokens[0]) continue
+            if (tokens.length == 0) continue
+            console.log(`tokens = ${tokens.join(":")}`)
             let tok = tokens.shift()
             console.log(`tok1 = ${tok}`)
             if (tok == "Page") {
@@ -52,8 +54,9 @@ namespace microcode {
                 currRule = undefined
                 tok = tokens.shift()
             }
-            for (; tok; tok = tokens.shift()) {
+            for (; tokens.length > 0; tok = tokens.shift()) {
                 console.log(`tok2 = ${tok}`)
+                if (!tok) continue
                 if (!currRule) {
                     currRule = new RuleDefn()
                     // can we have When followed by Do?
