@@ -28,7 +28,7 @@ namespace microcode {
         for (let i = 0; i < lines.length; i++) {
             if (currTile && currTile instanceof IconEditor) {
                 const all5 = lines.slice(i, i + 5).join("\n")
-                console.log(`get the image? ${all5}`)
+                console.log(`get the image?\n${all5}`)
                 currTile.field = currTile.fieldEditor.fromString(all5)
                 currTile = undefined
                 i = i + 4 // loop count adds one more
@@ -42,13 +42,11 @@ namespace microcode {
             } else if (tokens[0] == "EOP") {
                 prog.pages.push(currPage)
                 currPage = undefined
-            } else if (tokens[0] == "EOR") {
-                console.log("EOR")
-                currPage.rules.push(currRule)
-                currRule = undefined
+            } else if (tokens[0] == "When") {
+                if (currRule) currPage.rules.push(currRule)
+                currRule = new RuleDefn()
             } else {
                 if (!currRule) {
-                    currRule = new RuleDefn()
                     currRule.sensors.push(token2tile(tokens[0]) as number)
                     tokens.shift()
                 }

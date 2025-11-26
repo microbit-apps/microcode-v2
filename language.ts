@@ -286,26 +286,24 @@ namespace microcode {
                 const tok = toToken(tile)
                 if (tile instanceof ModifierEditor) {
                     const mod = tile as ModifierEditor
-                    return (
-                        tok +
-                        `\n` +
-                        mod.fieldEditor.toString(mod.getField()) +
-                        "\n"
-                    )
+                    const field = mod.fieldEditor.toString(mod.getField())
+                    if (mod instanceof IconEditor) return `${tok}\n${field}`
+                    else return `${tok} ${field}\n`
                 }
                 return tok
             }
             return (
+                "When " +
                 toToken(this.sensor) +
                 " " +
                 this.filters.map(tileToString).join(" ") +
-                " " +
+                " Do " +
                 (this.actuators.length
                     ? toToken(this.actuators[0]) +
                       " " +
                       this.modifiers.map(tileToString).join(" ")
                     : "") +
-                " EOR\n"
+                "\n"
             )
         }
     }
@@ -417,7 +415,7 @@ namespace microcode {
 
         public toString() {
             const res = this.pages.map(page => page.toString())
-            return res.map((ps, i) => `Page ${i + 1}\n${ps}\nEOP`).join("\n")
+            return res.map((ps, i) => `Page ${i + 1}\n${ps}`).join("\n")
         }
     }
 

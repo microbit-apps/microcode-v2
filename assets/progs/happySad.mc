@@ -1,11 +1,10 @@
 Page 1
-press button_A show_image LED_image
+When press button_A Do show_image LED_image
 1 1 . 1 1 
 1 1 . 1 1 
 . . . . . 
 1 . . . 1 
 . 1 1 1 . 
-
  LED_image
 1 1 . 1 1 
 . . . . . 
@@ -13,17 +12,15 @@ press button_A show_image LED_image
 . 1 1 1 . 
 . . . . . 
 
- EOR
 
-press button_A play_sound happy EOR
+When press button_A Do play_sound happy
 
-press button_B show_image LED_image
+When press button_B Do show_image LED_image
 1 1 . 1 1 
 1 1 . 1 1 
 . . . . . 
 . 1 1 1 . 
 1 . . . 1 
-
  LED_image
 1 1 . 1 1 
 1 1 . 1 1 
@@ -31,34 +28,25 @@ press button_B show_image LED_image
 . . . . . 
 1 1 1 1 1 
 
- EOR
 
-press button_B play_sound sad EOR
+When press button_B Do play_sound sad
 
-EOP
 Page 2
 
-EOP
 Page 3
 
-EOP
 Page 4
 
-EOP
 Page 5
 
-EOP
-
-button-up
 
 Page 1
-press button_A show_image LED_image
+When press button_A Do show_image LED_image
 1 1 . 1 1 
 1 1 . 1 1 
 . . . . . 
 1 . . . 1 
 . 1 1 1 . 
-
  LED_image
 1 1 . 1 1 
 . . . . . 
@@ -66,17 +54,15 @@ press button_A show_image LED_image
 . 1 1 1 . 
 . . . . . 
 
- EOR
 
-press button_A play_sound happy EOR
+When press button_A Do play_sound happy
 
-press button_B show_image LED_image
+When press button_B Do show_image LED_image
 1 1 . 1 1 
 1 1 . 1 1 
 . . . . . 
 . 1 1 1 . 
 1 . . . 1 
-
  LED_image
 1 1 . 1 1 
 1 1 . 1 1 
@@ -84,20 +70,15 @@ press button_B show_image LED_image
 . . . . . 
 1 1 1 1 1 
 
- EOR
 
-press button_B play_sound sad EOR
+When press button_B Do play_sound sad
 
-EOP
 Page 2
 
-EOP
 Page 3
 
-EOP
 Page 4
 
-EOP
 Page 5
 
-EOP
+
