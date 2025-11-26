@@ -35,7 +35,7 @@ namespace microcode {
         toString(field: any): string {
             return ""
         }
-        fromString(text: string): any {
+        fromTokens(tokens: string[]): any {
             return undefined
         }
     }
@@ -102,8 +102,9 @@ namespace microcode {
         toString(field: BoxedNumAsStr) {
             return field.num
         }
-        fromString(txt: string) {
-            return { num: txt }
+        fromTokens(tokens: string[]) {
+            // TODO: check that we have a number
+            return { num: tokens.length > 0 ? tokens[0] : "0" }
         }
     }
 
@@ -183,7 +184,7 @@ namespace microcode {
             return img
         }
         toString(img: Bitmap) {
-            let ret = ""
+            let ret = "`"
             for (let row = 0; row < 5; row++) {
                 for (let col = 0; col < 5; col++) {
                     ret += img.getPixel(col, row) ? `1` : `.`
@@ -191,14 +192,13 @@ namespace microcode {
                 }
                 ret += `\n`
             }
-            return ret
+            return ret + "`"
         }
-        fromString(txt: string): Bitmap {
+        fromTokens(tokens: string[]): Bitmap {
             let ret = bitmaps.create(5, 5)
-            let seq = txt.split("\n").join(" ").split(" ")
-            seq.forEach((s, i) => {
-                ret.setPixel(i % 5, Math.idiv(i, 5), s == "1" ? 1 : 0)
-            })
+            for (let i = 0; i < tokens.length && i < 25; i++) {
+                ret.setPixel(i % 5, Math.idiv(i, 5), tokens[i] == "1" ? 1 : 0)
+            }
             return ret
         }
     }
@@ -235,20 +235,22 @@ namespace microcode {
 
     export function melodyToNotes(melody: Melody) {
         const notes = melody.notes.split("")
-        let result = ""
+        let result = "`"
         for (const n of notes) {
             if (n == ".") result += "- "
             else result += noteNames[parseInt(n)] + " "
         }
-        return result
+        return result + "`"
     }
 
-    function notesToMelody(txt: string) {
-        const seq = txt.split(" ")
+    function notesToMelody(tokens: string[]) {
         let res = ""
-        seq.forEach((note, index) => {
+        tokens.forEach((note, index) => {
             if (note == "-") res += "."
-            else res += noteNames.indexOf(note).toString()
+            else {
+                const index = noteNames.indexOf(note)
+                if (index >= 0) res += index.toString()
+            }
         })
         return { notes: res, tempo: 120 }
     }
@@ -312,8 +314,8 @@ namespace microcode {
         toString(melody: Melody): string {
             return melodyToNotes(melody)
         }
-        fromString(txt: string): Melody {
-            return notesToMelody(txt)
+        fromTokens(tokens: string[]): Melody {
+            return notesToMelody(tokens)
         }
     }
 
