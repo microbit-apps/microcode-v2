@@ -294,6 +294,18 @@ namespace microcode {
                 this.app.save(SAVESLOT_AUTO, this.progdef.toBuffer())
             } else {
                 this.progdef = ProgramDefn.fromBuffer(new BufferReader(buf))
+                // to string
+                const progAsString = this.progdef.toString()
+                const progFromString = parse(progAsString)
+                const progAsBuf = progFromString.toBuffer()
+                // compare buffers
+                if (buf.length == progAsBuf.length) {
+                } else {
+                    control.assert(
+                        false,
+                        `buf.length = ${buf.length} progAsBuf.length = ${progAsBuf.length}`
+                    )
+                }
             }
             this.configureP1Keys()
         }
