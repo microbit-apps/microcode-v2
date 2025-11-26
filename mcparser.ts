@@ -15,7 +15,7 @@ namespace microcode {
 
     export function parse(str: string) {
         const token2tile = (tok: string) => {
-            const tid = tooltip2tid(tok)
+            const tid = tooltip2tid(tok.replaceAll("_", " "))
             // check to see if field editor needed
             const tile = getEditor(tid)
             if (tile instanceof ModifierEditor) {
@@ -35,7 +35,16 @@ namespace microcode {
         const lines = str.split("\n")
         let currPage: PageDefn = undefined
         let currRule: RuleDefn = undefined
+        let currTile: Tile = undefined
         for (let i = 0; i < lines.length; i++) {
+            if (currTile instanceof IconEditor) {
+                // grab the next 4 lines as well
+                const all5 = lines.slice(i, i + 4).join("\n")
+                currTile.field = currTile.fieldEditor.fromString(all5)
+                currTile = undefined
+                i = i + 4
+                continue
+            }
             const line = lines[0].split(" ")
             if (line[0] == "Page") {
                 currPage = new PageDefn()
@@ -53,11 +62,23 @@ namespace microcode {
                 }
                 let tok = line.shift()
                 while (tok) {
-                    const tile = token2tile(tok)
-                    placeTile(tile, currRule)
-                    if (tile instanceof ModifierEditor) {
-                        // TODO: process the field, based on context
-                    } else tok = line.shift()
+                    if (!currTile) {
+                        currTile = token2tile(tok)
+                        placeTile(currTile, currRule)
+                        tok = line.shift()
+                    } else if (currTile instanceof IconEditor) {
+                        break
+                    } else if (currTile instanceof DigitEditor) {
+                        currTile.field = currTile.fieldEditor.fromString(tok)
+                        currTile = undefined
+                        tok = line.shift()
+                    } else if (currTile instanceof MelodyEditor) {
+                        currTile.field = currTile.fieldEditor.fromString(
+                            tok + line.join(" ")
+                        )
+                        currTile = undefined
+                        break
+                    }
                 }
             }
         }

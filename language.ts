@@ -281,12 +281,17 @@ namespace microcode {
 
         public toString() {
             const toToken = (tile: Tile) =>
-                resolveTooltip("T" + getTid(tile)).replaceAll(" ", "-")
+                resolveTooltip("T" + getTid(tile)).replaceAll(" ", "_")
             const tileToString = (tile: Tile) => {
                 const tok = toToken(tile)
                 if (tile instanceof ModifierEditor) {
                     const mod = tile as ModifierEditor
-                    return tok + `\n` + mod.fieldEditor.toString(mod.getField())
+                    return (
+                        tok +
+                        `\n` +
+                        mod.fieldEditor.toString(mod.getField()) +
+                        "\n"
+                    )
                 }
                 return tok
             }
