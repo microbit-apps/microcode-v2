@@ -97,11 +97,12 @@ namespace microcode {
                     currTile instanceof IconEditor ||
                     currTile instanceof MelodyEditor
                 ) {
+                    const thisTile = currTile as ModifierEditor
                     control.assert(tok == "`")
-                    let iconTokens = []
-                    while ((tok = getToken()) != "`") iconTokens.push(tok)
+                    let tokens = []
+                    while ((tok = getToken()) != "`") tokens.push(tok)
                     control.assert(tok == "`")
-                    currTile.field = currTile.fieldEditor.fromTokens(iconTokens)
+                    currTile.field = thisTile.fieldEditor.fromTokens(tokens)
                 } else if (currTile instanceof DigitEditor) {
                     currTile.field = currTile.fieldEditor.fromTokens([tok])
                 }
