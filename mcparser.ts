@@ -4,15 +4,16 @@ namespace microcode {
     export function parse(str: string): ProgramDefn {
         const token2tile = (tok: string) => {
             const tid = tooltip2tid(tok.replaceAll("_", " "))
+            control.assert(tid != undefined, `tok ${tok} does not have mapping`)
             // check to see if field editor needed
             const tile = getEditor(tid)
-            if (tile instanceof ModifierEditor) {
+            if (tile && tile instanceof ModifierEditor) {
                 return tile.getNewInstance()
             } else {
                 return tid
             }
         }
-        const placeTile = (tile: Tile, rule: RuleDefn) => {
+        const addTile = (tile: Tile, rule: RuleDefn) => {
             const tid = getTid(tile)
             if (isFilter(tid)) rule.push(tile, "filters", false)
             else if (isModifier(tid)) rule.push(tile, "modifiers", false)
@@ -25,8 +26,9 @@ namespace microcode {
         let currRule: RuleDefn = undefined
         let currTile: Tile = undefined
         for (let i = 0; i < lines.length; i++) {
-            if (currTile instanceof IconEditor) {
-                const all5 = lines.slice(i, i + 4).join("\n")
+            if (currTile && currTile instanceof IconEditor) {
+                const all5 = lines.slice(i, i + 5).join("\n")
+                console.log(`get the image? ${all5}`)
                 currTile.field = currTile.fieldEditor.fromString(all5)
                 currTile = undefined
                 i = i + 4 // loop count adds one more
@@ -52,11 +54,9 @@ namespace microcode {
                 }
                 let tok = tokens.shift()
                 while (tok) {
-                    console.log(`tok = ${tok}`)
-                    if (!currTile) {
-                        currTile = token2tile(tok)
-                        placeTile(currTile, currRule)
-                    } else if (currTile instanceof IconEditor) {
+                    currTile = token2tile(tok)
+                    addTile(currTile, currRule)
+                    if (currTile instanceof IconEditor) {
                         console.log(`got IconEditor`)
                         break
                     } else if (currTile instanceof DigitEditor) {
