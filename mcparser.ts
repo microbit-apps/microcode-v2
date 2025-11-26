@@ -54,7 +54,7 @@ namespace microcode {
                 currRule = undefined
                 tok = tokens.shift()
             }
-            for (; tokens.length > 0; tok = tokens.shift()) {
+            for (; tok !== undefined; tok = tokens.shift()) {
                 console.log(`tok2 = ${tok}`)
                 if (!tok) continue
                 if (!currRule) {

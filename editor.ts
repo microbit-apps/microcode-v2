@@ -297,6 +297,7 @@ namespace microcode {
                 // to string
                 const progAsString = this.progdef.toString()
                 const progFromString = parse(progAsString)
+                console.log(progFromString.toString())
                 // const progAsBuf = progFromString.toBuffer()
                 // // compare buffers
                 // if (buf.length == progAsBuf.length) {
