@@ -196,7 +196,7 @@ namespace microcode {
         TID_MODIFIER_LIGHT_READ = 206,
         TID_MODIFIER_MAGNET_READ = 207,
         TID_MODIFIER_MIC_READ = 208,
-        MODIFER_END = 208,
+        MODIFIER_END = 208,
 
         TID_OPERATOR_START = 210,
         TID_OPERATOR_PLUS = 210,
@@ -224,7 +224,7 @@ namespace microcode {
         sensors: [Tid.SENSOR_START, Tid.SENSOR_END],
         filters: [Tid.FILTER_START, Tid.FILTER_END],
         actuators: [Tid.ACTUATOR_START, Tid.ACTUATOR_END],
-        modifiers: [Tid.MODIFIER_START, Tid.MODIFER_END],
+        modifiers: [Tid.MODIFIER_START, Tid.MODIFIER_END],
         mathOperators: [Tid.TID_OPERATOR_START, Tid.TID_OPERATOR_END],
         comparisonOperators: [Tid.TID_COMPARE_START, Tid.TID_COMPARE_END],
     }
@@ -253,7 +253,7 @@ namespace microcode {
 
     export function isModifier(tid: Tid) {
         return (
-            (tid >= Tid.MODIFIER_START && tid <= Tid.MODIFER_END) ||
+            (tid >= Tid.MODIFIER_START && tid <= Tid.MODIFIER_END) ||
             isConstant(tid) ||
             isVariable(tid) ||
             isMathOperator(tid) ||

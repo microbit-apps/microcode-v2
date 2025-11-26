@@ -465,6 +465,19 @@ namespace microcode {
                 all.push(getEditor(Tid.TID_DECIMAL_EDITOR))
                 all.push(getEditor(Tid.TID_POS_INT_EDITOR))
             }
+            if (rangeName == "modifiers") {
+                // add constants and vars
+                all.concat([
+                    Tid.TID_FILTER_COIN_1,
+                    Tid.TID_FILTER_COIN_2,
+                    Tid.TID_FILTER_COIN_3,
+                    Tid.TID_FILTER_COIN_4,
+                    Tid.TID_FILTER_COIN_5,
+                    Tid.TID_FILTER_CUP_X_READ,
+                    Tid.TID_FILTER_CUP_Y_READ,
+                    Tid.TID_FILTER_CUP_Z_READ,
+                ])
+            }
 
             all = all
                 .filter((tile: Tile) => isVisible(tile))
