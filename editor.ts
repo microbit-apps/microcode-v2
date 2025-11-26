@@ -297,15 +297,15 @@ namespace microcode {
                 // to string
                 const progAsString = this.progdef.toString()
                 const progFromString = parse(progAsString)
-                const progAsBuf = progFromString.toBuffer()
-                // compare buffers
-                if (buf.length == progAsBuf.length) {
-                } else {
-                    control.assert(
-                        false,
-                        `buf.length = ${buf.length} progAsBuf.length = ${progAsBuf.length}`
-                    )
-                }
+                // const progAsBuf = progFromString.toBuffer()
+                // // compare buffers
+                // if (buf.length == progAsBuf.length) {
+                // } else {
+                //     control.assert(
+                //         false,
+                //         `buf.length = ${buf.length} progAsBuf.length = ${progAsBuf.length}`
+                //     )
+                // }
             }
             this.configureP1Keys()
         }

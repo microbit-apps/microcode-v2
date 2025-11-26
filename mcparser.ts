@@ -26,20 +26,22 @@ namespace microcode {
         let currTile: Tile = undefined
         for (let i = 0; i < lines.length; i++) {
             if (currTile instanceof IconEditor) {
-                // grab the next 4 lines as well
                 const all5 = lines.slice(i, i + 4).join("\n")
                 currTile.field = currTile.fieldEditor.fromString(all5)
                 currTile = undefined
-                i = i + 4
+                i = i + 4 // loop count adds one more
                 continue
             }
             const tokens = lines[i].split(" ")
+            if (tokens.length == 0) continue
+            console.log(`tok = ${tokens[0]}`)
             if (tokens[0] == "Page") {
                 currPage = new PageDefn()
             } else if (tokens[0] == "EOP") {
                 prog.pages.push(currPage)
                 currPage = undefined
             } else if (tokens[0] == "EOR") {
+                console.log("EOR")
                 currPage.rules.push(currRule)
                 currRule = undefined
             } else {
@@ -50,10 +52,12 @@ namespace microcode {
                 }
                 let tok = tokens.shift()
                 while (tok) {
+                    console.log(`tok = ${tok}`)
                     if (!currTile) {
                         currTile = token2tile(tok)
                         placeTile(currTile, currRule)
                     } else if (currTile instanceof IconEditor) {
+                        console.log(`got IconEditor`)
                         break
                     } else if (currTile instanceof DigitEditor) {
                         currTile.field = currTile.fieldEditor.fromString(tok)

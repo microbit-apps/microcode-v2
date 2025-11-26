@@ -84,16 +84,6 @@ for (const lang of languages.filter(l => l !== "pxt")) {
 
     const entries = {}
 
-    /*
-        ERROR: already have entry for red
-        ERROR: already have entry for purple
-
-        ERROR: already have entry for turn-left
-        ERROR: already have entry for turn-right
-        ERROR: already have entry for on
-        ERROR: already have entry for off
-    */
-
     const tooltip2tid = `
         export function tooltip2tid(id: string): number {
            let tid: number = undefined
@@ -105,7 +95,7 @@ for (const lang of languages.filter(l => l !== "pxt")) {
                 .filter(k => /T\d+/.test(k))
                 .map(k => {
                     const tid = parseInt(k.slice(1))
-                    const trans = translations[k].replace(/ /g, "-")
+                    const trans = translations[k]
                     if (entries[trans]) {
                         console.log(`ERROR: already have entry for ${trans}`)
                     } else {
