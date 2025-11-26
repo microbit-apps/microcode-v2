@@ -4,7 +4,7 @@
 namespace microcode {
     export let progToStringRet: string = undefined
     //% shim=TD_NOOP
-    export function progToString(prog: ProgramDefn): string {
+    export function progToString(prog: ProgramDefn) {
         const ruleToString = (rule: RuleDefn) => {
             const toToken = (tile: Tile) =>
                 resolveTooltip("T" + getTid(tile)).replaceAll(" ", "_")
