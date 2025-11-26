@@ -36,8 +36,9 @@ namespace microcode {
             }
             const tokens = lines[i].split(" ")
             if (tokens.length == 0 || !tokens[0]) continue
-            console.log(`tok1 = ${tokens[0]}`)
-            if (tokens[0] == "Page") {
+            let tok = tokens.shift()
+            console.log(`tok1 = ${tok}`)
+            if (tok == "Page") {
                 if (currPage) {
                     if (currRule) currPage.rules.push(currRule)
                     prog.pages.push(currPage)
@@ -45,38 +46,36 @@ namespace microcode {
                 }
                 currPage = new PageDefn()
                 continue
-            } else if (tokens[0] == "When") {
+            } else if (tok == "When") {
                 control.assert(currPage != undefined)
                 if (currRule) currPage.rules.push(currRule)
                 currRule = undefined
-                tokens.shift()
+                tok = tokens.shift()
             }
-            let tok = tokens.shift()
-            while (tok) {
+            for (; tok; tok = tokens.shift()) {
+                console.log(`tok2 = ${tok}`)
                 if (!currRule) {
                     currRule = new RuleDefn()
-                    currRule.sensors.push(token2tile(tokens[0]) as number)
-                    tokens.shift()
+                    // can we have When followed by Do?
+                    currRule.sensors.push(token2tile(tok) as number)
+                    continue
                 }
-                console.log(`tok2 = ${tok}`)
-                if (tok !== "Do") {
-                    currTile = token2tile(tok)
-                    addTile(currTile, currRule)
-                    if (currTile instanceof IconEditor) {
-                        console.log(`got IconEditor`)
-                        break
-                    } else if (currTile instanceof DigitEditor) {
-                        currTile.field = currTile.fieldEditor.fromString(tok)
-                        currTile = undefined
-                    } else if (currTile instanceof MelodyEditor) {
-                        currTile.field = currTile.fieldEditor.fromString(
-                            tok + tokens.join(" ")
-                        )
-                        currTile = undefined
-                        break
-                    }
+                if (tok == "Do") continue
+                currTile = token2tile(tok)
+                addTile(currTile, currRule)
+                if (currTile instanceof IconEditor) {
+                    console.log(`got IconEditor`)
+                    break
+                } else if (currTile instanceof DigitEditor) {
+                    currTile.field = currTile.fieldEditor.fromString(tok)
+                    currTile = undefined
+                } else if (currTile instanceof MelodyEditor) {
+                    currTile.field = currTile.fieldEditor.fromString(
+                        tok + tokens.join(" ")
+                    )
+                    currTile = undefined
+                    break
                 }
-                tok = tokens.shift()
             }
         }
         if (currRule) currPage.rules.push(currRule)
