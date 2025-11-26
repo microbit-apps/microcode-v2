@@ -33,40 +33,39 @@ namespace microcode {
                 i = i + 4
                 continue
             }
-            const line = lines[0].split(" ")
-            if (line[0] == "Page") {
+            const tokens = lines[i].split(" ")
+            if (tokens[0] == "Page") {
                 currPage = new PageDefn()
-            } else if (line[0] == "EOP") {
+            } else if (tokens[0] == "EOP") {
                 prog.pages.push(currPage)
                 currPage = undefined
-            } else if (line[0] == "EOR") {
+            } else if (tokens[0] == "EOR") {
                 currPage.rules.push(currRule)
                 currRule = undefined
             } else {
                 if (!currRule) {
                     currRule = new RuleDefn()
-                    currRule.sensors.push(token2tile(line[0]) as number)
-                    line.shift()
+                    currRule.sensors.push(token2tile(tokens[0]) as number)
+                    tokens.shift()
                 }
-                let tok = line.shift()
+                let tok = tokens.shift()
                 while (tok) {
                     if (!currTile) {
                         currTile = token2tile(tok)
                         placeTile(currTile, currRule)
-                        tok = line.shift()
                     } else if (currTile instanceof IconEditor) {
                         break
                     } else if (currTile instanceof DigitEditor) {
                         currTile.field = currTile.fieldEditor.fromString(tok)
                         currTile = undefined
-                        tok = line.shift()
                     } else if (currTile instanceof MelodyEditor) {
                         currTile.field = currTile.fieldEditor.fromString(
-                            tok + line.join(" ")
+                            tok + tokens.join(" ")
                         )
                         currTile = undefined
                         break
                     }
+                    tok = tokens.shift()
                 }
             }
         }
