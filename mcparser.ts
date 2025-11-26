@@ -1,7 +1,49 @@
-// a parser for MC programs
+// a pretty printer and parser for MC programs
+// web only
 
 namespace microcode {
-    export function parse(str: string): ProgramDefn {
+    export let progToStringRet: string = undefined
+    //% shim=TD_NOOP
+    export function progToString(prog: ProgramDefn): string {
+        const ruleToString = (rule: RuleDefn) => {
+            const toToken = (tile: Tile) =>
+                resolveTooltip("T" + getTid(tile)).replaceAll(" ", "_")
+            const tileToString = (tile: Tile) => {
+                const tok = toToken(tile)
+                if (tile instanceof ModifierEditor) {
+                    const mod = tile as ModifierEditor
+                    const field = mod.fieldEditor.toString(mod.getField())
+                    if (mod instanceof IconEditor) return `${tok}\n${field}`
+                    if (mod instanceof MelodyEditor) return `${tok} ${field}\n`
+                    else return `${tok} ${field}`
+                }
+                return tok
+            }
+            return (
+                "When " +
+                toToken(rule.sensor) +
+                " " +
+                rule.filters.map(tileToString).join(" ") +
+                " Do " +
+                (rule.actuators.length
+                    ? toToken(rule.actuators[0]) +
+                      " " +
+                      rule.modifiers.map(tileToString).join(" ")
+                    : "") +
+                "\n"
+            )
+        }
+        const pageToString = (page: PageDefn) => {
+            const res = page.rules.map(ruleToString)
+            return res.join("\n")
+        }
+        const res = prog.pages.map(pageToString)
+        progToStringRet = res.map((ps, i) => `Page ${i + 1}\n${ps}`).join("\n")
+    }
+
+    export let parseProgRet: ProgramDefn = undefined
+    //% shim=TD_NOOP
+    export function parseProg(str: string): void {
         const token2tile = (tok: string) => {
             const tid = tooltip2tid(tok.replaceAll("_", " "))
             control.assert(tid != undefined, `tok ${tok} does not have mapping`)
@@ -83,6 +125,6 @@ namespace microcode {
         }
         if (currRule) currPage.rules.push(currRule)
         prog.pages.push(currPage)
-        return prog
+        parseProgRet = prog
     }
 }

@@ -278,35 +278,6 @@ namespace microcode {
             defn.fixup()
             return defn
         }
-
-        public toString() {
-            const toToken = (tile: Tile) =>
-                resolveTooltip("T" + getTid(tile)).replaceAll(" ", "_")
-            const tileToString = (tile: Tile) => {
-                const tok = toToken(tile)
-                if (tile instanceof ModifierEditor) {
-                    const mod = tile as ModifierEditor
-                    const field = mod.fieldEditor.toString(mod.getField())
-                    if (mod instanceof IconEditor) return `${tok}\n${field}`
-                    if (mod instanceof MelodyEditor) return `${tok} ${field}\n`
-                    else return `${tok} ${field}`
-                }
-                return tok
-            }
-            return (
-                "When " +
-                toToken(this.sensor) +
-                " " +
-                this.filters.map(tileToString).join(" ") +
-                " Do " +
-                (this.actuators.length
-                    ? toToken(this.actuators[0]) +
-                      " " +
-                      this.modifiers.map(tileToString).join(" ")
-                    : "") +
-                "\n"
-            )
-        }
     }
 
     export class PageDefn {
@@ -358,11 +329,6 @@ namespace microcode {
             br.readByte()
             return defn
         }
-
-        public toString() {
-            const res = this.rules.map(rule => rule.toString())
-            return res.join("\n")
-        }
     }
 
     export function PAGE_IDS() {
@@ -412,11 +378,6 @@ namespace microcode {
             }
             br.readByte()
             return defn
-        }
-
-        public toString() {
-            const res = this.pages.map(page => page.toString())
-            return res.map((ps, i) => `Page ${i + 1}\n${ps}`).join("\n")
         }
     }
 
