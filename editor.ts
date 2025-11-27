@@ -296,9 +296,14 @@ namespace microcode {
                 this.progdef = ProgramDefn.fromBuffer(new BufferReader(buf))
 
                 progToString(this.progdef)
-                const progAsString = progToStringRet
-                parseProg(progAsString)
+                const pas1 = progToStringRet
+                console.log(`PAS1\n${pas1}`)
+                parseProg(pas1)
                 const progFromString = parseProgRet
+                progToString(progFromString)
+                const pas2 = progToStringRet
+                console.log("PAS2")
+                console.log(pas2)
                 // check the programs are the same
             }
             this.configureP1Keys()

@@ -13,8 +13,10 @@ namespace microcode {
                 if (tile instanceof ModifierEditor) {
                     const mod = tile as ModifierEditor
                     const field = mod.fieldEditor.toString(mod.getField())
-                    if (mod instanceof IconEditor) return `${tok}\n${field}`
-                    if (mod instanceof MelodyEditor) return `${tok} ${field}\n`
+                    if (mod instanceof IconEditor)
+                        return `${tok} \`\n${field}\`\n`
+                    if (mod instanceof MelodyEditor)
+                        return `${tok} \`${field}\`\n`
                     else return `${tok} ${field}`
                 }
                 return tok
@@ -55,7 +57,7 @@ namespace microcode {
                 return tid
             }
         }
-        const addTile = (tile: Tile, rule: RuleDefn) => {
+        const addTile = (rule: RuleDefn, tile: Tile) => {
             control.assert(rule != undefined, `No Rule definition`)
             const tid = getTid(tile)
             if (isSensor(tid)) rule.push(tile, "sensors", false)
@@ -63,11 +65,12 @@ namespace microcode {
             else if (isModifier(tid)) rule.push(tile, "modifiers", false)
             else rule.push(tile, "actuators", false)
         }
+        // tokenizer
         let cursor = 0
-        const whiteSpace = (s: string) => {
-            return s == " " || s == "\n" || s == "\t"
-        }
         const getToken = () => {
+            const whiteSpace = (s: string) => {
+                return s == " " || s == "\n" || s == "\t"
+            }
             let prev = cursor
             let gotToken = false
             while (cursor < str.length) {
@@ -95,8 +98,8 @@ namespace microcode {
         let currTile: Tile = undefined
         let tok: string = undefined
         while ((tok = getToken())) {
-            // console.log(`tok1 = ${tok}`)
-            if (currTile) {
+            // console.log(`tok = ${tok}`)
+            if (currTile && currTile instanceof ModifierEditor) {
                 if (
                     currTile instanceof IconEditor ||
                     currTile instanceof MelodyEditor
@@ -104,17 +107,16 @@ namespace microcode {
                     const thisTile = currTile as ModifierEditor
                     control.assert(tok == "`", `expected \`, got ${tok}`)
                     let tokens = []
-                    while ((tok = getToken()) == "." || tok == "1") {
+                    while ((tok = getToken()) != "`") {
                         tokens.push(tok)
                     }
-                    control.assert(
-                        tok == "`",
-                        `expected {0, 1, \`}, got ${tok}`
-                    )
+                    //console.log(`got tokens = ${tokens.join(":")}`)
+                    control.assert(tok == "`", `expected \`, got ${tok}`)
                     currTile.field = thisTile.fieldEditor.fromTokens(tokens)
                 } else if (currTile instanceof DigitEditor) {
                     currTile.field = currTile.fieldEditor.fromTokens([tok])
                 }
+                currTile = undefined
                 continue
             }
             currTile = undefined
@@ -126,7 +128,6 @@ namespace microcode {
                 }
                 currPage = new PageDefn()
                 getToken() // consume page #
-                continue
             } else if (tok == "When") {
                 control.assert(currPage != undefined, `No Page defined`)
                 if (currRule) currPage.rules.push(currRule)
@@ -135,7 +136,7 @@ namespace microcode {
                 control.assert(currRule != undefined, `No When defined`)
             } else {
                 currTile = token2tile(tok)
-                addTile(currTile, currRule)
+                addTile(currRule, currTile)
             }
         }
         if (currRule) currPage.rules.push(currRule)

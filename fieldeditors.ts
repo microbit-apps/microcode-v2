@@ -184,7 +184,7 @@ namespace microcode {
             return img
         }
         toString(img: Bitmap) {
-            let ret = "`"
+            let ret = ""
             for (let row = 0; row < 5; row++) {
                 for (let col = 0; col < 5; col++) {
                     ret += img.getPixel(col, row) ? `1` : `.`
@@ -192,7 +192,7 @@ namespace microcode {
                 }
                 ret += `\n`
             }
-            return ret + "`"
+            return ret + ""
         }
         fromTokens(tokens: string[]): Bitmap {
             let ret = bitmaps.create(5, 5)
@@ -235,12 +235,12 @@ namespace microcode {
 
     export function melodyToNotes(melody: Melody) {
         const notes = melody.notes.split("")
-        let result = "`"
+        let result = ""
         for (const n of notes) {
             if (n == ".") result += "- "
             else result += noteNames[parseInt(n)] + " "
         }
-        return result + "`"
+        return result + ""
     }
 
     function notesToMelody(tokens: string[]) {
