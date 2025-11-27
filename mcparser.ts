@@ -61,7 +61,7 @@ namespace microcode {
             control.assert(rule != undefined, `No Rule definition`)
             const tid = getTid(tile)
             if (isSensor(tid)) rule.push(tile, "sensors", false)
-            if (isFilter(tid)) rule.push(tile, "filters", false)
+            else if (isFilter(tid)) rule.push(tile, "filters", false)
             else if (isModifier(tid)) rule.push(tile, "modifiers", false)
             else rule.push(tile, "actuators", false)
         }

@@ -297,14 +297,16 @@ namespace microcode {
 
                 progToString(this.progdef)
                 const pas1 = progToStringRet
-                console.log(`PAS1\n${pas1}`)
+                // console.log(`PAS1\n${pas1}`)
                 parseProg(pas1)
                 const progFromString = parseProgRet
                 progToString(progFromString)
                 const pas2 = progToStringRet
-                console.log("PAS2")
-                console.log(pas2)
+                // console.log("PAS2")
+                // console.log(pas2)
                 // check the programs are the same
+                console.log(pas2)
+                // control.assert(pas1 == pas2, "progs not the same")
             }
             this.configureP1Keys()
         }
