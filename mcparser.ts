@@ -56,7 +56,7 @@ namespace microcode {
             }
         }
         const addTile = (tile: Tile, rule: RuleDefn) => {
-            control.assert(rule != undefined)
+            control.assert(rule != undefined, `No Rule definition`)
             const tid = getTid(tile)
             if (isSensor(tid)) rule.push(tile, "sensors", false)
             if (isFilter(tid)) rule.push(tile, "filters", false)
@@ -76,6 +76,10 @@ namespace microcode {
                     cursor++
                     prev = cursor
                 } else {
+                    if (str[cursor] == "`") {
+                        cursor++
+                        return "`"
+                    }
                     gotToken = true
                     cursor++
                 }
@@ -91,23 +95,30 @@ namespace microcode {
         let currTile: Tile = undefined
         let tok: string = undefined
         while ((tok = getToken())) {
-            console.log(`tok1 = ${tok}`)
+            // console.log(`tok1 = ${tok}`)
             if (currTile) {
                 if (
                     currTile instanceof IconEditor ||
                     currTile instanceof MelodyEditor
                 ) {
                     const thisTile = currTile as ModifierEditor
-                    control.assert(tok == "`")
+                    control.assert(tok == "`", `expected \`, got ${tok}`)
                     let tokens = []
-                    while ((tok = getToken()) != "`") tokens.push(tok)
-                    control.assert(tok == "`")
+                    while ((tok = getToken()) == "." || tok == "1") {
+                        tokens.push(tok)
+                    }
+                    control.assert(
+                        tok == "`",
+                        `expected {0, 1, \`}, got ${tok}`
+                    )
                     currTile.field = thisTile.fieldEditor.fromTokens(tokens)
                 } else if (currTile instanceof DigitEditor) {
                     currTile.field = currTile.fieldEditor.fromTokens([tok])
                 }
-                currTile = undefined
-            } else if (tok == "Page") {
+                continue
+            }
+            currTile = undefined
+            if (tok == "Page") {
                 if (currPage) {
                     if (currRule) currPage.rules.push(currRule)
                     prog.pages.push(currPage)
@@ -117,11 +128,11 @@ namespace microcode {
                 getToken() // consume page #
                 continue
             } else if (tok == "When") {
-                control.assert(currPage != undefined)
+                control.assert(currPage != undefined, `No Page defined`)
                 if (currRule) currPage.rules.push(currRule)
                 currRule = new RuleDefn()
             } else if (tok == "Do") {
-                control.assert(currRule != undefined)
+                control.assert(currRule != undefined, `No When defined`)
             } else {
                 currTile = token2tile(tok)
                 addTile(currTile, currRule)
