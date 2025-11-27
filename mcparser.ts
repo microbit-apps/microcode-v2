@@ -43,6 +43,13 @@ namespace microcode {
         progToStringRet = res.map((ps, i) => `Page ${i + 1}\n${ps}`).join("\n")
     }
 
+    enum Phase {
+        Sensor,
+        Filter,
+        Actuator,
+        Modifier,
+    }
+
     export let parseProgRet: ProgramDefn = undefined
     //% shim=TD_NOOP
     export function parseProg(str: string): void {
@@ -57,13 +64,19 @@ namespace microcode {
                 return tid
             }
         }
-        const addTile = (rule: RuleDefn, tile: Tile) => {
+        let phase: Phase = Phase.Sensor
+        const addTile = (rule: RuleDefn, tile: Tile, phase: Phase) => {
             control.assert(rule != undefined, `No Rule definition`)
-            const tid = getTid(tile)
-            if (isSensor(tid)) rule.push(tile, "sensors", false)
-            else if (isFilter(tid)) rule.push(tile, "filters", false)
-            else if (isModifier(tid)) rule.push(tile, "modifiers", false)
-            else rule.push(tile, "actuators", false)
+            if (phase == Phase.Sensor) {
+                rule.push(tile, "sensors", false)
+                phase = Phase.Filter
+            } else if (phase == Phase.Filter) rule.push(tile, "filters", false)
+            else if (phase == Phase.Modifier)
+                rule.push(tile, "modifiers", false)
+            else {
+                rule.push(tile, "actuators", false)
+                phase = Phase.Modifier
+            }
         }
         // tokenizer
         let cursor = 0
@@ -132,11 +145,13 @@ namespace microcode {
                 control.assert(currPage != undefined, `No Page defined`)
                 if (currRule) currPage.rules.push(currRule)
                 currRule = new RuleDefn()
+                phase = Phase.Sensor
             } else if (tok == "Do") {
                 control.assert(currRule != undefined, `No When defined`)
+                phase = Phase.Actuator
             } else {
                 currTile = token2tile(tok)
-                addTile(currRule, currTile)
+                addTile(currRule, currTile, phase)
             }
         }
         if (currRule) currPage.rules.push(currRule)
