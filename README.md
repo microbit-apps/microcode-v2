@@ -6,29 +6,40 @@ MicroCode is an icon-based programming language and editor for young learners to
 
 ### With hardware
 
-You will need a micro:bit V2 and one of the [display shields for the microbit](https://makecode.microbit.org/pkg/microbit-apps/display-shield).
-Download the [microcode hex file](./assets/microcode.hex) and copy it your micro:bit.
+To use MicroCode, you will need to:
 
-### With simulators
+1. Get a micro:bit (v2) and one of the [display shields](https://makecode.microbit.org/pkg/microbit-apps/display-shield).
+2. Download the [microcode hex file](./assets/microcode-v2.hex) and copy it your micro:bit.
+3. Insert the micro:bit into the display shield, and make sure the combination is powered.
+
+With the above hardware, in addition to the freely-available MicroCode software, you also
+can use these other free programming environments:
+
+-   create your own graphics with [MakeCode for micro:bit](https://makecode.microbit.org) and the [display shield extension](https://makecode.microbit.org/pkg/microbit-apps/display-shield)
+-   develop retro arcade games with [MakeCode Arcade](https://arcade.makecode.com)
+
+### With simulators (no hardware required)
 
 You can load this repo into [https://makecode.microbit.org/beta](https://makecode.microbit.org/beta) using the import button on the right-hand side of the home page via "Import URL". Enter [https://github.com/microbit-apps/microcode-v2](https://github.com/microbit-apps/microcode-v2) as the URL.
 
-## What's new?
+## What's New?
 
 -   MicroCode is built using [MakeCode for the micro:bit](https://makecode.microbit.org/beta), which
-    provides direct access to all the micro:bit APIs available through MakeCode.
+    provides direct access to all the micro:bit APIs available through MakeCode
 
--   Decimal notation (instead of the 1-5 dots in MicroCode v1)
+-   Decimal notation (instead of the 1-5 dots in MicroCode-classic)
+
+-   Math (+, -, \*, /) and comparison (=, !=, <, >) operators
 
 -   Uniform support for sensors
 
 -   Lots of changes to improve reliability
 
-## What happened to MicroCode v1 and its cool features?
+## What happened to MicroCode-classic and its features?
 
-While we soon will retire the [MicroCode v1](https://aka.ms/microcode) web site, we plan to bring back the following features from MicroCode v1:
+While we soon will retire the [MicroCode-classic](https://aka.ms/microcode) web site, we plan to bring back the following features from MicroCode-classic:
 
--   Option to to use 1-5 counting dots, instead of decimal notation, for beginners.
+-   Option to use 1-5 dots, instead of decimal notation, for beginners.
 -   Jacdac services
 -   Robot cars
 -   Localization
