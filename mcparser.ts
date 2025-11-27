@@ -15,7 +15,7 @@ namespace microcode {
                     const field = mod.fieldEditor.toString(mod.getField())
                     if (mod instanceof IconEditor)
                         return `${tok} \`\n${field}\`\n`
-                    if (mod instanceof MelodyEditor)
+                    else if (mod instanceof MelodyEditor)
                         return `${tok} \`${field}\`\n`
                     else return `${tok} ${field}`
                 }
