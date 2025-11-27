@@ -44,7 +44,7 @@ namespace microcode {
     }
 
     enum Phase {
-        Sensor,
+        Sensor = 1,
         Filter,
         Actuator,
         Modifier,
@@ -64,16 +64,17 @@ namespace microcode {
                 return tid
             }
         }
-        let phase: Phase = Phase.Sensor
-        const addTile = (rule: RuleDefn, tile: Tile, phase: Phase) => {
+        let phase = Phase.Sensor
+        const addTile = (rule: RuleDefn, tile: Tile) => {
             control.assert(rule != undefined, `No Rule definition`)
             if (phase == Phase.Sensor) {
                 rule.push(tile, "sensors", false)
                 phase = Phase.Filter
-            } else if (phase == Phase.Filter) rule.push(tile, "filters", false)
-            else if (phase == Phase.Modifier)
+            } else if (phase == Phase.Filter) {
+                rule.push(tile, "filters", false)
+            } else if (phase == Phase.Modifier) {
                 rule.push(tile, "modifiers", false)
-            else {
+            } else {
                 rule.push(tile, "actuators", false)
                 phase = Phase.Modifier
             }
@@ -151,7 +152,7 @@ namespace microcode {
                 phase = Phase.Actuator
             } else {
                 currTile = token2tile(tok)
-                addTile(currRule, currTile, phase)
+                addTile(currRule, currTile)
             }
         }
         if (currRule) currPage.rules.push(currRule)

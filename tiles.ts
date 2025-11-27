@@ -734,11 +734,7 @@ namespace microcode {
         if (isEmoji(tid)) return "sound_emoji"
         if (isComparisonOperator(tid)) return "comparison"
         if (isMathOperator(tid)) return "maths"
-        if (
-            // isFilterConstant(tid) ||
-            isVariable(tid)
-        )
-            return "variable"
+        if (isVariable(tid)) return "variable"
         if (isPage(tid)) return "page"
         if (isCarModifier(tid)) return "car"
         if (isLedModifier(tid)) return "rgb_led"

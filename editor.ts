@@ -305,8 +305,10 @@ namespace microcode {
                 // console.log("PAS2")
                 // console.log(pas2)
                 // check the programs are the same
-                console.log(pas1)
-                // control.assert(pas1 == pas2, "progs not the same")
+                control.assert(
+                    pas1 == pas2,
+                    `progs not the same ${pas1} \n---\n ${pas2}`
+                )
             }
             this.configureP1Keys()
         }
