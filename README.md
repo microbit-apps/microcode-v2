@@ -1,34 +1,53 @@
-## Microsoft MicroCode [https://aka.ms/microcode](https://aka.ms/microcode)
+## MicroCode (version 2)
 
-Microsoft MicroCode is an icon-based programming language and editor for young learners to code with the [BBC micro:bit V2](https://microbit.org). MicroCode allows you to program the micro:bit V2 with only an [Arcade shield accessory](#arcade-shields-for-microbit-v2) - _no other computer is required!_ If you prefer the web browser, there's also a MicroCode web app that connects to your micro:bit V2 over WebUSB.
+MicroCode is an icon-based programming language and editor for young learners to code with the [BBC micro:bit V2](https://microbit.org). MicroCode allows you to program the micro:bit V2 with only an [display shield accessory](https://makecode.microbit.org/pkg/microbit-apps/display-shield) - _no other computer is required!_
 
-Here's the classic micro:bit _Happy-A-button/Sad-B-button_ program in MicroCode:
+## Getting started with MicroCode
 
-![Happy sad program in microcode](./docs/images/generated/sample_smiley_buttons.png)
+### With hardware
 
-## Getting started
+To use MicroCode, you will need to:
 
--   **Read the [MicroCode user guide](https://microsoft.github.io/microcode/docs/manual)**
--   [try it now!](https://microsoft.github.io/microcode/)
+1. Get a micro:bit (v2) and one of the [display shields](https://makecode.microbit.org/pkg/microbit-apps/display-shield).
+2. Download the [microcode hex file](./assets/microcode-v2.hex) and copy it your micro:bit.
+3. Insert the micro:bit into the display shield, and make sure the combination is powered.
 
-## [Arcade shields](https://microsoft.github.io/microcode/docs/manual#arcade-shield) for micro:bit V2
+With the above hardware, in addition to the freely-available MicroCode software, you also
+can use these other free programming environments:
 
-There are various [Arcade shields](https://microsoft.github.io/microcode/docs/manual#arcade-shield) available on the market today, as shown below.
+-   create your own graphics with [MakeCode for micro:bit](https://makecode.microbit.org) and the [display shield extension](https://makecode.microbit.org/pkg/microbit-apps/display-shield)
+-   develop retro arcade games with [MakeCode Arcade](https://arcade.makecode.com)
 
-<img style="width: 40%" src="https://microsoft.github.io/microcode/assets/newbit-shield.png"></img>
+### With simulators (no hardware required)
 
-## Robot
+You can load this repo into [https://makecode.microbit.org/beta](https://makecode.microbit.org/beta) using the import button on the right-hand side of the home page via "Import URL". Enter [https://github.com/microbit-apps/microcode-v2](https://github.com/microbit-apps/microcode-v2) as the URL.
 
-MicroCode can also be used to [program and control a 2 wheeled rover robot](https://microsoft.github.io/microcode/docs/robot).
+## What's New?
 
-![robot line following](https://microsoft.github.io/microcode/docs/images/generated/sample_robot_line_follow.png){:class="sample"}
+-   MicroCode is built using [MakeCode for the micro:bit](https://makecode.microbit.org/beta), which
+    provides direct access to all the micro:bit APIs available through MakeCode
 
-<img style="width: 40%" src="https://microsoft.github.io/microcode/docs/images/cutebot.jpeg"></img>
+-   Decimal notation (instead of the 1-5 dots in MicroCode-classic)
+
+-   Math (+, -, \*, /) and comparison (=, !=, <, >) operators
+
+-   Uniform support for sensors
+
+-   Lots of changes to improve reliability
+
+## What happened to MicroCode-classic and its features?
+
+While we soon will retire the [MicroCode-classic](https://aka.ms/microcode) web site, we plan to bring back the following features from MicroCode-classic:
+
+-   Option to use 1-5 dots, instead of decimal notation, for beginners.
+-   Jacdac services
+-   Robot cars
+-   Localization
 
 ## Development
 
-To contribute to MicroCode, please read about [MicroCode development](./docs/develop.md).
+See [https://github.com/microbit-apps](https://github.com/microbit-apps) for more information on developing micro:bit apps such as MicroCode.
 
 ## Contributing
 
-This project welcomes contributions and suggestions.
+[This project](https://github.com/microbit-apps/microcode-v2) welcomes contributions and suggestions.
