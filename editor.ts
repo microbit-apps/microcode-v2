@@ -294,21 +294,21 @@ namespace microcode {
                 this.app.save(SAVESLOT_AUTO, this.progdef.toBuffer())
             } else {
                 this.progdef = ProgramDefn.fromBuffer(new BufferReader(buf))
-
-                progToString(this.progdef)
-                const pas1 = progToStringRet
-                // console.log(`PAS1\n${pas1}`)
-                parseProg(pas1)
-                const progFromString = parseProgRet
-                progToString(progFromString)
-                const pas2 = progToStringRet
-                // console.log("PAS2")
-                // console.log(pas2)
-                // check the programs are the same
-                control.assert(
-                    pas1 == pas2,
-                    `progs not the same ${pas1} \n---\n ${pas2}`
-                )
+                if (true) {
+                    progToString(this.progdef)
+                    const pas1 = progToStringRet
+                    // console.log(`PAS1\n${pas1}`)
+                    parseProg(pas1)
+                    const progFromString = parseProgRet
+                    const buf2 = progFromString.toBuffer()
+                    progToString(progFromString)
+                    const pas2 = progToStringRet
+                    // check the programs are the same
+                    control.assert(
+                        buf.equals(buf2),
+                        `progs not the same:\nP1 ------\n${pas1}\nP2 ---------\n${pas2}`
+                    )
+                }
             }
             this.configureP1Keys()
         }

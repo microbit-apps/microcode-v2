@@ -40,7 +40,7 @@ namespace microcode {
             return res.join("\n")
         }
         const res = prog.pages.map(pageToString)
-        progToStringRet = res.map((ps, i) => `page-${i}\n${ps}`).join("\n")
+        progToStringRet = res.map((ps, i) => `page-${i + 1}\n${ps}`).join("\n")
     }
 
     enum Phase {
