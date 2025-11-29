@@ -22,11 +22,11 @@ namespace microcode {
                 return tok
             }
             return (
-                "When " +
+                "when " +
                 toToken(rule.sensor) +
                 " " +
                 rule.filters.map(tileToString).join(" ") +
-                " Do " +
+                " do " +
                 (rule.actuators.length
                     ? toToken(rule.actuators[0]) +
                       " " +
@@ -40,7 +40,7 @@ namespace microcode {
             return res.join("\n")
         }
         const res = prog.pages.map(pageToString)
-        progToStringRet = res.map((ps, i) => `Page ${i + 1}\n${ps}`).join("\n")
+        progToStringRet = res.map((ps, i) => `page-${i}\n${ps}`).join("\n")
     }
 
     enum Phase {
@@ -107,6 +107,7 @@ namespace microcode {
         const prog = new ProgramDefn()
         prog.pages = []
 
+        let nextPageNum = 1
         let currPage: PageDefn = undefined
         let currRule: RuleDefn = undefined
         let currTile: Tile = undefined
@@ -134,23 +135,34 @@ namespace microcode {
                 continue
             }
             currTile = undefined
-            if (tok == "Page") {
+            if (tok.indexOf("page-") == 0) {
+                control.assert(
+                    tok.length == 6,
+                    `expected page-[1-5], got page-`
+                )
+                const pageNum = parseInt(tok[5])
+                control.assert(
+                    pageNum == nextPageNum,
+                    `expected page-${nextPageNum}, got page-${pageNum}`
+                )
                 if (currPage) {
                     if (currRule) currPage.rules.push(currRule)
                     prog.pages.push(currPage)
                     currRule = undefined
                 }
                 currPage = new PageDefn()
-                getToken() // consume page #
-            } else if (tok == "When") {
-                control.assert(currPage != undefined, `No Page defined`)
+                nextPageNum++
+            } else if (tok == "when") {
+                control.assert(currPage != undefined, `No page defined`)
                 if (currRule) currPage.rules.push(currRule)
                 currRule = new RuleDefn()
                 phase = Phase.Sensor
-            } else if (tok == "Do") {
-                control.assert(currRule != undefined, `No When defined`)
+            } else if (tok == "do") {
+                control.assert(currRule != undefined, `No when defined`)
                 phase = Phase.Actuator
             } else {
+                control.assert(currPage != undefined, `No page defined`)
+                control.assert(currRule != undefined, `No when defined`)
                 currTile = token2tile(tok)
                 addTile(currRule, currTile)
             }
