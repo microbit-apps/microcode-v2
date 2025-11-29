@@ -173,8 +173,9 @@ namespace microcode {
     //% shim=TD_NOOP
     export function testSamples() {
         const samples = microcode.samples(false)
+        console.log(`const newSamples: testSampleList = [`)
         for (const sample of samples) {
-            console.log(`check sample ${sample.label}`)
+            //console.log(`check sample ${sample.label}`)
             const buf = sample.source
             const prog = ProgramDefn.fromBuffer(new BufferReader(buf))
             const ret = { s: "" }
@@ -196,7 +197,13 @@ namespace microcode {
                 }
             }
             assert(buf1.length == buf2.length, `bufs not same length`)
-            console.log(`${sample.label}\n${pas2}`)
+            console.log(`{
+ label: \"${sample.label}\",
+ aridId: \"${sample.ariaId}\",
+ src: \`${pas2.replaceAll("`", "\\`")}\`,
+ icon: \"${sample.icon}\",
+},\n`)
         }
+        console.log(`]`)
     }
 }

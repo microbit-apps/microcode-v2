@@ -12,6 +12,14 @@ namespace microcode {
         }
     }
 
+    type textSampleList = {
+        label: string
+        ariaId?: string
+        src: string
+        // leave empty to hide sample
+        icon?: string
+    }[]
+
     type rawSampleList = {
         label: string
         ariaId?: string
