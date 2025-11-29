@@ -304,10 +304,15 @@ namespace microcode {
                     progToString(progFromString)
                     const pas2 = progToStringRet
                     // check the programs are the same
-                    control.assert(
-                        buf.equals(buf2),
-                        `progs not the same:\nP1 ------\n${pas1}\nP2 ---------\n${pas2}`
-                    )
+                    for (let i = 0; i < buf.length && i < buf2.length; i++) {
+                        if (buf[i] != buf2[i]) {
+                            control.assert(
+                                false,
+                                `buf/buf2[${i}] = ${buf[i]}/${buf2[i]}`
+                            )
+                        }
+                    }
+                    assert(buf.length == buf2.length, `bufs not same length`)
                 }
             }
             this.configureP1Keys()
