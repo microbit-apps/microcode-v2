@@ -1,8 +1,10 @@
-const newSamples: textSampleList = [
-    {
-        label: "new program",
-        aridId: "N1",
-        src: `page-1
+function newSamples(): textSampleList {
+    return
+    ;[
+        {
+            label: "new program",
+            ariadId: "N1",
+            src: `page-1
 
 page-2
 
@@ -12,13 +14,13 @@ page-4
 
 page-5
 `,
-        icon: "new_program",
-    },
+            icon: "new_program",
+        },
 
-    {
-        label: "smiley buttons",
-        aridId: "N3",
-        src: `page-1
+        {
+            label: "smiley buttons",
+            ariadId: "N3",
+            src: `page-1
 when press button_A do show_image LED_image \`
 1 1 . 1 1
 1 1 . 1 1
@@ -63,13 +65,13 @@ page-4
 
 page-5
 `,
-        icon: "smiley_buttons",
-    },
+            icon: "smiley_buttons",
+        },
 
-    {
-        label: "first program",
-        aridId: "undefined",
-        src: `page-1
+        {
+            label: "first program",
+            ariadId: undefined,
+            src: `page-1
 when press button_A do show_image LED_image \`
 . . . . .
 . 1 . 1 .
@@ -89,13 +91,13 @@ page-4
 
 page-5
 `,
-        icon: "undefined",
-    },
+            icon: undefined,
+        },
 
-    {
-        label: "flashing heart",
-        aridId: "N2",
-        src: `page-1
+        {
+            label: "flashing heart",
+            ariadId: "N2",
+            src: `page-1
 when timer  do show_image LED_image \`
 . 1 . 1 .
 1 . 1 . 1
@@ -122,13 +124,13 @@ page-4
 
 page-5
 `,
-        icon: "flashing_heart",
-    },
+            icon: "flashing_heart",
+        },
 
-    {
-        label: "counter",
-        aridId: "N14",
-        src: `page-1
+        {
+            label: "counter",
+            ariadId: "N14",
+            src: `page-1
 when press button_A do set_variable_X variable_X add 1
 
 when variable_X_set  do show_number variable_X
@@ -143,13 +145,13 @@ page-4
 
 page-5
 `,
-        icon: "undefined",
-    },
+            icon: undefined,
+        },
 
-    {
-        label: "times table",
-        aridId: "undefined",
-        src: `page-1
+        {
+            label: "times table",
+            ariadId: undefined,
+            src: `page-1
 when move shake do set_variable_Y random_number 4 add 5
 
 when variable_Y_set  do set_variable_X variable_Y
@@ -168,13 +170,13 @@ page-4
 
 page-5
 `,
-        icon: "undefined",
-    },
+            icon: undefined,
+        },
 
-    {
-        label: "double counter",
-        aridId: "undefined",
-        src: `page-1
+        {
+            label: "double counter",
+            ariadId: undefined,
+            src: `page-1
 when page_start  do play_sound happy
 
 when page_start  do show_number variable_X
@@ -202,13 +204,13 @@ page-4
 
 page-5
 `,
-        icon: "undefined",
-    },
+            icon: undefined,
+        },
 
-    {
-        label: "pet hamster",
-        aridId: "N4",
-        src: `page-1
+        {
+            label: "pet hamster",
+            ariadId: "N4",
+            src: `page-1
 when page_start  do show_image LED_image \`
 . . . . .
 1 1 . 1 1
@@ -262,13 +264,13 @@ page-4
 
 page-5
 `,
-        icon: "pet_hamster",
-    },
+            icon: "pet_hamster",
+        },
 
-    {
-        label: "head or tail",
-        aridId: "N9",
-        src: `page-1
+        {
+            label: "head or tail",
+            ariadId: "N9",
+            src: `page-1
 when move  do set_variable_X random_number 2
 
 when move  do music melody \`C E G E \`
@@ -301,13 +303,13 @@ page-4
 
 page-5
 `,
-        icon: "heads_tails",
-    },
+            icon: "heads_tails",
+        },
 
-    {
-        label: "rock, paper, scissors",
-        aridId: "N8",
-        src: `page-1
+        {
+            label: "rock, paper, scissors",
+            ariadId: "N8",
+            src: `page-1
 when move shake do set_variable_X random_number 3
 
 when move shake do play_sound slide
@@ -368,13 +370,13 @@ page-4
 
 page-5
 `,
-        icon: "rock_paper_scissors",
-    },
+            icon: "rock_paper_scissors",
+        },
 
-    {
-        label: "hot potato",
-        aridId: "N7",
-        src: `page-1
+        {
+            label: "hot potato",
+            ariadId: "N7",
+            src: `page-1
 when timer 5_seconds 1_random_second 1_random_second do switch_page page_2
 
 when timer  do show_image LED_image \`
@@ -411,13 +413,13 @@ page-4
 
 page-5
 `,
-        icon: "hot_potato",
-    },
+            icon: "hot_potato",
+        },
 
-    {
-        label: "clap lights",
-        aridId: "N10",
-        src: `page-1
+        {
+            label: "clap lights",
+            ariadId: "N10",
+            src: `page-1
 when page_start  do show_image LED_image \`
 1 1 1 1 1
 1 1 1 1 1
@@ -451,13 +453,13 @@ page-4
 
 page-5
 `,
-        icon: "clap_lights",
-    },
+            icon: "clap_lights",
+        },
 
-    {
-        label: "24 7 clap",
-        aridId: "N13",
-        src: `page-1
+        {
+            label: "24 7 clap",
+            ariadId: "N13",
+            src: `page-1
 when page_start  do play_sound hello
 
 when page_start  do set_variable_X 1
@@ -516,13 +518,13 @@ page-4
 
 page-5
 `,
-        icon: "undefined",
-    },
+            icon: undefined,
+        },
 
-    {
-        label: "reaction time",
-        aridId: "N6",
-        src: `page-1
+        {
+            label: "reaction time",
+            ariadId: "N6",
+            src: `page-1
 when page_start  do show_image LED_image \`
 . . . . .
 . . . . .
@@ -608,13 +610,13 @@ when timer 5_seconds do switch_page page_1
 
 page-5
 `,
-        icon: "reaction_time",
-    },
+            icon: "reaction_time",
+        },
 
-    {
-        label: "chuck a duck",
-        aridId: "N5",
-        src: `page-1
+        {
+            label: "chuck a duck",
+            ariadId: "N5",
+            src: `page-1
 when move shake do show_image LED_image \`
 . . . . .
 . . . . .
@@ -645,13 +647,13 @@ page-4
 
 page-5
 `,
-        icon: "teleport_duck",
-    },
+            icon: "teleport_duck",
+        },
 
-    {
-        label: "zombie detector",
-        aridId: "undefined",
-        src: `page-1
+        {
+            label: "zombie detector",
+            ariadId: undefined,
+            src: `page-1
 when timer  do show_image LED_image \`
 . . . . .
 . . . . .
@@ -730,13 +732,13 @@ page-4
 
 page-5
 `,
-        icon: "undefined",
-    },
+            icon: undefined,
+        },
 
-    {
-        label: "firefly",
-        aridId: "N11",
-        src: `page-1
+        {
+            label: "firefly",
+            ariadId: "N11",
+            src: `page-1
 when page_start  do show_image LED_image \`
 . . . . .
 . . . . .
@@ -778,13 +780,13 @@ page-4
 
 page-5
 `,
-        icon: "firefly",
-    },
+            icon: "firefly",
+        },
 
-    {
-        label: "railroad crossing",
-        aridId: "N12",
-        src: `page-1
+        {
+            label: "railroad crossing",
+            ariadId: "N12",
+            src: `page-1
 when page_start  do servo_power on
 
 when press button_A do servo_set_angle 1
@@ -805,13 +807,13 @@ page-4
 
 page-5
 `,
-        icon: "railroad_crossing",
-    },
+            icon: "railroad_crossing",
+        },
 
-    {
-        label: "moves",
-        aridId: "undefined",
-        src: `page-1
+        {
+            label: "moves",
+            ariadId: undefined,
+            src: `page-1
 when move tilt_down do show_image LED_image \`
 1 1 1 . .
 1 . . 1 .
@@ -865,13 +867,13 @@ page-4
 
 page-5
 `,
-        icon: "undefined",
-    },
+            icon: undefined,
+        },
 
-    {
-        label: "coins",
-        aridId: "undefined",
-        src: `page-1
+        {
+            label: "coins",
+            ariadId: undefined,
+            src: `page-1
 when press button_A do set_variable_X 1
 
 when press button_B do set_variable_X variable_X add 1
@@ -911,13 +913,13 @@ page-4
 
 page-5
 `,
-        icon: "undefined",
-    },
+            icon: undefined,
+        },
 
-    {
-        label: "inchworm",
-        aridId: "undefined",
-        src: `page-1
+        {
+            label: "inchworm",
+            ariadId: undefined,
+            src: `page-1
 when page_start  do servo_set_angle 1
 
 when timer 1/4_second 1/4_second do switch_page page_2
@@ -933,13 +935,13 @@ page-4
 
 page-5
 `,
-        icon: "undefined",
-    },
+            icon: undefined,
+        },
 
-    {
-        label: "head guess",
-        aridId: "undefined",
-        src: `page-1
+        {
+            label: "head guess",
+            ariadId: undefined,
+            src: `page-1
 when page_start  do play_sound hello
 
 when page_start  do set_variable_X random_number 3
@@ -1022,13 +1024,13 @@ page-4
 
 page-5
 `,
-        icon: "undefined",
-    },
+            icon: undefined,
+        },
 
-    {
-        label: "battery charger prank",
-        aridId: "undefined",
-        src: `page-1
+        {
+            label: "battery charger prank",
+            ariadId: undefined,
+            src: `page-1
 when page_start  do show_image LED_image \`
 . 1 1 1 .
 . 1 . 1 .
@@ -1086,13 +1088,13 @@ page-4
 
 page-5
 `,
-        icon: "undefined",
-    },
+            icon: undefined,
+        },
 
-    {
-        label: "green light red light",
-        aridId: "undefined",
-        src: `page-1
+        {
+            label: "green light red light",
+            ariadId: undefined,
+            src: `page-1
 when press logo do switch_page page_2
 
 when radio_receive equals 2 do switch_page page_3
@@ -1188,13 +1190,13 @@ page-4
 
 page-5
 `,
-        icon: "undefined",
-    },
+            icon: undefined,
+        },
 
-    {
-        label: "crooked head or tail",
-        aridId: "undefined",
-        src: `page-1
+        {
+            label: "crooked head or tail",
+            ariadId: undefined,
+            src: `page-1
 when move  do set_variable_X random_number 3
 
 when move  do play_sound slide
@@ -1234,13 +1236,13 @@ page-4
 
 page-5
 `,
-        icon: "undefined",
-    },
+            icon: undefined,
+        },
 
-    {
-        label: "step counter",
-        aridId: "undefined",
-        src: `page-1
+        {
+            label: "step counter",
+            ariadId: undefined,
+            src: `page-1
 when move shake do set_variable_X variable_X add 1
 
 when variable_X_set  do show_number variable_X
@@ -1255,13 +1257,13 @@ page-4
 
 page-5
 `,
-        icon: "undefined",
-    },
+            icon: undefined,
+        },
 
-    {
-        label: "clap counter",
-        aridId: "undefined",
-        src: `page-1
+        {
+            label: "clap counter",
+            ariadId: undefined,
+            src: `page-1
 when sound loud do set_variable_X variable_X add 1
 
 when variable_X_set  do show_number variable_X
@@ -1274,13 +1276,13 @@ page-4
 
 page-5
 `,
-        icon: "undefined",
-    },
+            icon: undefined,
+        },
 
-    {
-        label: "random counter",
-        aridId: "undefined",
-        src: `page-1
+        {
+            label: "random counter",
+            ariadId: undefined,
+            src: `page-1
 when press button_A do set_variable_X 1 add random_number 5
 
 when press button_A do set_variable_Y 
@@ -1306,13 +1308,13 @@ page-4
 
 page-5
 `,
-        icon: "undefined",
-    },
+            icon: undefined,
+        },
 
-    {
-        label: "slider levels",
-        aridId: "undefined",
-        src: `page-1
+        {
+            label: "slider levels",
+            ariadId: undefined,
+            src: `page-1
 when slider equals 1 do show_number 1
 
 when slider equals 2 do show_number 2
@@ -1331,13 +1333,13 @@ page-4
 
 page-5
 `,
-        icon: "undefined",
-    },
+            icon: undefined,
+        },
 
-    {
-        label: "light levels",
-        aridId: "undefined",
-        src: `page-1
+        {
+            label: "light levels",
+            ariadId: undefined,
+            src: `page-1
 when light_(external) equals 1 do show_number 1
 
 when light_(external) equals 2 do show_number 2
@@ -1356,13 +1358,13 @@ page-4
 
 page-5
 `,
-        icon: "undefined",
-    },
+            icon: undefined,
+        },
 
-    {
-        label: "magnet levels",
-        aridId: "undefined",
-        src: `page-1
+        {
+            label: "magnet levels",
+            ariadId: undefined,
+            src: `page-1
 when magnet equals 1 do show_number 1
 
 when magnet equals 2 do show_number 2
@@ -1381,13 +1383,13 @@ page-4
 
 page-5
 `,
-        icon: "undefined",
-    },
+            icon: undefined,
+        },
 
-    {
-        label: "count turns",
-        aridId: "undefined",
-        src: `page-1
+        {
+            label: "count turns",
+            ariadId: undefined,
+            src: `page-1
 when dial turn_left do set_variable_X variable_X add 1
 
 when dial turn_right do set_variable_Y variable_Y add 1
@@ -1404,13 +1406,13 @@ page-4
 
 page-5
 `,
-        icon: "undefined",
-    },
+            icon: undefined,
+        },
 
-    {
-        label: "key demo",
-        aridId: "undefined",
-        src: `page-1
+        {
+            label: "key demo",
+            ariadId: undefined,
+            src: `page-1
 when page_start  do show_image LED_image \`
 . . . . .
 . . . . .
@@ -1446,13 +1448,13 @@ page-4
 
 page-5
 `,
-        icon: "undefined",
-    },
+            icon: undefined,
+        },
 
-    {
-        label: "more water please!",
-        aridId: "undefined",
-        src: `page-1
+        {
+            label: "more water please!",
+            ariadId: undefined,
+            src: `page-1
 when moisture equals 1 do relay on
 
 when moisture equals 3 do relay off
@@ -1465,13 +1467,13 @@ page-4
 
 page-5
 `,
-        icon: "undefined",
-    },
+            icon: undefined,
+        },
 
-    {
-        label: "don't stand too close to me!",
-        aridId: "undefined",
-        src: `page-1
+        {
+            label: "don't stand too close to me!",
+            ariadId: undefined,
+            src: `page-1
 when distance equals 1 do LED red
 
 when distance equals 3 do LED yellow
@@ -1486,13 +1488,13 @@ page-4
 
 page-5
 `,
-        icon: "undefined",
-    },
+            icon: undefined,
+        },
 
-    {
-        label: "start/stop servo",
-        aridId: "undefined",
-        src: `page-1
+        {
+            label: "start/stop servo",
+            ariadId: undefined,
+            src: `page-1
 when press button_A do servo_power on
 
 when release button_B do servo_power off
@@ -1505,13 +1507,13 @@ page-4
 
 page-5
 `,
-        icon: "undefined",
-    },
+            icon: undefined,
+        },
 
-    {
-        label: "move off the line",
-        aridId: "undefined",
-        src: `page-1
+        {
+            label: "move off the line",
+            ariadId: undefined,
+            src: `page-1
 when reflected_light active do servo_power on
 
 when reflected_light unactive do servo_power off
@@ -1524,6 +1526,7 @@ page-4
 
 page-5
 `,
-        icon: "undefined",
-    },
-]
+            icon: undefined,
+        },
+    ]
+}

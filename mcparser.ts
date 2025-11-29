@@ -173,7 +173,7 @@ namespace microcode {
     //% shim=TD_NOOP
     export function testSamples() {
         const samples = microcode.samples(false)
-        console.log(`const newSamples: testSampleList = [`)
+        console.log(`const newSamples: textSampleList = [`)
         for (const sample of samples) {
             //console.log(`check sample ${sample.label}`)
             const buf = sample.source
@@ -199,9 +199,9 @@ namespace microcode {
             assert(buf1.length == buf2.length, `bufs not same length`)
             console.log(`{
  label: \"${sample.label}\",
- aridId: \"${sample.ariaId}\",
+ ariaId: ${sample.ariaId ? '"' + sample.ariaId + '"' : "undefined"},
  src: \`${pas2.replaceAll("`", "\\`")}\`,
- icon: \"${sample.icon}\",
+ icon: ${sample.icon ? '"' + sample.icon + '"' : "undefined"},
 },\n`)
         }
         console.log(`]`)
