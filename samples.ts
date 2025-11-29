@@ -12,18 +12,31 @@ namespace microcode {
         }
     }
 
-    type textSampleList = {
-        label: string
-        ariaId?: string
-        src: string
-        // leave empty to hide sample
-        icon?: string
-    }[]
-
     type rawSampleList = {
         label: string
         ariaId?: string
         b64?: string
+        // leave empty to hide sample
+        icon?: string
+    }[]
+
+    export class TextSample {
+        constructor(
+            public readonly label: string,
+            public readonly ariaId: string,
+            public readonly icon: string,
+            public readonly src: string
+        ) {}
+
+        get source() {
+            return this.src
+        }
+    }
+
+    type textSampleList = {
+        label: string
+        ariaId?: string
+        src: string
         // leave empty to hide sample
         icon?: string
     }[]
@@ -254,6 +267,16 @@ namespace microcode {
             .map(
                 ({ label, ariaId, icon, b64 }) =>
                     new Sample(label, ariaId, icon, b64)
+            )
+    }
+
+    export function textSamples(withIcon: boolean): TextSample[] {
+        const s = newSamples()
+        return s
+            .filter(({ icon }) => !withIcon || !!icon)
+            .map(
+                ({ label, ariaId, icon, src }) =>
+                    new TextSample(label, ariaId, icon, src)
             )
     }
 
