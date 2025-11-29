@@ -171,4 +171,33 @@ namespace microcode {
         prog.pages.push(currPage)
         parseProgRet = prog
     }
+
+    //% shim=TD_NOOP
+    function testSamples() {
+        const samples = microcode.samples(false)
+        for (const sample of samples) {
+            console.log(`check sample ${sample.label}`)
+            const buf = sample.source
+            const prog = ProgramDefn.fromBuffer(new BufferReader(buf))
+            progToString(prog)
+            const pas1 = progToStringRet
+            const buf1 = this.progdef.toBuffer()
+            parseProg(pas1)
+            const progFromString = parseProgRet
+            const buf2 = progFromString.toBuffer()
+            progToString(progFromString)
+            const pas2 = progToStringRet
+            // check the programs are the same
+            for (let i = 0; i < buf.length && i < buf2.length; i++) {
+                if (buf1[i] != buf2[i]) {
+                    control.assert(
+                        false,
+                        `buf/buf2[${i}] = ${buf[i]}/${buf2[i]}`
+                    )
+                }
+            }
+            assert(buf1.length == buf2.length, `bufs not same length`)
+            console.log(`${sample.label}\n${pas2}`)
+        }
+    }
 }
