@@ -291,11 +291,12 @@ namespace microcode {
             return undefined
         }
 
-        public runInstant() {
+        public runInstant(): boolean {
             const actuator = this.rule.actuators[0]
             const param = this.getParamInstant()
-            this.interp.runAction(this.index, actuator, param)
+            const ok = this.interp.runAction(this.index, actuator, param)
             this.kill()
+            return ok
         }
 
         private runAction() {
@@ -520,9 +521,9 @@ namespace microcode {
             } as StateUpdateEvent)
         }
 
-        public runAction(ruleIndex: number, action: Tile, param: any) {
+        public runAction(ruleIndex: number, action: Tile, param: any): boolean {
             switch (action) {
-                case Tid.TID_ACTUATOR_SWITCH_PAGE:
+                case Tid.TID_ACTUATOR_SWITCH_PAGE: {
                     // no switch if no param
                     if (param) {
                         // when switching, drop any outstanding events
@@ -531,17 +532,21 @@ namespace microcode {
                             kind: MicroCodeEventKind.SwitchPage,
                             index: param,
                         } as SwitchPageEvent)
+                        return true
                     }
-                    return
+                    return false
+                }
                 case Tid.TID_ACTUATOR_CUP_X_ASSIGN:
                 case Tid.TID_ACTUATOR_CUP_Y_ASSIGN:
-                case Tid.TID_ACTUATOR_CUP_Z_ASSIGN:
+                case Tid.TID_ACTUATOR_CUP_Z_ASSIGN: {
                     const varName = getParam(action)
                     this.updateState(ruleIndex, varName, param)
-                    return
+                    return true
+                }
                 default:
                     this.host.execute(action as ActionTid, param)
             }
+            return true
         }
 
         private updateState(ruleIndex: number, varName: string, v: number) {
@@ -610,8 +615,7 @@ namespace microcode {
                 rc => rc.getOutputResource() == OutputResource.PageCounter
             )
             if (switchPage) {
-                switchPage.runInstant()
-                return // others don't get chance to run
+                if (switchPage.runInstant()) return // others don't get chance to run
             }
 
             const takesTime = live.filter(
