@@ -297,6 +297,7 @@ namespace microcode {
                 if (true) {
                     progToString(this.progdef)
                     const pas1 = progToStringRet
+                    const buf1 = this.progdef.toBuffer()
                     // console.log(`PAS1\n${pas1}`)
                     parseProg(pas1)
                     const progFromString = parseProgRet
@@ -305,14 +306,14 @@ namespace microcode {
                     const pas2 = progToStringRet
                     // check the programs are the same
                     for (let i = 0; i < buf.length && i < buf2.length; i++) {
-                        if (buf[i] != buf2[i]) {
+                        if (buf1[i] != buf2[i]) {
                             control.assert(
                                 false,
                                 `buf/buf2[${i}] = ${buf[i]}/${buf2[i]}`
                             )
                         }
                     }
-                    assert(buf.length == buf2.length, `bufs not same length`)
+                    assert(buf1.length == buf2.length, `bufs not same length`)
                 }
             }
             this.configureP1Keys()
