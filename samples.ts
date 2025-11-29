@@ -21,6 +21,36 @@ namespace microcode {
     }[]
 
     //% shim=TD_NOOP
+    export function robotSamples(r: { s: rawSampleList }) {
+        r.s = r.s.concat([
+            {
+                label: "robot shake",
+                b64: "JfiSPgounQ1cNL4NWzTCDV00wMINXjTBwgEBAQEBAA==",
+            },
+            {
+                label: "robot wake",
+                b64: "JfiSPgounRI0wMDAwgEBAQEBAA==",
+            },
+            {
+                label: "robot avoid wall",
+                b64: "JfiSPgounQo0vhlPNMC+AQEBAQEA",
+            },
+            {
+                label: "robot line follow",
+                b64: "JfiSPgoumxpoNL4aZjTAGmc0wRpqNMQaazTFGmk0wgEBAQEBAA==",
+            },
+            {
+                label: "robot showcase",
+                b64: "JfiSPgoumwtJNL7IC0o0wsYZTzTEvgEBAQEBAA==",
+            },
+            {
+                label: "robot drift tester",
+                b64: "JfiSPgoumwtJNL7IC0o0w8cSNMLGAQEBAQEA",
+            },
+        ])
+    }
+
+    //% shim=TD_NOOP
     function rawWebAppSamples(r: { s: rawSampleList }) {
         r.s = r.s.concat([
             {
@@ -170,30 +200,6 @@ namespace microcode {
                 b64: "JfiSPgosoAAQAAALSyygQIHoAAtMLKBAARcBAQEBAQEA",
             },
             {
-                label: "robot shake",
-                b64: "JfiSPgounQ1cNL4NWzTCDV00wMINXjTBwgEBAQEBAA==",
-            },
-            {
-                label: "robot wake",
-                b64: "JfiSPgounRI0wMDAwgEBAQEBAA==",
-            },
-            {
-                label: "robot avoid wall",
-                b64: "JfiSPgounQo0vhlPNMC+AQEBAQEA",
-            },
-            {
-                label: "robot line follow",
-                b64: "JfiSPgoumxpoNL4aZjTAGmc0wRpqNMQaazTFGmk0wgEBAQEBAA==",
-            },
-            {
-                label: "robot showcase",
-                b64: "JfiSPgoumwtJNL7IC0o0wsYZTzTEvgEBAQEBAA==",
-            },
-            {
-                label: "robot drift tester",
-                b64: "JfiSPgoumwtJNL7IC0o0w8cSNMLGAQEBAQEA",
-            },
-            {
                 label: "more water please!",
                 b64: "JfiSPhxONswcUDbNAQEBAQEA",
             },
@@ -208,7 +214,7 @@ namespace microcode {
             {
                 label: "move off the line",
                 b64: "JfiSPh5uN8webzfNAQEBAQEA",
-            }
+            },
         ])
     }
 
@@ -234,6 +240,7 @@ namespace microcode {
         const s = rawSamples()
         const r = { s: s }
         rawWebAppSamples(r)
+        // robotSamples(r)
         return r.s
             .filter(({ icon }) => !withIcon || !!icon)
             .map(

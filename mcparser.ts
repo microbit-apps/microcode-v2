@@ -2,9 +2,8 @@
 // web only
 
 namespace microcode {
-    export let progToStringRet: string = undefined
     //% shim=TD_NOOP
-    export function progToString(prog: ProgramDefn) {
+    export function progToString(prog: ProgramDefn, ret: { s: string }) {
         const ruleToString = (rule: RuleDefn) => {
             const toToken = (tile: Tile) =>
                 resolveTooltip("T" + getTid(tile)).replaceAll(" ", "_")
@@ -40,7 +39,7 @@ namespace microcode {
             return res.join("\n")
         }
         const res = prog.pages.map(pageToString)
-        progToStringRet = res.map((ps, i) => `page-${i + 1}\n${ps}`).join("\n")
+        ret.s = res.map((ps, i) => `page-${i + 1}\n${ps}`).join("\n")
     }
 
     enum Phase {
@@ -50,9 +49,8 @@ namespace microcode {
         Modifier,
     }
 
-    export let parseProgRet: ProgramDefn = undefined
     //% shim=TD_NOOP
-    export function parseProg(str: string): void {
+    export function parseProg(str: string, ret: { p: ProgramDefn }) {
         const token2tile = (tok: string) => {
             const tid = tooltip2tid(tok.replaceAll("_", " "))
             control.assert(tid != undefined, `tok ${tok} does not have mapping`)
@@ -169,24 +167,25 @@ namespace microcode {
         }
         if (currRule) currPage.rules.push(currRule)
         prog.pages.push(currPage)
-        parseProgRet = prog
+        ret.p = prog
     }
 
     //% shim=TD_NOOP
-    function testSamples() {
+    export function testSamples() {
         const samples = microcode.samples(false)
         for (const sample of samples) {
             console.log(`check sample ${sample.label}`)
             const buf = sample.source
             const prog = ProgramDefn.fromBuffer(new BufferReader(buf))
-            progToString(prog)
-            const pas1 = progToStringRet
-            const buf1 = this.progdef.toBuffer()
-            parseProg(pas1)
-            const progFromString = parseProgRet
-            const buf2 = progFromString.toBuffer()
-            progToString(progFromString)
-            const pas2 = progToStringRet
+            const ret = { s: "" }
+            progToString(prog, ret)
+            const buf1 = prog.toBuffer()
+            const ret2: { p: ProgramDefn } = { p: undefined }
+            parseProg(ret.s, ret2)
+            const buf2 = ret2.p.toBuffer()
+            const ret3 = { s: "" }
+            progToString(ret2.p, ret3)
+            const pas2 = ret3.s
             // check the programs are the same
             for (let i = 0; i < buf.length && i < buf2.length; i++) {
                 if (buf1[i] != buf2[i]) {
