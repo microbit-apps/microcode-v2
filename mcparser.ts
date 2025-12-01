@@ -6,7 +6,7 @@ namespace microcode {
     export function progToString(prog: ProgramDefn, ret: { s: string }) {
         const ruleToString = (rule: RuleDefn) => {
             const toToken = (tile: Tile) =>
-                resolveTooltip("T" + getTid(tile)).replaceAll(" ", "_")
+                resolveTooltip("T" + getTid(tile)).replaceAll(" ", "-")
             const tileToString = (tile: Tile) => {
                 const tok = toToken(tile)
                 if (tile instanceof ModifierEditor) {
@@ -52,7 +52,7 @@ namespace microcode {
     //% shim=TD_NOOP
     export function parseProg(str: string, ret: { p: ProgramDefn }) {
         const token2tile = (tok: string) => {
-            const tid = tooltip2tid(tok.replaceAll("_", " "))
+            const tid = tooltip2tid(tok.replaceAll("-", " "))
             control.assert(tid != undefined, `tok ${tok} does not have mapping`)
             // check to see if field editor needed
             const tile = getEditor(tid)
