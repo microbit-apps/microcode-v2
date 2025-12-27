@@ -3,14 +3,15 @@
 ## Syntax
 
 In the following, a word in ALLCAPS refers to a non-terminal in
-MicroCode's grammar. Words in lowercase are terminal symbols and
-may have dashes and other symbols in them. <float> is a floating
-point number; <pos> is an integer greater than zero. Comments follow //.
+MicroCode's grammar. All other words are terminal symbols and
+may have dashes and other symbols in them, with the following
+exceptions: <float> is a floating point number; <pos> is an
+integer greater than zero; // designates a comment.
 
 A program (PROG) consists of 5 pages, number 1-5, each with a possibly empty sequence of
 rules RULE:
 
-    PROG := page-1 RULE\* page-2 RULE\* page-3 RULE\* page-4 RULE\* page-5 RULE\*
+    PROG := page-1 RULE* page-2 RULE* page-3 RULE* page-4 RULE* page-5 RULE*
 
 Each rule has an option when section WHEN and an optional do section DO.
 
@@ -36,7 +37,7 @@ Some actions can be repeated.
     | variable-Z-set [C]        // fire after variable Z has been assigned, subject to optional comparison C
 
     UD := up | down
-    TS := (1/4-second | 1-second | 1-random-second | 5-seconds)\*       // sum the sequence of times
+    TS := (1/4-second | 1-second | 1-random-second | 5-seconds)*       // sum the sequence of times
     PK := button-A | button-B | logo | pin-0 | pin-1 | pin-2
     MK := shake | tilt-left | tilt-right | ...
 
@@ -80,19 +81,30 @@ A positive (integer) expression PE is
     | <pos> + PE
     | <pos> * PE
 
-DO :=
-| show-number [V]
-| show-image (image)_ [repeat [PE]]
-| play-sound (sound)_ [repeat [PE]]
-| play-music (notes)\* [repeat [PE]]
-| radio-send [V]
-| radio-set-group [PE]
-| set-variable-X [V]
-| set-variable-Y [V]
-| set-variable-Z [V]
-| switch-page [PG]
+A DO action
 
-PG := | page-1 | page-2 | page-3 | page-4 | page-5
+    DO :=
+    | show-number [V]
+    | show-image (IMAGE)* [repeat [PE]]
+    | play-sound (SND)*   [repeat [PE]]
+    | play-music (NOTES)* [repeat [PE]]
+    | radio-send [V]
+    | radio-set-group [PE]
+    | set-variable-X [V]
+    | set-variable-Y [V]
+    | set-variable-Z [V]
+    | switch-page [PAGE]
+
+    PAGE := | page-1 | page-2 | page-3 | page-4 | page-5
+    SND := | giggle | happy | hello | mysterious | sad | slide | soaring
+
+An led image is specified inside quotes and consists of 25 digits, either 0 or 1, separated by
+a space:
+
+    IMAGE := LED-image `(0\s | 1\s)25`
+
+
+    NOTES := (C | D | E | F | G)4
 
 ## Semantics
 
