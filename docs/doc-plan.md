@@ -1,18 +1,42 @@
 # The MicroCode Language
 
+This document presents a detailed accounting of the syntax and
+semantics of the MicroCode language. Its intended audience are
+those who are familiar with programming languages and would like
+to understand the MicroCode language in depth. We also will
+use it as the basis for generating friendlier descriptions
+that use MicroCode's visual presentation, as well as to
+generate tests and aid in the translation of MakeCode programs
+to MicroCode programs,
+
 ## Syntax
+
+MicroCode has a concrete syntax, as detailed below, for the
+purpose of creating programs without the need for visual
+MicroCode editor.
 
 In the following, a word in ALLCAPS refers to a non-terminal in
 MicroCode's grammar. All other words are terminal symbols, with
 the following exceptions: <float> is a floating point number;
-<pos> is an integer greater than zero; // designates a comment;
+<pos> is an integer greater than zero; // designates a comment
+(just for use in this markdown - MicroCode does not support comments);
 the symbols \s, \*, (, ), [, ], and | are part of the grammar
 specification. Words are always separated by whitespace.
 
-A program (PROG) consists of 5 pages, numbered 1-5, each with a possibly
-empty sequence of rules RULE:
+Note that non-terminals correspond to the tooltips used in MicroCode's
+visual editor (where the underscores are replaced by spaces), which
+accounts for their long form.
+
+A program (PROG) consists of 5 pages, numbered 1-5, each with a (possibly
+empty) sequence of rules RULE:
 
     PROG := page_1 RULE\* page_2 RULE\* page_3 RULE\* page_4 RULE\* page_5 RULE\*
+
+So, the following program is the empty program
+
+```
+page_1 page_2 page_3 page_4 page_5
+```
 
 Each rule has an optional section WHEN and an optional section DO.
 
@@ -161,13 +185,14 @@ used for timers, as detailed later.
 
 Actions have effects through writing to resources, which are as follows:
 
--   Screen
--   Speaker
--   Radio group
--   Radio
+-   screen
+-   speaker
+-   radio group
+-   radio channel
 -   variable X
 -   variable Y
 -   variable Z
+-   current page
 
 If two rules have actions that target the same resource, they are said
 to be in _conflict_ if it is possible for them to execute at the same time.
@@ -176,4 +201,35 @@ to be in _conflict_ if it is possible for them to execute at the same time.
 
 Upon reception of a signal, it is first necessary to find the
 rules that are enabled for execution by the signal. The first
-step is to find the rules that mention the named signal.
+step is to find the rules that mention the named signal. Then
+the optional conditions associated with those rules are evaluated
+in the current state (of variable and sensor values) to prune this
+set to get the enabled set E. Finally, if two rules in E are in conflict
+then the rule that comes later in sequence is removed from E.
+
+Once we have the final set E of enabled rules, we halt
+execution of any currently active rules that conflict with
+a rule in E.
+
+The set E is then partition into three sets, I, S, and T, corresponding
+to rules that execute instantly, those that switch page, and t
+hose that take time. Instant actions are
+
+-   assignments to variables
+-   radio send
+-   radio set group
+-   switch page
+
+The remaining actions are the ones that (may) take time.
+
+The actions in I are executed first and run to completion.
+Then, if S is not empty then
+it must be a singleton, so a page switch will take place, in which
+case actions in T are ignored. Else, if S is empty then actions in
+T are started.
+
+### Updating state
+
+### Switching pages
+
+### Timers
