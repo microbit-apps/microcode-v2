@@ -6,7 +6,7 @@ namespace microcode {
     export function progToString(prog: ProgramDefn, ret: { s: string }) {
         const ruleToString = (rule: RuleDefn) => {
             const toToken = (tile: Tile) =>
-                resolveTooltip("T" + getTid(tile)).replaceAll(" ", "-")
+                resolveTooltip("T" + getTid(tile)).replaceAll(" ", "_")
             const tileToString = (tile: Tile) => {
                 const tok = toToken(tile)
                 if (tile instanceof ModifierEditor) {
@@ -39,7 +39,7 @@ namespace microcode {
             return res.join("\n")
         }
         const res = prog.pages.map(pageToString)
-        ret.s = res.map((ps, i) => `page-${i + 1}\n${ps}`).join("\n")
+        ret.s = res.map((ps, i) => `page_${i + 1}\n${ps}`).join("\n")
     }
 
     enum Phase {
@@ -52,7 +52,7 @@ namespace microcode {
     //% shim=TD_NOOP
     export function parseProg(str: string, ret: { p: ProgramDefn }) {
         const token2tile = (tok: string) => {
-            const tid = tooltip2tid(tok.replaceAll("-", " "))
+            const tid = tooltip2tid(tok.replaceAll("_", " "))
             control.assert(tid != undefined, `tok ${tok} does not have mapping`)
             // check to see if field editor needed
             const tile = getEditor(tid)
