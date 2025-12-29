@@ -1,6 +1,6 @@
 P2 ---------
 page-1
-when page_start  do show_image LED_image `
+when start_page  do show_image LED_image `
 . . . . .
 1 1 . 1 1
 . . . . .

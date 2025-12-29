@@ -27,7 +27,7 @@ namespace microcode {
         else if (id === "SR_OFF") res = "off";
         else if (id === "C0") res = "edit";
         else if (id === "C1") res = "samples";
-        else if (id === "T10") res = "page start";
+        else if (id === "T10") res = "start page";
         else if (id === "T11") res = "press";
         else if (id === "T12") res = "release";
         else if (id === "T13") res = "move";
@@ -173,7 +173,7 @@ namespace microcode {
         export function tooltip2tid(id: string): number {
            let tid: number = undefined
            if (!id) return tid
-                    else if (id === "page start") tid = 10;
+                    else if (id === "start page") tid = 10;
         else if (id === "press") tid = 11;
         else if (id === "release") tid = 12;
         else if (id === "move") tid = 13;

@@ -136,7 +136,7 @@ namespace microcode {
             if (tok.indexOf("page_") == 0) {
                 control.assert(
                     tok.length == 6,
-                    `expected page_[1-5], got page_`
+                    `expected page_[1-5], got ${tok}}`
                 )
                 const pageNum = parseInt(tok[5])
                 control.assert(

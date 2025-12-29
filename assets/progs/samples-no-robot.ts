@@ -177,9 +177,9 @@ page-5
             label: "double counter",
             ariadId: undefined,
             src: `page-1
-when page_start  do play_sound happy
+when start_page  do play_sound happy
 
-when page_start  do show_number variable_X
+when start_page  do show_number variable_X
 
 when press button_A do set_variable_X variable_X add 1
 
@@ -188,9 +188,9 @@ when variable_X_set  do show_number variable_X
 when press button_B do switch_page page_2
 
 page-2
-when page_start  do play_sound hello
+when start_page  do play_sound hello
 
-when page_start  do show_number variable_Y
+when start_page  do show_number variable_Y
 
 when press button_B do set_variable_Y variable_Y add 1
 
@@ -211,7 +211,7 @@ page-5
             label: "pet hamster",
             ariadId: "N4",
             src: `page-1
-when page_start  do show_image LED_image \`
+when start_page  do show_image LED_image \`
 . . . . .
 1 1 . 1 1
 . . . . .
@@ -396,7 +396,7 @@ when timer  do show_image LED_image \`
 
 
 page-2
-when page_start  do show_image LED_image \`
+when start_page  do show_image LED_image \`
 1 1 1 1 1
 1 . 1 . 1
 1 1 1 1 1
@@ -405,7 +405,7 @@ when page_start  do show_image LED_image \`
 \`
 
 
-when page_start  do play_sound sad
+when start_page  do play_sound sad
 
 page-3
 
@@ -420,7 +420,7 @@ page-5
             label: "clap lights",
             ariadId: "N10",
             src: `page-1
-when page_start  do show_image LED_image \`
+when start_page  do show_image LED_image \`
 1 1 1 1 1
 1 1 1 1 1
 1 1 1 1 1
@@ -429,12 +429,12 @@ when page_start  do show_image LED_image \`
 \`
 
 
-when page_start  do play_sound hello
+when start_page  do play_sound hello
 
 when sound loud do switch_page page_2
 
 page-2
-when page_start  do show_image LED_image \`
+when start_page  do show_image LED_image \`
 . . . . .
 . . . . .
 . . . . .
@@ -443,7 +443,7 @@ when page_start  do show_image LED_image \`
 \`
 
 
-when page_start  do play_sound yawn
+when start_page  do play_sound yawn
 
 when sound loud do switch_page page_1
 
@@ -460,11 +460,11 @@ page-5
             label: "24 7 clap",
             ariadId: "N13",
             src: `page-1
-when page_start  do play_sound hello
+when start_page  do play_sound hello
 
-when page_start  do set_variable_X 1
+when start_page  do set_variable_X 1
 
-when page_start  do show_image LED_image \`
+when start_page  do show_image LED_image \`
 . 1 . 1 .
 . 1 . 1 .
 . 1 . 1 .
@@ -487,16 +487,16 @@ when timer 5_seconds 1_second 1_second do switch_page page_2
 when variable_X_set 5 add 5 add 5 add 5 add 5 do switch_page page_3
 
 page-2
-when page_start  do play_sound giggle
+when start_page  do play_sound giggle
 
-when page_start  do show_number variable_X
+when start_page  do show_number variable_X
 
 when timer 5_seconds 5_seconds do switch_page page_1
 
 page-3
-when page_start  do play_sound sad
+when start_page  do play_sound sad
 
-when page_start  do show_image LED_image \`
+when start_page  do show_image LED_image \`
 1 1 1 1 1
 1 . 1 . 1
 . 1 1 1 .
@@ -525,7 +525,7 @@ page-5
             label: "reaction time",
             ariadId: "N6",
             src: `page-1
-when page_start  do show_image LED_image \`
+when start_page  do show_image LED_image \`
 . . . . .
 . . . . .
 . 1 . . .
@@ -555,7 +555,7 @@ when press button_A do switch_page page_4
 when press button_B do switch_page page_3
 
 page-2
-when page_start  do show_image LED_image \`
+when start_page  do show_image LED_image \`
 1 1 1 1 1
 1 1 1 1 1
 1 1 1 1 1
@@ -564,14 +564,14 @@ when page_start  do show_image LED_image \`
 \`
 
 
-when page_start  do play_sound hello
+when start_page  do play_sound hello
 
 when press button_A do switch_page page_3
 
 when press button_B do switch_page page_4
 
 page-3
-when page_start  do show_image LED_image \`
+when start_page  do show_image LED_image \`
 . . 1 . .
 . 1 . . .
 1 1 1 1 .
@@ -590,7 +590,7 @@ when page_start  do show_image LED_image \`
 when timer 5_seconds do switch_page page_1
 
 page-4
-when page_start  do show_image LED_image \`
+when start_page  do show_image LED_image \`
 . . 1 . .
 . . . 1 .
 1 1 1 1 1
@@ -739,7 +739,7 @@ page-5
             label: "firefly",
             ariadId: "N11",
             src: `page-1
-when page_start  do show_image LED_image \`
+when start_page  do show_image LED_image \`
 . . . . .
 . . . . .
 . . 1 . .
@@ -757,11 +757,11 @@ when variable_X_set 3 add 5 do switch_page page_2
 when timer 1_second 1_second 1_second do switch_page page_2
 
 page-2
-when page_start  do radio_send 
+when start_page  do radio_send 
 
-when page_start  do set_variable_X 1
+when start_page  do set_variable_X 1
 
-when page_start  do show_image LED_image \`
+when start_page  do show_image LED_image \`
 1 1 1 1 1
 1 1 1 1 1
 1 1 . 1 1
@@ -770,7 +770,7 @@ when page_start  do show_image LED_image \`
 \`
 
 
-when page_start  do play_sound hello
+when start_page  do play_sound hello
 
 when timer 1/4_second do switch_page page_1
 
@@ -787,7 +787,7 @@ page-5
             label: "railroad crossing",
             ariadId: "N12",
             src: `page-1
-when page_start  do servo_power on
+when start_page  do servo_power on
 
 when press button_A do servo_set_angle 1
 
@@ -920,12 +920,12 @@ page-5
             label: "inchworm",
             ariadId: undefined,
             src: `page-1
-when page_start  do servo_set_angle 1
+when start_page  do servo_set_angle 1
 
 when timer 1/4_second 1/4_second do switch_page page_2
 
 page-2
-when page_start  do servo_set_angle 5
+when start_page  do servo_set_angle 5
 
 when timer 1/4_second 1/4_second do switch_page page_1
 
@@ -942,11 +942,11 @@ page-5
             label: "head guess",
             ariadId: undefined,
             src: `page-1
-when page_start  do play_sound hello
+when start_page  do play_sound hello
 
-when page_start  do set_variable_X random_number 3
+when start_page  do set_variable_X random_number 3
 
-when page_start  do set_variable_Y 1
+when start_page  do set_variable_Y 1
 
 when move tilt_down do set_variable_X random_number 3
 
@@ -1012,9 +1012,9 @@ when variable_X_set equals 3 do show_image LED_image \`
  repeat
 
 page-2
-when page_start  do show_number variable_Y
+when start_page  do show_number variable_Y
 
-when page_start  do play_sound giggle
+when start_page  do play_sound giggle
 
 when timer 5_seconds 5_seconds do switch_page page_1
 
@@ -1031,7 +1031,7 @@ page-5
             label: "battery charger prank",
             ariadId: undefined,
             src: `page-1
-when page_start  do show_image LED_image \`
+when start_page  do show_image LED_image \`
 . 1 1 1 .
 . 1 . 1 .
 . 1 . 1 .
@@ -1050,7 +1050,7 @@ when page_start  do show_image LED_image \`
 when move shake do switch_page page_2
 
 page-2
-when page_start  do show_image LED_image \`
+when start_page  do show_image LED_image \`
 . 1 1 1 .
 . 1 . 1 .
 . 1 . 1 .
@@ -1099,7 +1099,7 @@ when press logo do switch_page page_2
 
 when radio_receive equals 2 do switch_page page_3
 
-when page_start  do show_image LED_image \`
+when start_page  do show_image LED_image \`
 1 . 1 . .
 1 1 1 1 1
 . . 1 . 1
@@ -1122,10 +1122,10 @@ when page_start  do show_image LED_image \`
 \`
  repeat
 
-when page_start  do play_sound hello
+when start_page  do play_sound hello
 
 page-2
-when page_start  do set_variable_X 1
+when start_page  do set_variable_X 1
 
 when timer  do radio_send variable_X
 
@@ -1413,7 +1413,7 @@ page-5
             label: "key demo",
             ariadId: undefined,
             src: `page-1
-when page_start  do show_image LED_image \`
+when start_page  do show_image LED_image \`
 . . . . .
 . . . . .
 . . 1 . .
