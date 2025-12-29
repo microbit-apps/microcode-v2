@@ -109,9 +109,17 @@ namespace microcode {
         else if (id === "T152") res = "page 3";
         else if (id === "T153") res = "page 4";
         else if (id === "T154") res = "page 5";
-        else if (id === "T160") res = "LED image";
+        else if (id === "T160") res = "image";
         else if (id === "T161") res = "NA5";
         else if (id === "T162") res = "NA6";
+        else if (id === "T155") res = "1";
+        else if (id === "T156") res = "2";
+        else if (id === "T157") res = "3";
+        else if (id === "T158") res = "4";
+        else if (id === "T159") res = "5";
+        else if (id === "T160") res = "image";
+        else if (id === "T161") res = "red";
+        else if (id === "T162") res = "purple";
         else if (id === "T163") res = "giggle";
         else if (id === "T164") res = "happy";
         else if (id === "T165") res = "hello";
