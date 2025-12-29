@@ -133,15 +133,15 @@ namespace microcode {
                 continue
             }
             currTile = undefined
-            if (tok.indexOf("page-") == 0) {
+            if (tok.indexOf("page_") == 0) {
                 control.assert(
                     tok.length == 6,
-                    `expected page-[1-5], got page-`
+                    `expected page_[1-5], got page_`
                 )
                 const pageNum = parseInt(tok[5])
                 control.assert(
                     pageNum == nextPageNum,
-                    `expected page-${nextPageNum}, got page-${pageNum}`
+                    `expected page_${nextPageNum}, got page_${pageNum}`
                 )
                 if (currPage) {
                     if (currRule) currPage.rules.push(currRule)
