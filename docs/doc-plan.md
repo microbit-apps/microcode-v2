@@ -94,7 +94,7 @@ or the current value of one of the four sensors, or the last value received over
 
     A :=
     | <float>
-    | var_X | var_Y | var_Z
+    | variable_X | variable_Y | variable_Z
     | light_value | sound_value | temp_value | magnet_value
     | radio_value
 
@@ -136,13 +136,13 @@ where - denotes a rest, inside backquotes:
 
 Before execution starts, all variables (X, Y, and Z) are initialized to 0
 and the current value of all micro:bit/jacdac sensors is cached.
-The initial value of the radio is undefined.
+The initial value of radio_value is undefined.
 The radio group is initialized to 1.
 Execution begins by transitioning to page 1.
 
 ### Defaults
 
-The absence of an optional element results in the use of a default, as follows:
+The absence of an optional element/value results in the use of a default element/value, as follows:
 
 -   A rule with an empty do section never executes (no matching performed
     on it).
@@ -155,7 +155,7 @@ The absence of an optional element results in the use of a default, as follows:
     -   move defaults to shake event
     -   sound defaults to loud event
     -   temperature, light, and magnet default to up event
-    -   radio and variable signals have no default
+    -   radio and variable signals have no default, they fire even without a default
 -   Action defaults are as follows
     -   show_number defaults to 0
     -   show_image defaults to smiley face
@@ -163,8 +163,8 @@ The absence of an optional element results in the use of a default, as follows:
     -   music defaults to `C E G C`
     -   radio_send defaults to 0
     -   radio_set_group defaults to 1
-    -   set of a variable defaults to 0
-    -   switch page with no page specified is a NOOP
+    -   variable_X_set, variable_Y_set, variable_Z_set defaults to 0
+    -   switch_page with no page specified is a NOOP
 
 ### Signals
 
@@ -212,15 +212,13 @@ execution of any currently active rules that conflict with
 a rule in E.
 
 The set E is then partition into three sets, I, S, and T, corresponding
-to rules that execute instantly, those that switch page, and t
-hose that take time. Instant actions are
+to rules whose actions execute instantly, those that switch page, and those that take time. Instant actions are
 
 -   assignments to variables
 -   radio send
 -   radio set group
--   switch page
 
-The remaining actions are the ones that (may) take time.
+The remaining actions (other than switch page) are the ones that (may) take time.
 
 The actions in I are executed first and run to completion.
 Then, if S is not empty then
