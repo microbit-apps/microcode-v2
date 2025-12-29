@@ -121,7 +121,7 @@ namespace microcode {
             if (name == Tid.TID_MODIFIER_LOOP) return icondb.loop
 
             // variables
-
+            if (name == Tid.TID_SENSOR_MAGNET) return icondb.magnet
             if (name == Tid.TID_SENSOR_CUP_X_WRITTEN) return icondb.cupXwritten
             if (name == Tid.TID_SENSOR_CUP_Y_WRITTEN) return icondb.cupYwritten
             if (name == Tid.TID_SENSOR_CUP_Z_WRITTEN) return icondb.cupZwritten
