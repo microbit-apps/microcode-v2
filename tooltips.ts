@@ -114,7 +114,7 @@ namespace microcode {
         else if (id === "T157") res = "3";
         else if (id === "T158") res = "4";
         else if (id === "T159") res = "5";
-        else if (id === "T160") res = "LED image";
+        else if (id === "T160") res = "image";
         else if (id === "T161") res = "red";
         else if (id === "T162") res = "purple";
         else if (id === "T163") res = "giggle";
