@@ -236,7 +236,14 @@ namespace microcode {
         public static fromBuffer(br: BufferReader) {
             const defn = new RuleDefn()
             const handleFieldEditor = (which: string) => {
-                const by = br.readByte()
+                let by = br.readByte()
+                // convert from old to new
+                if (isOldModifierCoin(by))
+                    by = Tid.TID_FILTER_COIN_1 + (by - Tid.TID_MODIFIER_COIN_1)
+                if (isOldModifierVar(by))
+                    by =
+                        Tid.TID_FILTER_CUP_X_READ +
+                        (by - Tid.TID_MODIFIER_CUP_X_READ)
                 const tile = getEditor(by)
                 if (tile instanceof ModifierEditor) {
                     const field = tile.fieldEditor.fromBuffer(br)
@@ -264,6 +271,7 @@ namespace microcode {
             defn.actuators.push(actuatorEnum)
             assert(!br.eof())
             while (isModifier(br.peekByte())) {
+                // TODO: convert old coin and old var
                 handleFieldEditor("modifiers")
                 assert(!br.eof())
             }
@@ -416,6 +424,19 @@ namespace microcode {
             ) {
                 all.push(getEditor(Tid.TID_DECIMAL_EDITOR))
                 all.push(getEditor(Tid.TID_POS_INT_EDITOR))
+            }
+            if (rangeName == "modifiers") {
+                // add constants and vars
+                all.concat([
+                    Tid.TID_FILTER_COIN_1,
+                    Tid.TID_FILTER_COIN_2,
+                    Tid.TID_FILTER_COIN_3,
+                    Tid.TID_FILTER_COIN_4,
+                    Tid.TID_FILTER_COIN_5,
+                    Tid.TID_FILTER_CUP_X_READ,
+                    Tid.TID_FILTER_CUP_Y_READ,
+                    Tid.TID_FILTER_CUP_Z_READ,
+                ])
             }
 
             all = all

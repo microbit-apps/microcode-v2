@@ -32,6 +32,12 @@ namespace microcode {
         fromBuffer(buf: BufferReader): any {
             return undefined
         }
+        toString(field: any): string {
+            return ""
+        }
+        fromTokens(tokens: string[]): any {
+            return undefined
+        }
     }
 
     export class ModifierEditor {
@@ -92,6 +98,13 @@ namespace microcode {
         fromBuffer(buf: BufferReader): BoxedNumAsStr {
             const str = buf.readString()
             return { num: str }
+        }
+        toString(field: BoxedNumAsStr) {
+            return field.num
+        }
+        fromTokens(tokens: string[]) {
+            // TODO: check that we have a number
+            return { num: tokens.length > 0 ? tokens[0] : "0" }
         }
     }
 
@@ -170,6 +183,24 @@ namespace microcode {
             }
             return img
         }
+        toString(img: Bitmap) {
+            let ret = ""
+            for (let row = 0; row < 5; row++) {
+                for (let col = 0; col < 5; col++) {
+                    ret += img.getPixel(col, row) ? `1` : `.`
+                    if (col < 4) ret += " "
+                }
+                ret += `\n`
+            }
+            return ret + ""
+        }
+        fromTokens(tokens: string[]): Bitmap {
+            let ret = bitmaps.create(5, 5)
+            for (let i = 0; i < tokens.length && i < 25; i++) {
+                ret.setPixel(i % 5, Math.idiv(i, 5), tokens[i] == "1" ? 1 : 0)
+            }
+            return ret
+        }
     }
 
     export class IconEditor extends ModifierEditor {
@@ -200,6 +231,28 @@ namespace microcode {
     export interface Melody {
         notes: string
         tempo: number
+    }
+
+    export function melodyToNotes(melody: Melody) {
+        const notes = melody.notes.split("")
+        let result = ""
+        for (const n of notes) {
+            if (n == ".") result += "- "
+            else result += noteNames[parseInt(n)] + " "
+        }
+        return result + ""
+    }
+
+    function notesToMelody(tokens: string[]) {
+        let res = ""
+        tokens.forEach((note, index) => {
+            if (note == "-") res += "."
+            else {
+                const index = noteNames.indexOf(note)
+                if (index >= 0) res += index.toString()
+            }
+        })
+        return { notes: res, tempo: 120 }
     }
 
     export const MELODY_LENGTH = 4
@@ -258,6 +311,12 @@ namespace microcode {
             }
             return { tempo, notes }
         }
+        toString(melody: Melody): string {
+            return melodyToNotes(melody)
+        }
+        fromTokens(tokens: string[]): Melody {
+            return notesToMelody(tokens)
+        }
     }
 
     export class MelodyEditor extends ModifierEditor {
@@ -285,16 +344,6 @@ namespace microcode {
             return new MelodyEditor(
                 field ? field : this.fieldEditor.clone(this.field)
             )
-        }
-        // music.play(music.stringPlayable("C - E - G F E D ", 120), music.PlaybackMode.UntilDone)
-        getNoteSequence() {
-            const notes = this.field.notes.split("")
-            let result = ""
-            for (const n of notes) {
-                if (n == ".") result += "- "
-                else result += noteNames[parseInt(n)] + " "
-            }
-            return result
         }
     }
 

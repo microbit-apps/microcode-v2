@@ -8,6 +8,7 @@ import {
 import fetch from "node-fetch"
 import { execSync } from "child_process"
 import process from "process"
+import { fail } from "assert"
 
 const tooltips = JSON.parse(
     readFileSync("./locales/tooltips.json", { encoding: "utf-8" })
@@ -76,21 +77,36 @@ for (const lang of languages.filter(l => l !== "pxt")) {
         { encoding: "utf-8" }
     )
 
-    // for (const fn of ["dialogs", "legal"]) {
-    //     const dialogs = await (
-    //         await fetch(
-    //             `${cdn}content/${lang}/microcode/${fn}.html?timestamp=${timestamp}`
-    //         )
-    //     ).text()
-    //     writeFileSync(`./_includes/${fn}-${lang}.html`, dialogs, {
-    //         encoding: "utf-8",
-    //     })
-    // }
-
     // merge translations
     Object.keys(tooltips)
         .filter(k => !translations[k])
         .forEach(k => (translations[k] = tooltips[k]))
+
+    const entries = {}
+
+    const tooltip2tid = `
+        export function tooltip2tid(id: string): number {
+           let tid: number = undefined
+           if (!id) return tid
+            ${Object.keys(translations)
+                // don't emit sample names in hardware
+                .filter(k => !/^N/.test(k))
+                // only Tids
+                .filter(k => /T\d+/.test(k))
+                .map(k => {
+                    const tid = parseInt(k.slice(1))
+                    const trans = translations[k]
+                    if (entries[trans]) {
+                        console.log(`ERROR: already have entry for ${trans}`)
+                    } else {
+                        entries[trans] = tid
+                    }
+                    return `        else if (id === "${trans}") tid = ${tid};`
+                })
+                .join("\n")}        
+          return tid
+        }
+    `
 
     const ts = `// auto-generated, run 'node scripts/lochex.mjs' to refresh
 namespace microcode {
@@ -108,7 +124,10 @@ ${Object.keys(translations)
     .join("\n")}        
         return res
     }
+    
+    ${tooltip2tid}
 }`
+
     writeFileSync("./tooltips.ts", ts, { encoding: "utf8" })
 
     // build js
@@ -120,7 +139,7 @@ ${Object.keys(translations)
     )
     // build hex
     console.log(`  build hw`)
-    exec("makecode --hw n3", { shell: true })
+    exec("makecode", { shell: true })
     copyFileSync(
         "./built/n3/binary.hex",
         `./assets/hex/microcode-${lang.toLowerCase()}.hex`
