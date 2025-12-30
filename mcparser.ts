@@ -39,7 +39,7 @@ namespace microcode {
             return res.join("\n")
         }
         const res = prog.pages.map(pageToString)
-        ret.s = res.map((ps, i) => `page_${i + 1}\n${ps}`).join("\n")
+        ret.s = res.map((ps, i) => `P_${i + 1}\n${ps}`).join("\n")
     }
 
     enum Phase {
@@ -133,15 +133,12 @@ namespace microcode {
                 continue
             }
             currTile = undefined
-            if (tok.indexOf("page_") == 0) {
-                control.assert(
-                    tok.length == 6,
-                    `expected page_[1-5], got ${tok}}`
-                )
-                const pageNum = parseInt(tok[5])
+            if (tok.indexOf("P_") == 0) {
+                control.assert(tok.length == 3, `expected P_[1-5], got ${tok}}`)
+                const pageNum = parseInt(tok[2])
                 control.assert(
                     pageNum == nextPageNum,
-                    `expected page_${nextPageNum}, got page_${pageNum}`
+                    `expected P_${nextPageNum}, got P_${pageNum}`
                 )
                 if (currPage) {
                     if (currRule) currPage.rules.push(currRule)

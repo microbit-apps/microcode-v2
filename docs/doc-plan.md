@@ -27,15 +27,15 @@ Note that non-terminals correspond to the tooltips used in MicroCode's
 visual editor (where the underscores are replaced by spaces), which
 accounts for their long form.
 
-A program (PROG) consists of 5 pages, numbered 1-5, each with a (possibly
+A program (PROG) consists of 5 pages, numbered P_1 to P_5, each with a (possibly
 empty) sequence of rules RULE:
 
-    PROG := page_1 RULE\* page_2 RULE\* page_3 RULE\* page_4 RULE\* page_5 RULE\*
+    PROG := P_1 RULE\* P_2 RULE\* P_3 RULE\* P_4 RULE\* P_5 RULE\*
 
 So, the following program is the empty program
 
 ```
-page_1 page_2 page_3 page_4 page_5
+P_1 P_2 P_3 P_4 P_5
 ```
 
 Each rule has an optional section WHEN and an optional section DO.
