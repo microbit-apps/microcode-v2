@@ -313,8 +313,10 @@ namespace microcode {
                     }
                     case Tid.TID_ACTUATOR_MUSIC: {
                         // TODO: get the whole sequence and do as one shot, to avoid burps
-                        const mod = this.rule.modifiers[this.modifierIndex]
-                        param = (mod as MelodyEditor).getNoteSequence()
+                        const mod = this.rule.modifiers[
+                            this.modifierIndex
+                        ] as MelodyEditor
+                        param = melodyToNotes(mod.field)
                         break
                     }
                     case Tid.TID_ACTUATOR_SPEAKER: {

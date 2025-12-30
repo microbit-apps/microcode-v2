@@ -40,7 +40,6 @@ namespace microcode {
                         x: buttonStart + 40,
                         y: 30,
                         onClick: () => {
-                            // this.app.popScene()
                             this.app.pushScene(new SamplesGallery(this.app))
                         },
                     }),

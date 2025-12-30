@@ -27,15 +27,15 @@ Note that non-terminals correspond to the tooltips used in MicroCode's
 visual editor (where the underscores are replaced by spaces), which
 accounts for their long form.
 
-A program (PROG) consists of 5 pages, numbered 1-5, each with a (possibly
+A program (PROG) consists of 5 pages, numbered P_1 to P_5, each with a (possibly
 empty) sequence of rules RULE:
 
-    PROG := page_1 RULE\* page_2 RULE\* page_3 RULE\* page_4 RULE\* page_5 RULE\*
+    PROG := P_1 RULE\* P_2 RULE\* P_3 RULE\* P_4 RULE\* P_5 RULE\*
 
 So, the following program is the empty program
 
 ```
-page_1 page_2 page_3 page_4 page_5
+P_1 P_2 P_3 P_4 P_5
 ```
 
 Each rule has an optional section WHEN and an optional section DO.
@@ -46,7 +46,7 @@ The WHEN section specifies a signal of interest and, optionally, a filter on tha
 The DO section specifies an action and, optionally, parameters to that action.
 
     WHEN :=
-    | page_start [TS]           // fires (once) when control transitions to this page, with optional delay
+    | start_page [TS]           // fires (once) when control transitions to this page, with optional delay
     | timer [TS]                // set a timer to fire after a delay, execute repeatedly
     | press [PK]                // fire on press of specified button PK
     | release [PK]              // fire on release of specified button PK
@@ -146,9 +146,9 @@ The absence of an optional element/value results in the use of a default element
 
 -   A rule with an empty do section never executes (no matching performed
     on it).
--   A rule with an empty when section defaults to page_start signal with no delay.
+-   A rule with an empty when section defaults to start_page signal with no delay.
 -   Signal defaults are as follows
-    -   page_start defaults to no delay
+    -   start_page defaults to no delay
     -   timer defaults to 1 second delay
     -   press defaults to wildcard (any element in PK)
     -   release defaults to wildcard (any element in PK)
