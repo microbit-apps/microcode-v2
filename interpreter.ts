@@ -105,8 +105,10 @@ namespace microcode {
             this.actionRunning = false
             // give the background fiber chance to finish unless it is waiting
             while (!this.waitingOnTimer() && this.backgroundActive) {
+                console.log(`killing rule ${this.index} ${this.wakeTime}...`)
                 basic.pause(0)
             }
+            console.log(`DONE rule ${this.index}`)
             this.reset()
         }
 
@@ -175,7 +177,13 @@ namespace microcode {
                 this.backgroundActive = true
                 while (this.ok()) {
                     if (this.wakeTime > 0) {
+                        console.log(
+                            `rule ${this.index} sleeping for ${this.wakeTime}ms`
+                        )
                         basic.pause(this.wakeTime)
+                        console.log(
+                            `rule ${this.index} woke up after ${this.wakeTime}ms`
+                        )
                         this.wakeTime = 0
                         if (this.ok()) {
                             this.interp.addEvent({
