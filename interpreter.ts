@@ -93,6 +93,10 @@ namespace microcode {
             this.loopIndex = 0
         }
 
+        private waitingOnTimer() {
+            return this.wakeTime > 0
+        }
+
         kill() {
             const resource = this.getOutputResource()
             if (resource == OutputResource.LEDScreen) {
@@ -173,13 +177,15 @@ namespace microcode {
                     if (this.wakeTime > 0) {
                         basic.pause(this.wakeTime)
                         this.wakeTime = 0
-                        this.interp.addEvent({
-                            kind: MicroCodeEventKind.TimerFire,
-                            ruleIndex: this.index,
-                        } as TimerEvent)
-                        this.timerGoAhead = false
-                        while (this.ok() && !this.timerGoAhead) {
-                            basic.pause(1)
+                        if (this.ok()) {
+                            this.interp.addEvent({
+                                kind: MicroCodeEventKind.TimerFire,
+                                ruleIndex: this.index,
+                            } as TimerEvent)
+                            this.timerGoAhead = false
+                            while (this.ok() && !this.timerGoAhead) {
+                                basic.pause(1)
+                            }
                         }
                     }
 
@@ -331,10 +337,6 @@ namespace microcode {
             this.interp.runAction(this.index, actuator, param)
             if (this.getActionKind() === ActionKind.Instant)
                 this.interp.processNewState()
-        }
-
-        private waitingOnTimer() {
-            return this.wakeTime > 0
         }
 
         private getWakeTime() {
