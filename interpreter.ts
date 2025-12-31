@@ -94,10 +94,6 @@ namespace microcode {
             this.loopIndex = 0
         }
 
-        private waitingOnTimer() {
-            return this.wakeTime > 0
-        }
-
         kill() {
             const resource = this.getOutputResource()
             if (resource == OutputResource.LEDScreen) {
@@ -105,12 +101,10 @@ namespace microcode {
             } else if (resource == OutputResource.Speaker) music.stopAllSounds()
             this.actionRunning = false
             // give the background fiber chance to finish unless it is waiting
-            // while (!this.waitingOnTimer() && this.backgroundActive) {
+            // while (this.wakeTime == 0 && this.backgroundActive) {
             //     console.log(`killing rule ${this.index} ${this.wakeTime}...`)
             //     basic.pause(0)
             // }
-            console.log(`DONE rule ${this.index}`)
-            this.reset()
         }
 
         public matchWhen(tid: number, filter: number = undefined): boolean {
@@ -172,7 +166,7 @@ namespace microcode {
             // make sure we have something to do
             if (this.rule.actuators.length == 0) return
             // prevent re-entrancy
-            if (this.actionRunning) return
+            if (this.ok()) return
             this.actionRunning = true
             control.runInBackground(() => {
                 this.backgroundActive = true
@@ -226,14 +220,13 @@ namespace microcode {
         }
 
         private checkForLoopFinish() {
-            if (!this.actionRunning) return
             control.waitMicros(ANTI_FREEZE_DELAY * 1000)
             const actionKind = this.getActionKind()
             if (
                 actionKind === ActionKind.Instant ||
                 getTid(this.rule.actuators[0]) == Tid.TID_ACTUATOR_SHOW_NUMBER
             ) {
-                this.reset()
+                this.actionRunning = false
                 return
             }
             if (!this.atLoop()) this.modifierIndex++
@@ -251,7 +244,7 @@ namespace microcode {
                         ) as number
                         this.loopIndex++
                         if (this.loopIndex >= loopBound) {
-                            this.reset()
+                            this.actionRunning = false
                         } else {
                             this.modifierIndex = 0
                         }
@@ -260,7 +253,7 @@ namespace microcode {
                     // we move to the next tile in sequence
                 }
             } else {
-                this.reset()
+                this.actionRunning = false
             }
         }
 
