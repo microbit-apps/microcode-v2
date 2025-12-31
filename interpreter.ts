@@ -100,10 +100,9 @@ namespace microcode {
             } else if (resource == OutputResource.Speaker) music.stopAllSounds()
             this.actionRunning = false
             // give the background fiber chance to finish unless it is waiting
-            while (!this.waitingOnTimer() && this.backgroundActive) {
+            while (this.wakeTime == 0 && this.backgroundActive) {
                 basic.pause(0)
             }
-            this.reset()
         }
 
         public matchWhen(tid: number, filter: number = undefined): boolean {
@@ -173,13 +172,15 @@ namespace microcode {
                     if (this.wakeTime > 0) {
                         basic.pause(this.wakeTime)
                         this.wakeTime = 0
-                        this.interp.addEvent({
-                            kind: MicroCodeEventKind.TimerFire,
-                            ruleIndex: this.index,
-                        } as TimerEvent)
-                        this.timerGoAhead = false
-                        while (this.ok() && !this.timerGoAhead) {
-                            basic.pause(1)
+                        if (this.ok()) {
+                            this.interp.addEvent({
+                                kind: MicroCodeEventKind.TimerFire,
+                                ruleIndex: this.index,
+                            } as TimerEvent)
+                            this.timerGoAhead = false
+                            while (this.ok() && !this.timerGoAhead) {
+                                basic.pause(1)
+                            }
                         }
                     }
 
@@ -211,14 +212,13 @@ namespace microcode {
         }
 
         private checkForLoopFinish() {
-            if (!this.actionRunning) return
             control.waitMicros(ANTI_FREEZE_DELAY * 1000)
             const actionKind = this.getActionKind()
             if (
                 actionKind === ActionKind.Instant ||
                 getTid(this.rule.actuators[0]) == Tid.TID_ACTUATOR_SHOW_NUMBER
             ) {
-                this.reset()
+                this.actionRunning = false
                 return
             }
             if (!this.atLoop()) this.modifierIndex++
@@ -236,7 +236,7 @@ namespace microcode {
                         ) as number
                         this.loopIndex++
                         if (this.loopIndex >= loopBound) {
-                            this.reset()
+                            this.actionRunning = false
                         } else {
                             this.modifierIndex = 0
                         }
@@ -245,7 +245,7 @@ namespace microcode {
                     // we move to the next tile in sequence
                 }
             } else {
-                this.reset()
+                this.actionRunning = false
             }
         }
 
@@ -288,11 +288,12 @@ namespace microcode {
             return undefined
         }
 
-        public runInstant() {
+        public runInstant(): boolean {
             const actuator = this.rule.actuators[0]
             const param = this.getParamInstant()
-            this.interp.runAction(this.index, actuator, param)
+            const ok = this.interp.runAction(this.index, actuator, param)
             this.kill()
+            return ok
         }
 
         private runAction() {
@@ -330,10 +331,6 @@ namespace microcode {
             this.interp.runAction(this.index, actuator, param)
             if (this.getActionKind() === ActionKind.Instant)
                 this.interp.processNewState()
-        }
-
-        private waitingOnTimer() {
-            return this.wakeTime > 0
         }
 
         private getWakeTime() {
@@ -495,12 +492,20 @@ namespace microcode {
         }
 
         private switchPage(page: number) {
+            // need to make sure outstanding events are dropped and no new events
+            this.eventQueue = []
+            this.allowEvents = false
+            // now stop existing rules
             this.stopAllRules()
             // set up new rule closures
             this.currentPage = page
             this.program.pages[this.currentPage].rules.forEach((r, index) => {
                 this.ruleClosures.push(new RuleClosure(index, r, this))
             })
+            // start up timer-based rules (should these be events as well?)
+            this.ruleClosures.forEach(rc => rc.start(true))
+            // restart events
+            this.allowEvents = true
             this.addEvent({
                 kind: MicroCodeEventKind.StartPage,
             } as StartPageEvent)
@@ -509,30 +514,34 @@ namespace microcode {
                 kind: MicroCodeEventKind.StateUpdate,
                 updatedVars: Object.keys(vars2tids),
             } as StateUpdateEvent)
-            // start up timer-based rules
-            this.ruleClosures.forEach(rc => rc.start(true))
         }
 
-        public runAction(ruleIndex: number, action: Tile, param: any) {
+        public runAction(ruleIndex: number, action: Tile, param: any): boolean {
             switch (action) {
-                case Tid.TID_ACTUATOR_SWITCH_PAGE:
+                case Tid.TID_ACTUATOR_SWITCH_PAGE: {
+                    // no switch if no param
                     if (param) {
-                        // no switch if no param
+                        // when switching, drop any outstanding events
+                        this.eventQueue = []
                         this.addEvent({
                             kind: MicroCodeEventKind.SwitchPage,
                             index: param,
                         } as SwitchPageEvent)
+                        return true
                     }
-                    return
+                    return false
+                }
                 case Tid.TID_ACTUATOR_CUP_X_ASSIGN:
                 case Tid.TID_ACTUATOR_CUP_Y_ASSIGN:
-                case Tid.TID_ACTUATOR_CUP_Z_ASSIGN:
+                case Tid.TID_ACTUATOR_CUP_Z_ASSIGN: {
                     const varName = getParam(action)
                     this.updateState(ruleIndex, varName, param)
-                    return
+                    return true
+                }
                 default:
                     this.host.execute(action as ActionTid, param)
             }
+            return true
         }
 
         private updateState(ruleIndex: number, varName: string, v: number) {
@@ -601,8 +610,7 @@ namespace microcode {
                 rc => rc.getOutputResource() == OutputResource.PageCounter
             )
             if (switchPage) {
-                switchPage.runInstant()
-                return // others don't get chance to run
+                if (switchPage.runInstant()) return // others don't get chance to run
             }
 
             const takesTime = live.filter(
@@ -618,10 +626,11 @@ namespace microcode {
             })
         }
 
+        private allowEvents = false
         private eventQueueActive = false
         private eventQueue: MicroCodeEvent[] = []
         public addEvent(event: MicroCodeEvent) {
-            if (!this.running) return
+            if (!this.running || !this.allowEvents) return
             this.eventQueue.push(event)
         }
 
