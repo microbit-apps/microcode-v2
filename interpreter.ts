@@ -164,7 +164,7 @@ namespace microcode {
             // make sure we have something to do
             if (this.rule.actuators.length == 0) return
             // prevent re-entrancy
-            if (this.ok()) return
+            if (this.actionRunning) return
             this.actionRunning = true
             control.runInBackground(() => {
                 this.backgroundActive = true
