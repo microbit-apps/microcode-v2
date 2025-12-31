@@ -87,7 +87,6 @@ namespace microcode {
         }
 
         private reset() {
-            console.log(`resetting rule ${this.index}`)
             this.wakeTime = 0
             this.actionRunning = false
             this.modifierIndex = 0
@@ -101,10 +100,9 @@ namespace microcode {
             } else if (resource == OutputResource.Speaker) music.stopAllSounds()
             this.actionRunning = false
             // give the background fiber chance to finish unless it is waiting
-            // while (this.wakeTime == 0 && this.backgroundActive) {
-            //     console.log(`killing rule ${this.index} ${this.wakeTime}...`)
-            //     basic.pause(0)
-            // }
+            while (this.wakeTime == 0 && this.backgroundActive) {
+                basic.pause(0)
+            }
         }
 
         public matchWhen(tid: number, filter: number = undefined): boolean {
@@ -172,13 +170,7 @@ namespace microcode {
                 this.backgroundActive = true
                 while (this.ok()) {
                     if (this.wakeTime > 0) {
-                        console.log(
-                            `rule ${this.index} sleeping for ${this.wakeTime}ms`
-                        )
                         basic.pause(this.wakeTime)
-                        console.log(
-                            `rule ${this.index} woke up after ${this.wakeTime}ms`
-                        )
                         this.wakeTime = 0
                         if (this.ok()) {
                             this.interp.addEvent({
