@@ -87,6 +87,7 @@ namespace microcode {
         }
 
         private reset() {
+            console.log(`resetting rule ${this.index}`)
             this.wakeTime = 0
             this.actionRunning = false
             this.modifierIndex = 0
@@ -104,10 +105,10 @@ namespace microcode {
             } else if (resource == OutputResource.Speaker) music.stopAllSounds()
             this.actionRunning = false
             // give the background fiber chance to finish unless it is waiting
-            while (!this.waitingOnTimer() && this.backgroundActive) {
-                console.log(`killing rule ${this.index} ${this.wakeTime}...`)
-                basic.pause(0)
-            }
+            // while (!this.waitingOnTimer() && this.backgroundActive) {
+            //     console.log(`killing rule ${this.index} ${this.wakeTime}...`)
+            //     basic.pause(0)
+            // }
             console.log(`DONE rule ${this.index}`)
             this.reset()
         }
