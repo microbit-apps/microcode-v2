@@ -12,19 +12,23 @@ to MicroCode programs,
 ## Syntax
 
 MicroCode has a concrete syntax, as detailed below, for the
-purpose of creating programs without the need for visual
+purpose of creating programs without the need for the
 MicroCode editor.
 
 In the following, a word in ALLCAPS refers to a non-terminal in
 MicroCode's grammar. All other words are terminal symbols, with
-the following exceptions: <float> is a floating point number;
-<pos> is an integer greater than zero; // designates a comment
-(just for use in this markdown - MicroCode does not support comments);
-the symbols \s, \*, (, ), [, ], and | are part of the grammar
-specification. Words are always separated by whitespace.
+the following exceptions:
 
-Note that non-terminals correspond to the tooltips used in MicroCode's
-visual editor (where the underscores are replaced by spaces), which
+-   <float> is a floating point number;
+-   <pos> is an integer greater than zero;
+-   // designates a comment
+    (just for use in this markdown - MicroCode does not support comments);
+-   the symbols \s, \*, (, ), [, ], and | are part of the grammar
+    specification
+
+Words are always separated by whitespace. Note that non-terminals
+correspond to the tooltips used in MicroCode's visual editor
+(where the underscores are replaced by spaces), which
 accounts for their long form.
 
 A program (PROG) consists of 5 pages, numbered P_1 to P_5, each with a (possibly
@@ -42,8 +46,7 @@ Each rule has an optional section WHEN and an optional section DO.
 
     RULE := when [WHEN] do [DO]
 
-The WHEN section specifies a signal of interest and, optionally, a filter on that signal.
-The DO section specifies an action and, optionally, parameters to that action.
+The WHEN section specifies a signal of interest and, optionally, a filter on that signal. The DO section specifies an action and, optionally, parameters to that action.
 
     WHEN :=
     | start_page [TS]           // fires (once) when control transitions to this page, with optional delay
@@ -55,10 +58,10 @@ The DO section specifies an action and, optionally, parameters to that action.
     | temperature [UD | C]      // fire on UD event or comparison C of current temperature (in Celsius)
     | light [UD | C]            // fire on UD event or comparison C of current light level (0-255)
     | magnet [UD | C]           // fire on UD event or comparison C of current magnetic level
-    | radio_receive [C]         // fire when number arrives via radio, subject to optional comparison C
-    | variable_X_set [C]        // fire after variable X has been assigned, subject to optional comparison C
-    | variable_Y_set [C]        // fire after variable Y has been assigned, subject to optional comparison C
-    | variable_Z_set [C]        // fire after variable Z has been assigned, subject to optional comparison C
+    | radio_receive [C]         // fire when number arrives via radio, subject to comparison C
+    | variable_X_set [C]        // fire after variable X has been assigned, subject to comparison C
+    | variable_Y_set [C]        // fire after variable Y has been assigned, subject to comparison C
+    | variable_Z_set [C]        // fire after variable Z has been assigned, subject to comparison C
 
     UD := up | down
     TS := (1/4_second | 1_second | 1_random_second | 5_seconds)\*       // sum the sequence of times
@@ -89,6 +92,8 @@ An expression E is either atomic A, a binary expression, or a randomly chosen va
     | A * E
     | random_number PE
 
+Note that the expression language does not admit parentheses and is right-recursive.
+
 An atomic value A is either a floating point number, one of the three variables,
 or the current value of one of the four sensors, or the last value received over radio:
 
@@ -98,20 +103,20 @@ or the current value of one of the four sensors, or the last value received over
     | light_value | sound_value | temp_value | magnet_value
     | radio_value
 
-A positive (integer) expression PE is
+A positive (integer) expression PE is:
 
     PE :=
     | <pos>
     | <pos> + PE
     | <pos> * PE
 
-A DO action
+A DO action takes on of the following forms:
 
     DO :=
     | show_number [V]
     | show_image (IMAGE)\* [repeat [PE]]
     | play_sound (SND)\*   [repeat [PE]]
-    | music (NOTES)* [repeat [PE]]
+    | music (NOTES)\* [repeat [PE]]
     | radio_send [V]
     | radio_set_group [PE]
     | set_variable_X [V]
@@ -120,9 +125,9 @@ A DO action
     | switch_page [PAGE]
 
     PAGE := | page_1 | page_2 | page_3 | page_4 | page_5
-    SND :=  | giggle | happy | hello | mysterious | sad | slide | soaring
+    SND :=  | giggle | happy | hello | mysterious | sad | slide | soaring | spring | twinkle | yawn
 
-An led image occurs inside backquotes ` and consists of 25 characters, either . or 1, separated by
+An LED image occurs inside backquotes ` and consists of 25 characters, either . or 1, separated by
 whitespace:
 
     IMAGE := image ` (.\s+ | 1\s+)25 `
@@ -138,11 +143,12 @@ Before execution starts, all variables (X, Y, and Z) are initialized to 0
 and the current value of all micro:bit/jacdac sensors is cached.
 The initial value of radio_value is undefined.
 The radio group is initialized to 1.
-Execution begins by transitioning to page 1.
+Execution begins by transitioning (switching) to page 1.
 
 ### Defaults
 
-The absence of an optional element/value results in the use of a default element/value, as follows:
+The absence of an optional element/value in the when or do section of a rule
+results in the use of a default element/value, as follows:
 
 -   A rule with an empty do section never executes (no matching performed
     on it).
@@ -183,7 +189,7 @@ used for timers, as detailed later.
 
 ### Resources and conflicts
 
-Actions have effects through writing to resources, which are as follows:
+Actions have effects by writing to (updating) a resource, which are as follows:
 
 -   screen
 -   speaker
