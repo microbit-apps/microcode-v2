@@ -35,11 +35,16 @@ namespace microcode {
             )
         }
         const pageToString = (page: PageDefn) => {
-            const res = page.rules.map(ruleToString)
+            const res = page.rules.map(ruleToString).filter(r => r != "")
             return res.join("\n")
         }
         const res = prog.pages.map(pageToString)
-        ret.s = res.map((ps, i) => `P_${i + 1}\n${ps}`).join("\n")
+        ret.s = res
+            .map((ps, i) =>
+                ps == "" && i > 0 ? "" : i == 0 ? ps : `page_${i + 1}:\n${ps}`
+            )
+            .filter(s => s != "")
+            .join("\n")
     }
 
     enum Phase {
@@ -105,8 +110,9 @@ namespace microcode {
         const prog = new ProgramDefn()
         prog.pages = []
 
-        let nextPageNum = 1
+        let pageMap: { [key: number]: PageDefn } = {}
         let currPage: PageDefn = undefined
+        let currPageNum: number = undefined
         let currRule: RuleDefn = undefined
         let currTile: Tile = undefined
         let tok: string = undefined
@@ -133,22 +139,36 @@ namespace microcode {
                 continue
             }
             currTile = undefined
-            if (tok.indexOf("P_") == 0) {
-                control.assert(tok.length == 3, `expected P_[1-5], got ${tok}}`)
-                const pageNum = parseInt(tok[2])
+            if (
+                tok.indexOf("page_") == 0 &&
+                tok.indexOf(":") == tok.length - 1
+            ) {
                 control.assert(
-                    pageNum == nextPageNum,
-                    `expected P_${nextPageNum}, got P_${pageNum}`
+                    tok.length == 7,
+                    `expected page_[1-5]:, got ${tok}}`
                 )
-                if (currPage) {
+                const pageNum = parseInt(tok[5])
+                control.assert(
+                    pageNum >= 1 && pageNum <= 5,
+                    `page number must be between 1 and 5, got ${pageNum}`
+                )
+                if (currPage && currPageNum !== undefined) {
                     if (currRule) currPage.rules.push(currRule)
-                    prog.pages.push(currPage)
+                    pageMap[currPageNum] = currPage
                     currRule = undefined
                 }
+                assert(
+                    pageMap[pageNum] == undefined,
+                    `page ${pageNum} redefined`
+                )
                 currPage = new PageDefn()
-                nextPageNum++
+                currPageNum = pageNum
             } else if (tok == "when") {
-                control.assert(currPage != undefined, `No page defined`)
+                if (currPage == undefined) {
+                    currPage = new PageDefn()
+                    currPageNum = 1
+                    pageMap[currPageNum] = currPage
+                }
                 if (currRule) currPage.rules.push(currRule)
                 currRule = new RuleDefn()
                 phase = Phase.Sensor
@@ -163,7 +183,18 @@ namespace microcode {
             }
         }
         if (currRule) currPage.rules.push(currRule)
-        prog.pages.push(currPage)
+        if (currPageNum !== undefined) {
+            pageMap[currPageNum] = currPage
+        }
+
+        // Build pages array from 1 to 5, including only pages that were defined
+        for (let i = 1; i <= 5; i++) {
+            if (pageMap[i]) {
+                prog.pages.push(pageMap[i])
+            } else {
+                prog.pages.push(new PageDefn())
+            }
+        }
         ret.p = prog
     }
 

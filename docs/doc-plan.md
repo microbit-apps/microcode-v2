@@ -31,16 +31,18 @@ correspond to the tooltips used in MicroCode's visual editor
 (where the underscores are replaced by spaces), which
 accounts for their long form.
 
-A program (PROG) consists of 5 pages, numbered P_1 to P_5, each with a (possibly
-empty) sequence of rules RULE:
-
-    PROG := P_1 RULE\* P_2 RULE\* P_3 RULE\* P_4 RULE\* P_5 RULE\*
-
-So, the following program is the empty program
+A program consists of (at most) 5 pages, identified
+by `page_i:`, where 1 <= i <= 5.
+Each page identifier is followed by a (possibly empty)
+sequence of rules RULE:
 
 ```
-P_1 P_2 P_3 P_4 P_5
+page_i: RULE*
 ```
+
+Rules that are presented without a preceding page identifier
+are added to page 1. Pages need not be presented in order.
+Each page identifier can appear at most once.
 
 Each rule has an optional section WHEN and an optional section DO.
 
@@ -200,13 +202,13 @@ Actions have effects by writing to (updating) a resource, which are as follows:
 -   variable Z
 -   current page
 
-If two rules have actions that target the same resource, they are said
+If two rules have actions that update the same resource, they are said
 to be in _conflict_ if it is possible for them to execute at the same time.
 
 ### Rule matching
 
 Upon reception of a signal, it is first necessary to find the
-rules that are enabled for execution by the signal. The first
+rules that are _enabled_ for execution by the signal. The first
 step is to find the rules that mention the named signal. Then
 the optional conditions associated with those rules are evaluated
 in the current state (of variable and sensor values) to prune this
@@ -218,7 +220,8 @@ execution of any currently active rules that conflict with
 a rule in E.
 
 The set E is then partition into three sets, I, S, and T, corresponding
-to rules whose actions execute instantly, those that switch page, and those that take time. Instant actions are
+to rules whose actions execute instantly, those that switch page,
+and those that take time. Instant actions are
 
 -   assignments to variables
 -   radio send
@@ -237,3 +240,40 @@ T are started.
 ### Switching pages
 
 ### Timers
+
+## Example
+
+Here is the MicroCode program corresponding to
+the [emotion badge](https://microbit.org/projects/make-it-code-it/emotion-badge/)
+project:
+
+```
+when press button_A do show_image
+image `
+. . . . .
+. 1 . 1 1.
+. . . . .
+1 . . . 1
+. 1 1 1 .
+`
+
+when press button_B do show_image
+image `
+. . . . .
+. 1 . 1 .
+. . . . .
+. 1 1 1 .
+1 . . . 1
+`
+```
+
+The MakeCode program is
+
+```
+input.onButtonPressed(Button.A, function () {
+    basic.showIcon(IconNames.Happy)
+})
+input.onButtonPressed(Button.B, function () {
+    basic.showIcon(IconNames.Sad)
+})
+```

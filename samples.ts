@@ -285,24 +285,14 @@ namespace microcode {
             {
                 label: "new program",
                 ariaId: "N1",
-                src: `P_1
-
-P_2
-
-P_3
-
-P_4
-
-P_5
-`,
+                src: ``,
                 icon: "new_program",
             },
 
             {
                 label: "smiley buttons",
                 ariaId: "N3",
-                src: `P_1
-when press button_A do show_image image \`
+                src: `when press button_A do show_image image \`
 1 1 . 1 1
 1 1 . 1 1
 . . . . .
@@ -337,14 +327,6 @@ when press button_B do show_image image \`
 
 
 when press button_B do play_sound sad
-
-P_2
-
-P_3
-
-P_4
-
-P_5
 `,
                 icon: "smiley_buttons",
             },
@@ -352,8 +334,7 @@ P_5
             {
                 label: "first program",
                 ariaId: undefined,
-                src: `P_1
-when press button_A do show_image image \`
+                src: `when press button_A do show_image image \`
 . . . . .
 . 1 . 1 .
 . . . . .
@@ -363,14 +344,6 @@ when press button_A do show_image image \`
 
 
 when press button_A do play_sound giggle
-
-P_2
-
-P_3
-
-P_4
-
-P_5
 `,
                 icon: undefined,
             },
@@ -378,8 +351,7 @@ P_5
             {
                 label: "flashing heart",
                 ariaId: "N2",
-                src: `P_1
-when timer  do show_image image \`
+                src: `when timer  do show_image image \`
 . 1 . 1 .
 1 . 1 . 1
 1 . . . 1
@@ -396,14 +368,6 @@ when timer  do show_image image \`
 
 
 when timer  do play_sound giggle
-
-P_2
-
-P_3
-
-P_4
-
-P_5
 `,
                 icon: "flashing_heart",
             },
@@ -411,20 +375,11 @@ P_5
             {
                 label: "counter",
                 ariaId: "N14",
-                src: `P_1
-when press button_A do set_variable_X variable_X add 1
+                src: `when press button_A do set_variable_X variable_X add 1
 
 when variable_X_set  do show_number variable_X
 
 when variable_X_set  do play_sound hello
-
-P_2
-
-P_3
-
-P_4
-
-P_5
 `,
                 icon: undefined,
             },
@@ -432,8 +387,7 @@ P_5
             {
                 label: "times table",
                 ariaId: undefined,
-                src: `P_1
-when move shake do set_variable_Y random_number 4 add 5
+                src: `when move shake do set_variable_Y random_number 4 add 5
 
 when variable_Y_set  do set_variable_X variable_Y
 
@@ -442,14 +396,6 @@ when press button_A do set_variable_X variable_X add variable_Y
 when variable_X_set  do show_number variable_X
 
 when variable_X_set  do play_sound hello
-
-P_2
-
-P_3
-
-P_4
-
-P_5
 `,
                 icon: undefined,
             },
@@ -457,8 +403,7 @@ P_5
             {
                 label: "double counter",
                 ariaId: undefined,
-                src: `P_1
-when start_page  do play_sound happy
+                src: `when start_page  do play_sound happy
 
 when start_page  do show_number variable_X
 
@@ -468,7 +413,7 @@ when variable_X_set  do show_number variable_X
 
 when press button_B do switch_page page_2
 
-P_2
+page_2:
 when start_page  do play_sound hello
 
 when start_page  do show_number variable_Y
@@ -478,12 +423,6 @@ when press button_B do set_variable_Y variable_Y add 1
 when variable_Y_set  do show_number variable_Y
 
 when press button_A do switch_page page_1
-
-P_3
-
-P_4
-
-P_5
 `,
                 icon: undefined,
             },
@@ -491,8 +430,7 @@ P_5
             {
                 label: "pet hamster",
                 ariaId: "N4",
-                src: `P_1
-when start_page  do show_image image \`
+                src: `when start_page  do show_image image \`
 . . . . .
 1 1 . 1 1
 . . . . .
@@ -536,14 +474,6 @@ when move shake do show_image image \`
  repeat 3
 
 when move shake do play_sound sad
-
-P_2
-
-P_3
-
-P_4
-
-P_5
 `,
                 icon: "pet_hamster",
             },
@@ -551,8 +481,7 @@ P_5
             {
                 label: "head or tail",
                 ariaId: "N9",
-                src: `P_1
-when move  do set_variable_X random_number 2
+                src: `when move  do set_variable_X random_number 2
 
 when move  do music melody \`C E G E \`
  melody \`C - - - \`
@@ -575,14 +504,6 @@ when variable_X_set equals 2 do show_image image \`
 1 1 1 1 1
 \`
 
-
-P_2
-
-P_3
-
-P_4
-
-P_5
 `,
                 icon: "heads_tails",
             },
@@ -590,8 +511,7 @@ P_5
             {
                 label: "rock, paper, scissors",
                 ariaId: "N8",
-                src: `P_1
-when move shake do set_variable_X random_number 3
+                src: `when move shake do set_variable_X random_number 3
 
 when move shake do play_sound slide
 
@@ -642,14 +562,6 @@ when variable_X_set equals 3 do show_image image \`
 1 1 . . 1
 \`
 
-
-P_2
-
-P_3
-
-P_4
-
-P_5
 `,
                 icon: "rock_paper_scissors",
             },
@@ -657,8 +569,7 @@ P_5
             {
                 label: "hot potato",
                 ariaId: "N7",
-                src: `P_1
-when timer 5_seconds 1_random_second 1_random_second do switch_page page_2
+                src: `when timer 5_seconds 1_random_second 1_random_second do switch_page page_2
 
 when timer  do show_image image \`
 . . . . .
@@ -676,7 +587,7 @@ when timer  do show_image image \`
 \`
 
 
-P_2
+page_2:
 when start_page  do show_image image \`
 1 1 1 1 1
 1 . 1 . 1
@@ -687,12 +598,6 @@ when start_page  do show_image image \`
 
 
 when start_page  do play_sound sad
-
-P_3
-
-P_4
-
-P_5
 `,
                 icon: "hot_potato",
             },
@@ -700,8 +605,7 @@ P_5
             {
                 label: "clap lights",
                 ariaId: "N10",
-                src: `P_1
-when start_page  do show_image image \`
+                src: `when start_page  do show_image image \`
 1 1 1 1 1
 1 1 1 1 1
 1 1 1 1 1
@@ -714,7 +618,7 @@ when start_page  do play_sound hello
 
 when sound loud do switch_page page_2
 
-P_2
+page_2:
 when start_page  do show_image image \`
 . . . . .
 . . . . .
@@ -727,12 +631,6 @@ when start_page  do show_image image \`
 when start_page  do play_sound yawn
 
 when sound loud do switch_page page_1
-
-P_3
-
-P_4
-
-P_5
 `,
                 icon: "clap_lights",
             },
@@ -740,8 +638,7 @@ P_5
             {
                 label: "24 7 clap",
                 ariaId: "N13",
-                src: `P_1
-when start_page  do play_sound hello
+                src: `when start_page  do play_sound hello
 
 when start_page  do set_variable_X 1
 
@@ -767,14 +664,14 @@ when timer 5_seconds 1_second 1_second do switch_page page_2
 
 when variable_X_set 5 add 5 add 5 add 5 add 5 do switch_page page_3
 
-P_2
+page_2:
 when start_page  do play_sound giggle
 
 when start_page  do show_number variable_X
 
 when timer 5_seconds 5_seconds do switch_page page_1
 
-P_3
+page_3:
 when start_page  do play_sound sad
 
 when start_page  do show_image image \`
@@ -794,10 +691,6 @@ when start_page  do show_image image \`
  repeat
 
 when timer 5_seconds 5_seconds do switch_page page_1
-
-P_4
-
-P_5
 `,
                 icon: undefined,
             },
@@ -805,8 +698,7 @@ P_5
             {
                 label: "reaction time",
                 ariaId: "N6",
-                src: `P_1
-when start_page  do show_image image \`
+                src: `when start_page  do show_image image \`
 . . . . .
 . . . . .
 . 1 . . .
@@ -835,7 +727,7 @@ when press button_A do switch_page page_4
 
 when press button_B do switch_page page_3
 
-P_2
+page_2:
 when start_page  do show_image image \`
 1 1 1 1 1
 1 1 1 1 1
@@ -851,7 +743,7 @@ when press button_A do switch_page page_3
 
 when press button_B do switch_page page_4
 
-P_3
+page_3:
 when start_page  do show_image image \`
 . . 1 . .
 . 1 . . .
@@ -870,7 +762,7 @@ when start_page  do show_image image \`
 
 when timer 5_seconds do switch_page page_1
 
-P_4
+page_4:
 when start_page  do show_image image \`
 . . 1 . .
 . . . 1 .
@@ -888,8 +780,6 @@ when start_page  do show_image image \`
  repeat
 
 when timer 5_seconds do switch_page page_1
-
-P_5
 `,
                 icon: "reaction_time",
             },
@@ -897,8 +787,7 @@ P_5
             {
                 label: "chuck a duck",
                 ariaId: "N5",
-                src: `P_1
-when move shake do show_image image \`
+                src: `when move shake do show_image image \`
 . . . . .
 . . . . .
 . . 1 . .
@@ -919,14 +808,6 @@ when radio_receive equals 1 do show_image image \`
 
 
 when radio_receive equals 1 do play_sound hello
-
-P_2
-
-P_3
-
-P_4
-
-P_5
 `,
                 icon: "teleport_duck",
             },
@@ -934,8 +815,7 @@ P_5
             {
                 label: "zombie detector",
                 ariaId: undefined,
-                src: `P_1
-when timer  do show_image image \`
+                src: `when timer  do show_image image \`
 . . . . .
 . . . . .
 . . 1 . .
@@ -969,7 +849,7 @@ when radio_receive equals 1 do switch_page page_2
 
 when press logo do switch_page page_3
 
-P_2
+page_2:
 when timer  do show_image image \`
 . . 1 . .
 . . 1 . .
@@ -990,7 +870,7 @@ when timer 1_second do play_sound mysterious
 
 when timer 5_seconds do switch_page page_1
 
-P_3
+page_3:
 when timer  do show_image image \`
 1 1 1 1 1
 1 . 1 . 1
@@ -1008,10 +888,6 @@ when timer  do show_image image \`
 
 
 when timer  do radio_send 1
-
-P_4
-
-P_5
 `,
                 icon: undefined,
             },
@@ -1019,8 +895,7 @@ P_5
             {
                 label: "firefly",
                 ariaId: "N11",
-                src: `P_1
-when start_page  do show_image image \`
+                src: `when start_page  do show_image image \`
 . . . . .
 . . . . .
 . . 1 . .
@@ -1037,7 +912,7 @@ when variable_X_set 3 add 5 do switch_page page_2
 
 when timer 1_second 1_second 1_second do switch_page page_2
 
-P_2
+page_2:
 when start_page  do radio_send 
 
 when start_page  do set_variable_X 1
@@ -1054,12 +929,6 @@ when start_page  do show_image image \`
 when start_page  do play_sound hello
 
 when timer 1/4_second do switch_page page_1
-
-P_3
-
-P_4
-
-P_5
 `,
                 icon: "firefly",
             },
@@ -1067,8 +936,7 @@ P_5
             {
                 label: "railroad crossing",
                 ariaId: "N12",
-                src: `P_1
-when start_page  do servo_power on
+                src: `when start_page  do servo_power on
 
 when press button_A do servo_set_angle 1
 
@@ -1079,14 +947,6 @@ when press button_B do servo_set_angle 5
 when press button_B do LED blue black repeat
 
 when press logo do LED rainbow repeat
-
-P_2
-
-P_3
-
-P_4
-
-P_5
 `,
                 icon: "railroad_crossing",
             },
@@ -1094,8 +954,7 @@ P_5
             {
                 label: "moves",
                 ariaId: undefined,
-                src: `P_1
-when move tilt_down do show_image image \`
+                src: `when move tilt_down do show_image image \`
 1 1 1 . .
 1 . . 1 .
 1 . . 1 .
@@ -1139,14 +998,6 @@ when move shake do show_image image \`
 1 1 1 1 .
 \`
 
-
-P_2
-
-P_3
-
-P_4
-
-P_5
 `,
                 icon: undefined,
             },
@@ -1154,8 +1005,7 @@ P_5
             {
                 label: "coins",
                 ariaId: undefined,
-                src: `P_1
-when press button_A do set_variable_X 1
+                src: `when press button_A do set_variable_X 1
 
 when press button_B do set_variable_X variable_X add 1
 
@@ -1185,14 +1035,6 @@ when variable_X_set equals 5 do show_image image \`
 1 . 1 1 1
 \`
 
-
-P_2
-
-P_3
-
-P_4
-
-P_5
 `,
                 icon: undefined,
             },
@@ -1200,21 +1042,14 @@ P_5
             {
                 label: "inchworm",
                 ariaId: undefined,
-                src: `P_1
-when start_page  do servo_set_angle 1
+                src: `when start_page  do servo_set_angle 1
 
 when timer 1/4_second 1/4_second do switch_page page_2
 
-P_2
+page_2:
 when start_page  do servo_set_angle 5
 
 when timer 1/4_second 1/4_second do switch_page page_1
-
-P_3
-
-P_4
-
-P_5
 `,
                 icon: undefined,
             },
@@ -1222,8 +1057,7 @@ P_5
             {
                 label: "head guess",
                 ariaId: undefined,
-                src: `P_1
-when start_page  do play_sound hello
+                src: `when start_page  do play_sound hello
 
 when start_page  do set_variable_X random_number 3
 
@@ -1292,18 +1126,12 @@ when variable_X_set equals 3 do show_image image \`
 \`
  repeat
 
-P_2
+page_2:
 when start_page  do show_number variable_Y
 
 when start_page  do play_sound giggle
 
 when timer 5_seconds 5_seconds do switch_page page_1
-
-P_3
-
-P_4
-
-P_5
 `,
                 icon: undefined,
             },
@@ -1311,8 +1139,7 @@ P_5
             {
                 label: "battery charger prank",
                 ariaId: undefined,
-                src: `P_1
-when start_page  do show_image image \`
+                src: `when start_page  do show_image image \`
 . 1 1 1 .
 . 1 . 1 .
 . 1 . 1 .
@@ -1330,7 +1157,7 @@ when start_page  do show_image image \`
 
 when move shake do switch_page page_2
 
-P_2
+page_2:
 when start_page  do show_image image \`
 . 1 1 1 .
 . 1 . 1 .
@@ -1362,12 +1189,6 @@ when start_page  do show_image image \`
  repeat
 
 when timer 5_seconds do switch_page page_1
-
-P_3
-
-P_4
-
-P_5
 `,
                 icon: undefined,
             },
@@ -1375,8 +1196,7 @@ P_5
             {
                 label: "green light red light",
                 ariaId: undefined,
-                src: `P_1
-when press logo do switch_page page_2
+                src: `when press logo do switch_page page_2
 
 when radio_receive equals 2 do switch_page page_3
 
@@ -1405,7 +1225,7 @@ when start_page  do show_image image \`
 
 when start_page  do play_sound hello
 
-P_2
+page_2:
 when start_page  do set_variable_X 1
 
 when timer  do radio_send variable_X
@@ -1446,7 +1266,7 @@ when variable_X_set equals 2 do show_image image \`
 \`
 
 
-P_3
+page_3:
 when move shake do play_sound sad
 
 when move shake do show_image image \`
@@ -1466,10 +1286,6 @@ when move shake do show_image image \`
  repeat
 
 when radio_receive equals 1 do switch_page page_1
-
-P_4
-
-P_5
 `,
                 icon: undefined,
             },
@@ -1477,8 +1293,7 @@ P_5
             {
                 label: "crooked head or tail",
                 ariaId: undefined,
-                src: `P_1
-when move  do set_variable_X random_number 3
+                src: `when move  do set_variable_X random_number 3
 
 when move  do play_sound slide
 
@@ -1508,14 +1323,6 @@ when variable_X_set equals 3 do show_image image \`
 1 1 1 1 1
 \`
 
-
-P_2
-
-P_3
-
-P_4
-
-P_5
 `,
                 icon: undefined,
             },
@@ -1523,20 +1330,11 @@ P_5
             {
                 label: "step counter",
                 ariaId: undefined,
-                src: `P_1
-when move shake do set_variable_X variable_X add 1
+                src: `when move shake do set_variable_X variable_X add 1
 
 when variable_X_set  do show_number variable_X
 
 when variable_X_set  do play_sound hello
-
-P_2
-
-P_3
-
-P_4
-
-P_5
 `,
                 icon: undefined,
             },
@@ -1544,18 +1342,9 @@ P_5
             {
                 label: "clap counter",
                 ariaId: undefined,
-                src: `P_1
-when sound loud do set_variable_X variable_X add 1
+                src: `when sound loud do set_variable_X variable_X add 1
 
 when variable_X_set  do show_number variable_X
-
-P_2
-
-P_3
-
-P_4
-
-P_5
 `,
                 icon: undefined,
             },
@@ -1563,8 +1352,7 @@ P_5
             {
                 label: "random counter",
                 ariaId: undefined,
-                src: `P_1
-when press button_A do set_variable_X 1 add random_number 5
+                src: `when press button_A do set_variable_X 1 add random_number 5
 
 when press button_A do set_variable_Y 
 
@@ -1580,14 +1368,6 @@ when variable_Y_set equals variable_X do show_image image \`
 . 1 1 1 .
 \`
 
-
-P_2
-
-P_3
-
-P_4
-
-P_5
 `,
                 icon: undefined,
             },
@@ -1595,8 +1375,7 @@ P_5
             {
                 label: "slider levels",
                 ariaId: undefined,
-                src: `P_1
-when slider equals 1 do show_number 1
+                src: `when slider equals 1 do show_number 1
 
 when slider equals 2 do show_number 2
 
@@ -1605,14 +1384,6 @@ when slider equals 3 do show_number 3
 when slider equals 4 do show_number 4
 
 when slider equals 5 do show_number 5
-
-P_2
-
-P_3
-
-P_4
-
-P_5
 `,
                 icon: undefined,
             },
@@ -1620,8 +1391,7 @@ P_5
             {
                 label: "light levels",
                 ariaId: undefined,
-                src: `P_1
-when light_(external) equals 1 do show_number 1
+                src: `when light_(external) equals 1 do show_number 1
 
 when light_(external) equals 2 do show_number 2
 
@@ -1630,14 +1400,6 @@ when light_(external) equals 3 do show_number 3
 when light_(external) equals 4 do show_number 4
 
 when light_(external) equals 5 do show_number 5
-
-P_2
-
-P_3
-
-P_4
-
-P_5
 `,
                 icon: undefined,
             },
@@ -1645,8 +1407,7 @@ P_5
             {
                 label: "magnet levels",
                 ariaId: undefined,
-                src: `P_1
-when magnet equals 1 do show_number 1
+                src: `when magnet equals 1 do show_number 1
 
 when magnet equals 2 do show_number 2
 
@@ -1655,14 +1416,6 @@ when magnet equals 3 do show_number 3
 when magnet equals 4 do show_number 4
 
 when magnet equals 5 do show_number 5
-
-P_2
-
-P_3
-
-P_4
-
-P_5
 `,
                 icon: undefined,
             },
@@ -1670,22 +1423,13 @@ P_5
             {
                 label: "count turns",
                 ariaId: undefined,
-                src: `P_1
-when dial turn_left do set_variable_X variable_X add 1
+                src: `when dial turn_left do set_variable_X variable_X add 1
 
 when dial turn_right do set_variable_Y variable_Y add 1
 
 when variable_X_set  do show_number variable_X
 
 when variable_Y_set  do show_number variable_Y
-
-P_2
-
-P_3
-
-P_4
-
-P_5
 `,
                 icon: undefined,
             },
@@ -1693,8 +1437,7 @@ P_5
             {
                 label: "key demo",
                 ariaId: undefined,
-                src: `P_1
-when start_page  do show_image image \`
+                src: `when start_page  do show_image image \`
 . . . . .
 . . . . .
 . . 1 . .
@@ -1720,14 +1463,6 @@ when press key_2 do show_image image \`
 1 . . . 1
 \`
 
-
-P_2
-
-P_3
-
-P_4
-
-P_5
 `,
                 icon: undefined,
             },
@@ -1735,18 +1470,9 @@ P_5
             {
                 label: "more water please!",
                 ariaId: undefined,
-                src: `P_1
-when moisture equals 1 do relay on
+                src: `when moisture equals 1 do relay on
 
 when moisture equals 3 do relay off
-
-P_2
-
-P_3
-
-P_4
-
-P_5
 `,
                 icon: undefined,
             },
@@ -1754,20 +1480,11 @@ P_5
             {
                 label: "don't stand too close to me!",
                 ariaId: undefined,
-                src: `P_1
-when distance equals 1 do LED red
+                src: `when distance equals 1 do LED red
 
 when distance equals 3 do LED yellow
 
 when distance equals 5 do LED green
-
-P_2
-
-P_3
-
-P_4
-
-P_5
 `,
                 icon: undefined,
             },
@@ -1775,18 +1492,9 @@ P_5
             {
                 label: "start/stop servo",
                 ariaId: undefined,
-                src: `P_1
-when press button_A do servo_power on
+                src: `when press button_A do servo_power on
 
 when release button_B do servo_power off
-
-P_2
-
-P_3
-
-P_4
-
-P_5
 `,
                 icon: undefined,
             },
@@ -1794,18 +1502,9 @@ P_5
             {
                 label: "move off the line",
                 ariaId: undefined,
-                src: `P_1
-when reflected_light active do servo_power on
+                src: `when reflected_light active do servo_power on
 
 when reflected_light unactive do servo_power off
-
-P_2
-
-P_3
-
-P_4
-
-P_5
 `,
                 icon: undefined,
             },

@@ -75,11 +75,7 @@ namespace microcode {
         }
 
         public start(timer = false) {
-            if (
-                !this.interp.running ||
-                this.actionRunning ||
-                this.backgroundActive
-            )
+            if (!this.interp.running || this.active() || this.backgroundActive)
                 return
             this.reset()
             const time = this.getWakeTime()
@@ -152,7 +148,7 @@ namespace microcode {
         }
 
         private ok() {
-            return this.interp.running && this.actionRunning
+            return this.interp.running && this.active()
         }
 
         private timerOrSequenceRule() {
@@ -164,7 +160,7 @@ namespace microcode {
             // make sure we have something to do
             if (this.rule.actuators.length == 0) return
             // prevent re-entrancy
-            if (this.actionRunning) return
+            if (this.active()) return
             this.actionRunning = true
             control.runInBackground(() => {
                 this.backgroundActive = true
