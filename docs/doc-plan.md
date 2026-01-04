@@ -33,8 +33,8 @@ accounts for their long form.
 
 A program consists of (at most) 5 pages, identified
 by `page_i:`, where 1 <= i <= 5.
-Each page identifier is followed by a (possibly empty)
-sequence of rules RULE:
+Each page identifier appears at most once and
+is followed by a (possibly empty) sequence of rules RULE:
 
 ```
 page_i: RULE*
@@ -42,7 +42,6 @@ page_i: RULE*
 
 Rules that are presented without a preceding page identifier
 are added to page 1. Pages need not be presented in order.
-Each page identifier can appear at most once.
 
 Each rule has an optional section WHEN and an optional section DO.
 
@@ -152,8 +151,7 @@ Execution begins by transitioning (switching) to page 1.
 The absence of an optional element/value in the when or do section of a rule
 results in the use of a default element/value, as follows:
 
--   A rule with an empty do section never executes (no matching performed
-    on it).
+-   A rule with an empty do section never executes (no matching performed on it).
 -   A rule with an empty when section defaults to start_page signal with no delay.
 -   Signal defaults are as follows
     -   start_page defaults to no delay
@@ -187,7 +185,7 @@ Regardless of their origin, signals are ordered and processed one
 at a time using a FIFO queue. Each signal has a name corresponding to
 the signals named in the when section; a signal carries a payload, which
 may be an event or a value. Some special kinds of signals are
-used for timers, as detailed later.
+used for batch updates to variables and timers, as detailed later.
 
 ### Resources and conflicts
 
@@ -205,7 +203,7 @@ Actions have effects by writing to (updating) a resource, which are as follows:
 If two rules have actions that update the same resource, they are said
 to be in _conflict_ if it is possible for them to execute at the same time.
 
-### Rule matching
+### Rule matching and execution
 
 Upon reception of a signal, it is first necessary to find the
 rules that are _enabled_ for execution by the signal. The first
@@ -237,9 +235,38 @@ T are started.
 
 ### Updating state
 
+We guarantee that all actions that are executed `instantly` will read from
+the same state, even if they update variables; we do so by
+queuing updates to variables for processing later, rather than applying
+updates immediately to the current state. By construction,
+updates to variables (or any other resource) are guaranteed not to conflict,
+so the order in which the instant actions are executed does not matter.
+
+The set of updated variables and their (potentially new) values are processed
+together as follows: TBD - updates to variables are batched together in
+an aggregate-signal.
+
 ### Switching pages
 
+Rules from different pages should never execute simultaneously.
+When switching from the current page to another page N (even if the
+same), the following takes place
+
+-   pause generation and processing of signals
+-   clear queue of all signals
+-   halt all currently executing rules
+-   set the current page to N
+-   add start_page signal to queue
+-   add aggregate signal for update of all variables to queue
+-   start all timer-based rules
+-   restore signal generation/processing
+
 ### Timers
+
+When section sets a timer, when it fires, we generate a special
+timer_fired signal that specifies the rule's index and waits to
+receive that signal (this is done as all actions must execute
+in response to signals rather than invisible transitions).
 
 ## Example
 
