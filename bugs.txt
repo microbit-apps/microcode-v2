@@ -1,2 +1,0 @@
-- classic mode sensor value not working
-
