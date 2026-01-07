@@ -36,7 +36,8 @@
         "sensors.ts",
         "mcparser.ts",
         "exprparser.ts",
-        "settings.ts"
+        "settings.ts",
+        "docs.ts"
     ],
     "testFiles": [],
     "targetVersions": {
