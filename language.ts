@@ -23,7 +23,7 @@ namespace microcode {
         if (src.requires) {
             let compat = false
             src.requires.forEach(
-                req => (compat = compat || c.provides.some(pro => pro === req))
+                req => (compat = compat || c.provides.some(pro => pro === req)),
             )
             if (!compat) return false
         }
@@ -33,7 +33,7 @@ namespace microcode {
     function filterModifierCompat(
         tile: Tile,
         category: string | number,
-        c: Constraints
+        c: Constraints,
     ): boolean {
         const tid = getTid(tile)
         const only = c.only.some(cat => cat === category || cat === tid)
@@ -47,7 +47,7 @@ namespace microcode {
             cat =>
                 cat === category ||
                 cat === tid ||
-                (typeof cat == "function" && cat(tid))
+                (typeof cat == "function" && cat(tid)),
         )
         if (!disallows) return false
 
@@ -184,7 +184,7 @@ namespace microcode {
                 while (i < ruleTiles.length) {
                     const suggestions = this.getSuggestions(name, i)
                     const compatible = suggestions.find(
-                        t => getTid(t) == getTid(ruleTiles[i])
+                        t => getTid(t) == getTid(ruleTiles[i]),
                     )
                     if (compatible) i++
                     else {
@@ -221,8 +221,8 @@ namespace microcode {
                 if (fieldEditor) {
                     bw.writeBuffer(
                         fieldEditor.toBuffer(
-                            (tile as ModifierEditor).getField()
-                        )
+                            (tile as ModifierEditor).getField(),
+                        ),
                     )
                 }
             }
@@ -396,7 +396,7 @@ namespace microcode {
         public static getTileSuggestions(
             rule: RuleDefn,
             name: string,
-            index: number
+            index: number,
         ): Tile[] {
             const tile = rule.getRuleRep()[name][index]
 
@@ -427,7 +427,7 @@ namespace microcode {
             }
             if (rangeName == "modifiers") {
                 // add constants and vars
-                all.concat([
+                all = all.concat([
                     Tid.TID_FILTER_COIN_1,
                     Tid.TID_FILTER_COIN_2,
                     Tid.TID_FILTER_COIN_3,
