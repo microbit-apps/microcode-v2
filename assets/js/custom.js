@@ -32,27 +32,6 @@ function simPostMessage(channel, data) {
     }
 }
 
-const reportBus = () => {
-    try {
-        const state = {
-            selfId: bus.selfDevice.deviceId,
-            devices: bus
-                .devices({ announced: true, ignoreInfrastructure: true })
-                .map(dev => ({
-                    name: dev.name,
-                    id: dev.deviceId,
-                    services: dev.services().map(srv => ({
-                        name: srv.name,
-                        serviceClass: srv.serviceClass,
-                    })),
-                })),
-        }
-        simPostMessage("jacdacState", state)
-    } catch (e) {
-        console.log(e)
-    }
-}
-
 async function showModal(id) {
     await bus.disconnect()
     const el = document.getElementById(id)
@@ -61,14 +40,6 @@ async function showModal(id) {
 
 async function showOutdatedFirmwareDialog() {
     await showModal("outdatedDlg")
-}
-
-async function showConnectDialog() {
-    await showModal("connectDlg")
-}
-
-async function showWebUSBNotSupportedDialog() {
-    await showModal("notsupportedDlg")
 }
 
 async function flashJacscriptServices(services, data) {
@@ -84,7 +55,7 @@ async function flashJacscriptService(service, data) {
 
     if (productIdentifier !== MICROCODE_PRODUCT_IDENTIFIER) {
         console.debug(
-            `jacscript: invalid or unknown product identifier ${productIdentifier}`
+            `jacscript: invalid or unknown product identifier ${productIdentifier}`,
         )
         trackEvent("firmware.wrongpid")
         await showOutdatedFirmwareDialog()
@@ -108,7 +79,7 @@ async function flashJacscriptService(service, data) {
 
     if (service.nodeData["bytecode"]) {
         console.trace(
-            `jacscript: deployment to ${service} in progress, skipping`
+            `jacscript: deployment to ${service} in progress, skipping`,
         )
         trackEvent("jacscript.deploy.concurrent")
         return
@@ -124,7 +95,7 @@ async function flashJacscriptService(service, data) {
         await jacdac.OutPipe.sendBytes(
             service,
             jacdac.JacscriptManagerCmd.DeployBytecode,
-            data
+            data,
         )
         console.debug(`jacscript: deployed to ${service}`)
         trackEvent("firmware.deploy.success")
@@ -140,7 +111,7 @@ async function flashJacscriptService(service, data) {
 
     if (data !== lastData) {
         console.debug(
-            `jacscript: restarting ${service} deployment with newer bytecode`
+            `jacscript: restarting ${service} deployment with newer bytecode`,
         )
         trackEvent("firmware.deploy.redo")
         flashJacscriptService(service, lastData)
@@ -180,100 +151,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         for (let i = 0; i < fws.length; ++i)
             fws[i].setAttribute(
                 "href",
-                `/microcode/assets/hex/microcode-${editorLang.toLowerCase()}.hex`
+                `/microcode/assets/hex/microcode-${editorLang.toLowerCase()}.hex`,
             )
     }
 
     makeCodeRun({
         js: `./assets/js/binary-${editorLang.toLowerCase()}.js?v=${build}`,
     })
-})
-
-document.addEventListener("DOMContentLoaded", () => {
-    const script = document.createElement("script")
-    script.setAttribute("type", "text/javascript")
-    script.setAttribute(
-        "src",
-        "https://unpkg.com/jacdac-ts@1.28.7/dist/jacdac.js"
-    )
-    script.onload = () => {
-        // create WebUSB bus
-        bus = jacdac.createWebBus({
-            usbOptions: /usb=0/i.test(window.location.href) ? null : undefined,
-            bluetoothOptions: null,
-            serialOptions: null,
-        })
-        // track connection state and update button
-        bus.on(jacdac.CONNECTION_STATE, refreshUI)
-        bus.on(jacdac.ERROR, e => {
-            window.appInsights?.trackException({ exception: e })
-
-            const code = e.code
-            switch (code) {
-                case jacdac.ERROR_MICROBIT_JACDAC_MISSING: {
-                    console.debug(`jacdac not detected, ask for update`)
-                    showOutdatedFirmwareDialog()
-                    break
-                }
-                case jacdac.ERROR_MICROBIT_V1: {
-                    console.debug(`micro:bit v1 detected`)
-                    showOutdatedFirmwareDialog()
-                    break
-                }
-                case jacdac.ERROR_TRANSPORT_HF2_NOT_SUPPORTED: {
-                    console.debug(`HF2 not supported`)
-                    showOutdatedFirmwareDialog()
-                    break
-                }
-            }
-            refreshUI()
-        })
-        bus.on(jacdac.DEVICE_ANNOUNCE, dev => {
-            if (!lastData) return
-            console.debug(`jacdac: device announced ${dev}, flashing`)
-            flashJacscriptServices(
-                dev.services({
-                    serviceClass: jacdac.SRV_JACSCRIPT_MANAGER,
-                }),
-                lastData
-            )
-        })
-        bus.on(jacdac.SELF_ANNOUNCE, reportBus)
-
-        const webusbBtns = document.getElementsByClassName("webusbBtn")
-        for (let i = 0; i < webusbBtns.length; ++i) {
-            webusbBtns[i].onclick = async () => bus.connect()
-        }
-        refreshUI()
-        bus.autoConnect = true
-
-        setTimeout(async () => {
-            if (!bus.connected) await showConnectDialog()
-        }, 2000)
-    }
-    document.body.append(script)
-})
-
-// send jacscript bytecode to jacdac dashboard
-addSimMessageHandler("jacscript", async data => {
-    console.debug(`jacscript bytecode: ${data.length} bytes`)
-    lastData = data
-
-    if (inIFrame)
-        window.parent.postMessage(
-            {
-                broadcast: true,
-                source: "jacscript",
-                data,
-            },
-            "*"
-        )
-    if (bus) {
-        const services = bus.services({
-            serviceClass: jacdac.SRV_JACSCRIPT_MANAGER,
-        })
-        flashJacscriptServices(services, data)
-    }
 })
 
 // handle accessibility requests
@@ -287,15 +171,6 @@ function stringToUint8Array(str) {
     const encoder = new TextEncoder()
     return encoder.encode(str)
 }
-
-addSimMessageHandler("usb", async data => {
-    const msg = JSON.parse(uint8ArrayToString(data))
-    if (msg.type === "connect") {
-        const supportsWebusb = !!navigator.usb
-        if (!supportsWebusb) showWebUSBNotSupportedDialog()
-        else showConnectDialog()
-    }
-})
 
 let liveRegion
 let tooltipStrings = {}
@@ -364,7 +239,7 @@ async function loadTranslations(build) {
     console.debug(`loading translations for ${editorLang}`)
     tooltipStrings =
         (await fetchJSON(
-            `./assets/strings/${editorLang}/tooltips.json?v=${build}`
+            `./assets/strings/${editorLang}/tooltips.json?v=${build}`,
         )) || {}
 }
 
@@ -443,21 +318,6 @@ addSimMessageHandler("accessibility", data => {
     }
     setLiveRegion(value, force)
 })
-const clickSound =
-    typeof Howl !== "undefined"
-        ? new Howl({
-              src: ["./assets/sounds/click.wav", "./sounds/click.wav"],
-          })
-        : undefined
-async function playClick() {
-    if (speakTooltips || !clickSound) return
-    try {
-        clickSound.stop()
-        clickSound.play()
-    } catch (e) {
-        console.debug(e)
-    }
-}
 
 function setLiveRegion(value, force) {
     // apply to browser
@@ -485,7 +345,6 @@ function setLiveRegion(value, force) {
     if (value) console.debug(`aria-live: ${value}`)
     liveRegion.dataset["text"] = value
     liveRegion.textContent = value
-    playClick()
 }
 
 function hexToUint8Array(hex) {
@@ -591,7 +450,7 @@ function showArt(jsg, samples) {
                     await writable.write(blob)
                     await writable.close()
                 }
-            })
+            }),
         )
         // markdown samples
         const mds = `# Samples
@@ -603,13 +462,13 @@ ${samples
 ${
     icon
         ? `-   ![${label} icon](./images/generated/icon_sample_${norm(
-              label
+              label,
           )}.png){:class="icon-sample"}`
         : ""
 }
 -   [Open in MicroCode](/microcode/#${compressProgram(b64)})
 
-`
+`,
     )
     .join("\n")}
 `
@@ -622,14 +481,14 @@ ${jsg
     .map(
         ({ type, name }) => `
 ### ![${mapAriaId(name)}](./images/generated/${norm(
-            `${type}_${name}`
+            `${type}_${name}`,
         )}.png){:class="icon"} \`${mapAriaId(name)}\` {#${norm(
-            `${type}_${name}`
+            `${type}_${name}`,
         )}}
 
 - ${type}
 
-`
+`,
     )
     .join("")}`
         await writeText(dir, "reference.md", md)
