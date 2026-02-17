@@ -9,14 +9,6 @@ const inIFrame = (() => {
     }
 })()
 
-let bus
-let lastData
-const refreshUI = () => {
-    if (bus.connected) {
-        document.getElementById("connectDlg").close()
-    }
-}
-
 const stringFormat = (s, args) => s.replace(/{(\w+)}/g, (_, id) => args[id])
 
 function simPostMessage(channel, data) {
@@ -32,131 +24,22 @@ function simPostMessage(channel, data) {
     }
 }
 
-async function showModal(id) {
-    await bus.disconnect()
-    const el = document.getElementById(id)
-    el.showModal()
-}
-
-async function showOutdatedFirmwareDialog() {
-    await showModal("outdatedDlg")
-}
-
-async function flashJacscriptServices(services, data) {
-    for (const service of services) await flashJacscriptService(service, data)
-}
-
-async function flashJacscriptService(service, data) {
-    if (!data) return
-
-    const dev = service.device
-    await dev.resolveProductIdentifier(3)
-    const productIdentifier = dev.productIdentifier
-
-    if (productIdentifier !== MICROCODE_PRODUCT_IDENTIFIER) {
-        console.debug(
-            `jacscript: invalid or unknown product identifier ${productIdentifier}`,
-        )
-        trackEvent("firmware.wrongpid")
-        await showOutdatedFirmwareDialog()
-        return
-    }
-
-    await dev.resolveFirmwareVersion(3)
-    const firmwareVersion = dev.firmwareVersion
-    console.debug(`firmware version: ${firmwareVersion}`)
-    const webFirmwareVersion = document.body.dataset.version
-    const semweb = parseSemver(webFirmwareVersion)
-    const semcur = parseSemver(firmwareVersion)
-    if (semweb[0] > semcur[0] || semweb[1] > semcur[1]) {
-        console.debug(`outdated firmware: ${firmwareVersion}`)
-        trackEvent("firmware.outdated", {
-            firmwareVersion,
-        })
-        await showOutdatedFirmwareDialog()
-        return
-    }
-
-    if (service.nodeData["bytecode"]) {
-        console.trace(
-            `jacscript: deployment to ${service} in progress, skipping`,
-        )
-        trackEvent("jacscript.deploy.concurrent")
-        return
-    }
-
-    try {
-        console.debug(`jacscript: deploying to ${service}`)
-        trackEvent("firmware.deploy", {
-            firmwareVersion,
-            bytes: data.length,
-        })
-        service.nodeData["bytecode"] = data
-        await jacdac.OutPipe.sendBytes(
-            service,
-            jacdac.JacscriptManagerCmd.DeployBytecode,
-            data,
-        )
-        console.debug(`jacscript: deployed to ${service}`)
-        trackEvent("firmware.deploy.success")
-    } catch (e) {
-        trackEvent("firmware.deploy.fail")
-        window.appInsights?.trackException({
-            exception: e,
-        })
-        throw e
-    } finally {
-        service.nodeData["bytecode"] = undefined
-    }
-
-    if (data !== lastData) {
-        console.debug(
-            `jacscript: restarting ${service} deployment with newer bytecode`,
-        )
-        trackEvent("firmware.deploy.redo")
-        flashJacscriptService(service, lastData)
-    }
-}
-
 // docs
 document.addEventListener("DOMContentLoaded", async () => {
     const build = document.body.dataset["build"] || "local"
 
-    initLang()
-    await loadTranslations(build)
+    // initLang()
+    // await loadTranslations(build)
+
     const docsbtn = document.getElementById("docsbtn")
     if (docsbtn)
         docsbtn.onclick = () => {
             docsbtn.disabled = true
             simPostMessage("docs", { type: "art" })
         }
-    const screenshotbtn = document.getElementById("screenshotbtn")
-    if (screenshotbtn)
-        screenshotbtn.onclick = () => {
-            simPostMessage("docs", { type: "screenshot" })
-        }
-
-    const voicebtn = document.getElementById("voicebtn")
-    if (voicebtn) {
-        if (!window.speechSynthesis) voicebtn.remove()
-        else
-            voicebtn.onclick = () => {
-                speakTooltips = !speakTooltips
-                speak(liveRegion.dataset["text"] || "")
-            }
-    }
-
-    if (supportedLanguages.indexOf(editorLang) > -1) {
-        const fws = document.getElementsByClassName("firmware-download")
-        for (let i = 0; i < fws.length; ++i)
-            fws[i].setAttribute(
-                "href",
-                `/microcode/assets/hex/microcode-${editorLang.toLowerCase()}.hex`,
-            )
-    }
 
     makeCodeRun({
-        js: `./assets/js/binary-${editorLang.toLowerCase()}.js?v=${build}`,
+        js: `./js/binary.js?v=${build}`,
     })
 })
 
@@ -175,176 +58,16 @@ function stringToUint8Array(str) {
 let liveRegion
 let tooltipStrings = {}
 
-const supportedLanguages = [
-    "en",
-    "eu",
-    "ca",
-    "zh-CN",
-    "zh-HK",
-    "hr",
-    "nl",
-    "fil",
-    "fr",
-    "fr-CA",
-    "de",
-    "it",
-    "ja",
-    "pl",
-    "pt-BR",
-    "ru",
-    "es-ES",
-    "es-MX",
-    "tr",
-    "cy",
-    "ko",
-]
-
 async function fetchJSON(url) {
     const resp = await fetch(url)
     if (!resp.ok) return undefined
     return await resp.json()
 }
 
-// load localized strings
-let editorLang
-function initLang() {
-    const url = new URL(window.location.href)
-    editorLang =
-        url.searchParams.get("lang") ||
-        (document.firstElementChild.lang !== "en"
-            ? document.firstElementChild.lang
-            : undefined) ||
-        navigator.language ||
-        "en"
-    if (supportedLanguages.indexOf(editorLang) < 0)
-        editorLang = editorLang.split("-", 1)[0] || ""
-    if (supportedLanguages.indexOf(editorLang) < 0) editorLang = "en"
-    window.editor = editorLang
-
-    const noFooter = !!url.searchParams.get("nofooter")
-    const embed = !!url.searchParams.get("embed")
-    const root = document.querySelector("#root")
-
-    if (noFooter) {
-        const footer = document.querySelector("#footer")
-        if (root) root.className += " nofooter"
-        if (footer) footer.remove()
-    }
-    if (embed && root) {
-        root.className += " embed"
-    }
-}
-let loadTranslationsPromise
-async function loadTranslations(build) {
-    console.debug(`loading translations for ${editorLang}`)
-    tooltipStrings =
-        (await fetchJSON(
-            `./assets/strings/${editorLang}/tooltips.json?v=${build}`,
-        )) || {}
-}
-
-function mapAriaId(ariaId, missing) {
-    return tooltipStrings[ariaId] || missing || ""
-}
-
 function parseSemver(v) {
     const ver = /^v?(\d+)\.(\d+)\.(\d+)$/.exec(v)
     if (ver) return [parseInt(ver[1]), parseInt(ver[2]), parseInt(ver[3])]
     else return [0, 0, 0]
-}
-
-let speakTooltips = false
-let voice
-function speak(text) {
-    if (!text || !speakTooltips) return
-
-    console.debug(`speak ${text}`)
-    const synth = window.speechSynthesis
-    synth.cancel()
-    if (!voice) {
-        let voices = synth.getVoices().filter(v => v.lang === editorLang)
-        if (!voices.length)
-            voices = synth
-                .getVoices()
-                .filter(v => v.lang.indexOf(editorLang) === 0)
-        if (!voices.length) voices = synth.getVoices()
-        voice = voices[0]
-        console.debug(`voice found`, { voice })
-    }
-    const utterance = new SpeechSynthesisUtterance(text)
-    utterance.lang = editorLang
-    utterance.voice = voice
-    utterance.rate = 1.2
-    synth.speak(utterance)
-    synth.resume()
-}
-
-addSimMessageHandler("accessibility", data => {
-    // render message
-    const msg = JSON.parse(uint8ArrayToString(data))
-    //console.debug(`aria`, msg)
-    let value
-    const force = msg.force
-    if (msg.type === "tile" || msg.type === "text") {
-        value = mapAriaId(msg.value)
-        speak(value)
-    } else if (msg.type == "rule") {
-        value = mapAriaId("rule")
-        value += `: ${mapAriaId("when")} `
-        const whens = msg.whens
-        if (whens && whens.length > 0) value += whens.map(mapAriaId).join(" ")
-        else value += mapAriaId("T10")
-        value += `, ${mapAriaId("do")} `
-        const dos = msg.dos
-        if (dos && dos.length > 0) value += dos.map(mapAriaId).join(" ")
-        speak(mapAriaId("rule"))
-    } else if (msg.type == "led") {
-        const on = msg.on
-        const state = on ? mapAriaId("SR_ON", "on") : mapAriaId("SR_OFF", "off")
-        const x = msg.x
-        const y = msg.y
-        const format = mapAriaId("SR_LED", "LED {x} {y} {state}")
-        value = stringFormat(format, { state, x, y })
-        speak(value)
-    } else if (msg.type == "note") {
-        const on = msg.on
-        const state = on ? mapAriaId("SR_ON", "on") : mapAriaId("SR_OFF", "off")
-        const index = "CDEFGABCD".charAt(msg.index)
-        const format = mapAriaId("SR_NOTE", "note {index} {state}")
-        value = stringFormat(format, { state, index })
-        speak(value)
-    } else {
-        console.error("unknown accessibility message", msg)
-    }
-    setLiveRegion(value, force)
-})
-
-function setLiveRegion(value, force) {
-    // apply to browser
-    if (!liveRegion) {
-        const style =
-            "position: absolute !important;" +
-            "display: block;" +
-            "visibility: visible;" +
-            "overflow: hidden;" +
-            "width: 1px;" +
-            "height: 1px;" +
-            "margin: -1px;" +
-            "border: 0;" +
-            "padding: 0;" +
-            "clip: rect(0 0 0 0);"
-        liveRegion = document.createElement("div")
-        liveRegion.setAttribute("role", "status")
-        liveRegion.setAttribute("aria-live", "assertive")
-        liveRegion.setAttribute("aria-hidden", "false")
-        liveRegion.setAttribute("style", style)
-        document.body.appendChild(liveRegion)
-    }
-    value = value || ""
-    if (force && liveRegion.textContent === value) liveRegion.textContent = ""
-    if (value) console.debug(`aria-live: ${value}`)
-    liveRegion.dataset["text"] = value
-    liveRegion.textContent = value
 }
 
 function hexToUint8Array(hex) {
@@ -546,8 +269,3 @@ function trackEvent(name, props) {
         properties,
     })
 }
-
-addSimMessageHandler("analytics", buf => {
-    const msg = JSON.parse(uint8ArrayToString(buf))
-    if (msg.type === "event") trackEvent(msg.msg, msg.data)
-})
