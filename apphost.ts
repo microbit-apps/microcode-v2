@@ -3,11 +3,12 @@ namespace microcode {
 
     const HOST_FRAME_PRIORITY = 30
 
-    class MicroCodeUiAssets implements ui.UiAssetResolver {
+    class AppAssetResolver implements ui.UiAssetResolver {
         public getBitmap(
             id: string | number,
             nullIfMissing?: boolean
         ): Bitmap | undefined {
+            if (id == "wordLogo") return wordLogo
             const bitmap = icons.get(id, !!nullIfMissing)
             if (bitmap) return bitmap
             if (nullIfMissing) return undefined
@@ -19,7 +20,7 @@ namespace microcode {
         }
     }
 
-    class MicroCodeUiAccessibility implements ui.UiAccessibilitySink {
+    class AppAccessibilitySink implements ui.UiAccessibilitySink {
         public publish(message: string): void {
             if (message) {
                 const content: accessibility.TextAccessibilityMessage = {
@@ -31,89 +32,77 @@ namespace microcode {
         }
     }
 
-    class MicroCodeUiProfiler implements ui.UiProfiler {
+    class AppProfiler implements ui.UiProfiler {
         public mark(name: string): void {
             if (name) profile()
         }
     }
 
-    class HostedSmokeScreen implements ui.UiScreen {
-        public backgroundColor = 0xc
-
-        public render(surface: ui.DrawSurface): void {
-            surface.drawText("", 0, 0)
-        }
-
-        public handleInput(event: ui.UiInputEvent): boolean {
-            return event.action == "cancel"
-        }
-    }
-
     /**
-     * Navigation surface used by hosted microcode screens.
+     * Navigation surface used by app screens.
      */
-    export interface MicroCodeHostedNavigation {
+    export interface AppNavigation {
         /**
-         * Pushes a hosted screen onto the app-owned UI runtime.
+         * Pushes a screen onto the app-owned UI runtime.
          */
         push(screen: ui.UiScreen): void
 
         /**
-         * Replaces the active hosted screen.
+         * Replaces the active screen in the app-owned UI runtime.
          */
         replace(screen: ui.UiScreen): void
 
         /**
-         * Pops the active hosted screen when it is not the host root.
+         * Pops the active screen when it is not the host root.
          */
         pop(): void
 
         /**
-         * Leaves the hosted runtime and opens the old editor scene.
+         * Leaves the UI runtime and opens the old editor scene.
          */
         launchEditor(): void
+
+        /**
+         * Opens the old samples gallery over the UI runtime.
+         */
+        launchSamples(): void
+
+        /**
+         * Opens the old settings screen over the UI runtime.
+         */
+        launchSettings(): void
     }
 
     /**
-     * App-local owner for hosted `ui-core` screens.
+     * App-local owner for `ui-core` screens.
      */
-    export class MicroCodeUiHost implements MicroCodeHostedNavigation {
+    export class UiHost implements AppNavigation {
         private app_: App
-        private scene_: HostedUiScene
+        private scene_: UiHostScene
 
         constructor(app: App) {
             this.app_ = app
         }
 
         /**
-         * Opens the hosted runtime with a root screen.
+         * Opens the UI runtime with a root screen.
          */
         public open(root: ui.UiScreen): void {
             if (this.scene_) return
-            this.scene_ = new HostedUiScene(this.app_, this, root)
+            this.scene_ = new UiHostScene(this.app_, this, root)
             this.app_.pushScene(this.scene_)
         }
 
-        /**
-         * Constructs a hosted runtime scene and tears it down without opening it.
-         */
-        public smokeConstruct(): boolean {
-            const scene = new HostedUiScene(this.app_, this, new HostedSmokeScreen())
-            scene.prepareForSmoke()
-            scene.shutdown()
-            return true
-        }
-
         public push(screen: ui.UiScreen): void {
-            if (this.scene_) this.scene_.pushHostedScreen(screen)
+            if (this.scene_) this.scene_.pushScreen(screen)
         }
 
         public replace(screen: ui.UiScreen): void {
-            if (this.scene_) this.scene_.replaceHostedScreen(screen)
+            if (this.scene_) this.scene_.replaceScreen(screen)
         }
 
         public pop(): void {
-            if (this.scene_) this.scene_.popHostedScreen()
+            if (this.scene_) this.scene_.popScreen()
         }
 
         public launchEditor(): void {
@@ -122,26 +111,34 @@ namespace microcode {
             this.app_.pushScene(new Editor(this.app_))
         }
 
+        public launchSamples(): void {
+            this.app_.pushScene(new SamplesGallery(this.app_))
+        }
+
+        public launchSettings(): void {
+            this.app_.pushScene(new MicroCodeSettings(this.app_))
+        }
+
         public close(): void {
             if (!this.scene_) return
             const scene = this.scene_
             this.scene_ = undefined
-            this.app_.popHostedScene(scene)
+            this.app_.popUiHostScene(scene)
         }
 
-        public didClose(scene: HostedUiScene): void {
+        public didClose(scene: UiHostScene): void {
             if (this.scene_ == scene) this.scene_ = undefined
         }
     }
 
-    class HostedUiScene extends Scene {
-        private owner_: MicroCodeUiHost
+    class UiHostScene extends Scene {
+        private owner_: UiHost
         private runtime_: ui.UiRuntime
         private root_: ui.UiScreen
         private frameCallback_: context.FrameCallback
 
-        constructor(app: App, owner: MicroCodeUiHost, root: ui.UiScreen) {
-            super(app, "hosted-ui")
+        constructor(app: App, owner: UiHost, root: ui.UiScreen) {
+            super(app, "ui-host")
             this.owner_ = owner
             this.root_ = root
             this.backgroundColor = 0
@@ -152,9 +149,9 @@ namespace microcode {
                 display: new ui.DisplayShieldFrameAdapter({
                     scaleMode: "cover",
                 }),
-                assets: new MicroCodeUiAssets(),
-                accessibility: new MicroCodeUiAccessibility(),
-                profiler: new MicroCodeUiProfiler(),
+                assets: new AppAssetResolver(),
+                accessibility: new AppAccessibilitySink(),
+                profiler: new AppProfiler(),
                 clearColor: this.backgroundColor,
             })
             this.runtime_.push(this.root_)
@@ -165,7 +162,7 @@ namespace microcode {
         }
 
         public shutdown(): void {
-            this.drainHostedScreens()
+            this.drainScreens()
             this.runtime_ = undefined
             this.owner_.didClose(this)
         }
@@ -176,24 +173,19 @@ namespace microcode {
         public draw(): void {
         }
 
-        public prepareForSmoke(): void {
-            this.startup()
-            this.runtime_.runFrame()
-        }
-
-        public pushHostedScreen(screen: ui.UiScreen): void {
+        public pushScreen(screen: ui.UiScreen): void {
             if (!this.runtime_) return
             this.runtime_.push(screen)
             this.bindFramePump()
         }
 
-        public replaceHostedScreen(screen: ui.UiScreen): void {
+        public replaceScreen(screen: ui.UiScreen): void {
             if (!this.runtime_) return
             this.runtime_.replace(screen)
             this.bindFramePump()
         }
 
-        public popHostedScreen(): void {
+        public popScreen(): void {
             if (!this.runtime_ || this.runtime_.depth() <= 1) return
             this.runtime_.pop()
         }
@@ -267,7 +259,7 @@ namespace microcode {
             )
         }
 
-        private drainHostedScreens(): void {
+        private drainScreens(): void {
             if (!this.runtime_) return
             while (this.runtime_.depth()) this.runtime_.pop()
         }

@@ -19,6 +19,7 @@
         "tiles.ts",
         "app.ts",
         "apphost.ts",
+        "hosted/home.ts",
         "editor.ts",
         "ruleeditor.ts",
         "home.ts",

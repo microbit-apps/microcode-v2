@@ -359,7 +359,8 @@ namespace microcode {
                         this.prevPage(0, -1)
                     } else {
                         this.app.popScene()
-                        this.app.pushScene(new Home(this.app))
+                        const app = <App>this.app
+                        app.openHome()
                     }
                 } else {
                     if (this.navigator.atRuleStart()) {
