@@ -3,6 +3,7 @@
     "files.autoSave": "afterDelay",
     "files.watcherExclude": {
         "**/.git/objects/**": true,
+        "**/.pxt/**": true,
         "**/built/**": true,
         "**/node_modules/**": true,
         "**/yotta_modules/**": true,
@@ -15,6 +16,7 @@
     },
     "search.exclude": {
         "**/built": true,
+        "**/.pxt": true,
         "**/node_modules": true,
         "**/yotta_modules": true,
         "**/yotta_targets": true,

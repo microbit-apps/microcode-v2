@@ -18,6 +18,7 @@
         "language.ts",
         "tiles.ts",
         "app.ts",
+        "apphost.ts",
         "editor.ts",
         "ruleeditor.ts",
         "home.ts",

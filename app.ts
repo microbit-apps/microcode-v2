@@ -13,6 +13,7 @@ namespace microcode {
 
     export class App implements AppInterface {
         private sceneManager: SceneManager
+        private uiHost: MicroCodeUiHost
 
         constructor() {
             // One interval delay to ensure all static constructors have executed.
@@ -33,6 +34,7 @@ namespace microcode {
             // keymap.setupKeys()
 
             this.sceneManager = new SceneManager()
+            this.uiHost = new MicroCodeUiHost(this)
 
             const home = new Home(this)
             this.pushScene(home)
@@ -60,6 +62,13 @@ namespace microcode {
 
         public popScene() {
             this.sceneManager.popScene()
+        }
+
+        public popHostedScene(scene: Scene) {
+            const topIndex = this.sceneManager.scenes.length - 1
+            if (this.sceneManager.scenes[topIndex] == scene) {
+                this.sceneManager.popScene()
+            }
         }
 
         public runFromEditor() {
