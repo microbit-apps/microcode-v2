@@ -3,7 +3,7 @@ namespace microcode {
 
     const HOME_ACTION_SCOPE = "home/actions"
     const HOME_ADD_SETTINGS = false
-    const HOME_ACTION_Y = 30
+    const HOME_ACTION_CENTER_OFFSET_Y = 30
     const HOME_ACTION_WIDTH = 32
     const HOME_ACTION_HEIGHT = 33
     const HOME_ACTION_GAP = 8
@@ -28,7 +28,8 @@ namespace microcode {
         private input_: ui.UiFocusInputController
         private actions_: ui.UiActionItem<HomeAction>[]
         private row_: ui.UiActionRow<HomeAction>
-        private rowRect_: ui.Rect
+        private rowLayout_: ui.UiAlignLayout
+        private rowBandRect_: ui.Rect
         private labelRect_: ui.Rect
         private yOffset_: number
 
@@ -44,7 +45,16 @@ namespace microcode {
                 itemHeight: HOME_ACTION_HEIGHT,
                 gap: HOME_ACTION_GAP,
             })
-            this.rowRect_ = new ui.Rect()
+            this.rowLayout_ = new ui.UiAlignLayout({
+                layoutSpec: {
+                    width: { mode: "fixed", value: ui.LOGICAL_VIEWPORT_WIDTH },
+                    height: { mode: "fixed", value: HOME_ACTION_HEIGHT },
+                },
+                child: this.row_,
+                horizontalAlignment: "center",
+                verticalAlignment: "center",
+            })
+            this.rowBandRect_ = new ui.Rect()
             this.labelRect_ = new ui.Rect()
             this.layoutActions()
             this.yOffset_ = -(ui.LOGICAL_VIEWPORT_HEIGHT >> 1)
@@ -118,22 +128,22 @@ namespace microcode {
         }
 
         private layoutActions(): void {
-            // Home actions use center-based visual targets. `UiActionRow` arranges
-            // upper-left rectangles, so this translates the preserved centers
-            // into the rectangle the row owns.
-            const buttonStart = HOME_ADD_SETTINGS ? -60 : -40
-            const left =
-                this.oldX(buttonStart) - Math.idiv(HOME_ACTION_WIDTH, 2)
-            const top =
-                this.oldY(HOME_ACTION_Y) - Math.idiv(HOME_ACTION_HEIGHT, 2)
-            this.rowRect_.set(
-                left,
-                top,
-                this.actions_.length * HOME_ACTION_WIDTH +
-                    (this.actions_.length - 1) * HOME_ACTION_GAP,
+            // `UiAlignLayout` owns centering the row within this screen band;
+            // Home only chooses the vertical band where actions belong.
+            this.rowBandRect_.set(
+                0,
+                this.actionCenterY() - Math.idiv(HOME_ACTION_HEIGHT, 2),
+                ui.LOGICAL_VIEWPORT_WIDTH,
                 HOME_ACTION_HEIGHT
             )
-            this.row_.arrange(this.rowRect_)
+            this.rowLayout_.arrange(this.rowBandRect_)
+        }
+
+        private actionCenterY(): number {
+            return (
+                (ui.LOGICAL_VIEWPORT_HEIGHT >> 1) +
+                HOME_ACTION_CENTER_OFFSET_Y
+            )
         }
 
         private registerFocus(): void {
@@ -388,12 +398,5 @@ namespace microcode {
             )
         }
 
-        private oldX(x: number): number {
-            return x + (ui.LOGICAL_VIEWPORT_WIDTH >> 1)
-        }
-
-        private oldY(y: number): number {
-            return y + (ui.LOGICAL_VIEWPORT_HEIGHT >> 1)
-        }
     }
 }
