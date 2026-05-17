@@ -13,6 +13,7 @@ namespace microcode {
     const HOME_DISK_ITEM_HEIGHT = 18
     const HOME_DISK_COLUMN_COUNT = 3
     const HOME_DISK_MODAL_MARGIN = 4
+    const HOME_DISK_MODAL_TITLE_GAP = 4
     const HOME_FOCUS_COLOR = 9
     const HOME_FOCUS_THICKNESS = 3
     const HOME_FOCUS_LABEL_BACKGROUND = 15
@@ -132,7 +133,7 @@ namespace microcode {
                 controlHeight: HOME_DISK_ITEM_HEIGHT,
                 controlStyle: ui.UiButtonStyles.LightShadowedWhite,
                 contentMargin: HOME_DISK_MODAL_MARGIN,
-                titleGap: 4,
+                titleGap: HOME_DISK_MODAL_TITLE_GAP,
                 panelColor: this.backgroundColor,
                 titleColor: 1,
                 onCancel: () => this.closeDiskModal(),
