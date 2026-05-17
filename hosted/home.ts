@@ -59,6 +59,7 @@ namespace microcode {
                 itemWidth: HOME_ACTION_WIDTH,
                 itemHeight: HOME_ACTION_HEIGHT,
                 gap: HOME_ACTION_GAP,
+                onActivate: action => this.dispatchAction(action),
             })
             this.rowLayout_ = new ui.UiAlignLayout({
                 layoutSpec: {
@@ -215,10 +216,7 @@ namespace microcode {
                 return true
             return this.widgets_.handleInput(event, result => {
                 const rowResult = this.row_.handleFocusInput(result)
-                if (rowResult && rowResult.kind == "activated") {
-                    this.dispatchAction(rowResult.value)
-                    return true
-                }
+                if (rowResult && rowResult.kind == "activated") return true
                 return undefined
             })
         }
@@ -256,6 +254,8 @@ namespace microcode {
                 contentMargin: HOME_DISK_MODAL_MARGIN,
                 panelColor: this.backgroundColor,
                 titleColor: 1,
+                onActivate: slot => this.loadDiskSlot(slot),
+                onCancel: () => this.closeDiskModal(),
             })
             this.layoutDiskModal()
             this.diskModal_.open(
@@ -267,29 +267,19 @@ namespace microcode {
         private handleDiskModalInput(event: ui.UiInputEvent): boolean {
             return this.widgets_.handleInput(event, result => {
                 const modalResult = this.diskModal_.handleFocusInput(result)
-                if (modalResult) {
-                    this.handleDiskModalResult(modalResult)
-                    return true
-                }
+                if (modalResult) return true
                 if (event.action == "pointerClick" && result.kind == "miss")
                     return true
                 return undefined
             })
         }
 
-        private handleDiskModalResult(
-            result: ui.UiModalGridResult<HomeDiskSlot>,
-        ): void {
-            if (result.kind == "activated") {
-                const slot = result.value
-                let buf = settings.readBuffer(slot)
-                if (!buf) buf = this.createEmptyProgramBuffer()
-                settings.writeBuffer(SAVESLOT_AUTO, buf)
-                this.closeDiskModal()
-                this.navigation_.launchEditor()
-            } else if (result.kind == "cancelled") {
-                this.closeDiskModal()
-            }
+        private loadDiskSlot(slot: HomeDiskSlot): void {
+            let buf = settings.readBuffer(slot)
+            if (!buf) buf = this.createEmptyProgramBuffer()
+            settings.writeBuffer(SAVESLOT_AUTO, buf)
+            this.closeDiskModal()
+            this.navigation_.launchEditor()
         }
 
         private closeDiskModal(): void {
