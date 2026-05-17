@@ -33,21 +33,36 @@ namespace microcode {
         private widgets_: ui.UiWidgetController
         private actions_: ui.UiActionItem<HomeAction>[]
         private row_: ui.UiActionRow<HomeAction>
-        private actionButtonView_: ui.UiButtonView
+        private actionButtonStyle_: ui.UiButtonStyle
         private diskItems_: ui.UiActionItem<HomeDiskSlot>[]
-        private iconRect_: ui.Rect
         private rowLayout_: ui.UiAlignLayout
         private rowBandRect_: ui.Rect
-        private labelRect_: ui.Rect
+        private actionLabelBounds_: ui.Rect
         private yOffset_: number
 
         constructor(navigation: AppNavigation) {
             this.navigation_ = navigation
             this.actions_ = this.createActions()
             this.diskItems_ = this.createDiskItems()
-            this.actionButtonView_ = new ui.UiButtonView({
-                style: ui.UiButtonStyles.Transparent,
-            })
+            this.actionButtonStyle_ = ui.buttonStyle(
+                ui.UiButtonStyles.Transparent,
+                ui.UiButtonStyles.FocusLabel,
+                {
+                    focusColor: HOME_FOCUS_COLOR,
+                    focusThickness: HOME_FOCUS_THICKNESS,
+                    focusLabelBackgroundColor: HOME_FOCUS_LABEL_BACKGROUND,
+                    focusLabelColor: HOME_FOCUS_LABEL_COLOR,
+                    focusLabelFont: user_interface_base.font,
+                    focusLabelGap: 2,
+                    focusLabelPadding: 1,
+                },
+            )
+            this.actionLabelBounds_ = new ui.Rect(
+                0,
+                0,
+                UI_DESIGN_WIDTH,
+                UI_DESIGN_HEIGHT,
+            )
             // Widgets are retained objects. Build them once, then update their
             // layout, focus registration, and render pass as screen state changes.
             this.row_ = new ui.UiActionRow<HomeAction>({
@@ -56,8 +71,10 @@ namespace microcode {
                 itemWidth: HOME_ACTION_WIDTH,
                 itemHeight: HOME_ACTION_HEIGHT,
                 gap: HOME_ACTION_GAP,
+                buttonStyle: this.actionButtonStyle_,
+                labelBounds: this.actionLabelBounds_,
             })
-            
+
             this.rowLayout_ = new ui.UiAlignLayout({
                 layoutSpec: {
                     width: { mode: "fixed", value: UI_DESIGN_WIDTH },
@@ -67,9 +84,7 @@ namespace microcode {
                 horizontalAlignment: "center",
                 verticalAlignment: "center",
             })
-            this.iconRect_ = new ui.Rect()
             this.rowBandRect_ = new ui.Rect()
-            this.labelRect_ = new ui.Rect()
             this.layoutActions()
             this.yOffset_ = -(UI_DESIGN_HEIGHT >> 1)
         }
@@ -152,12 +167,6 @@ namespace microcode {
                 bitmapId,
                 textId,
                 onActivate,
-                draw: (
-                    surface: ui.DrawSurface,
-                    item: ui.UiActionItem<HomeAction>,
-                    rect: ui.Rect,
-                    focused: boolean,
-                ) => this.drawAction(surface, item, rect, focused),
             }
         }
 
@@ -208,6 +217,7 @@ namespace microcode {
                 itemHeight: HOME_DISK_ITEM_HEIGHT,
                 buttonStyle: ui.UiButtonStyles.LightShadowedWhite,
                 contentMargin: HOME_DISK_MODAL_MARGIN,
+                titleGap: 4,
                 panelColor: this.backgroundColor,
                 titleColor: 1,
                 onCancel: () => this.closeDiskModal(),
@@ -231,74 +241,6 @@ namespace microcode {
             for (let i = 0; i < 5; ++i) buf[i] = Tid.END_OF_PAGE
             buf[5] = Tid.END_OF_PROG
             return buf
-        }
-
-        private drawAction(
-            surface: ui.DrawSurface,
-            item: ui.UiActionItem<HomeAction>,
-            rect: ui.Rect,
-            focused: boolean,
-        ): void {
-            const bitmap = this.assets_.getBitmap(item.bitmapId, true)
-            this.actionButtonView_.render(
-                surface,
-                rect,
-                { bitmap },
-                { focused, contentRect: this.iconRect_ },
-            )
-            if (focused && bitmap) {
-                const text = this.actionText(item)
-                if (text.length > 0) {
-                    this.drawActionFocusLabel(
-                        surface,
-                        text,
-                        this.iconRect_.x + Math.idiv(this.iconRect_.width, 2),
-                        this.iconRect_.y +
-                            this.iconRect_.height -
-                            1 +
-                            HOME_FOCUS_THICKNESS +
-                            2,
-                    )
-                }
-            } else if (focused) {
-                const text = this.actionText(item)
-                if (text.length > 0) {
-                    this.drawActionFocusLabel(
-                        surface,
-                        text,
-                        rect.x + Math.idiv(rect.width, 2),
-                        rect.y + rect.height - 1 + HOME_FOCUS_THICKNESS + 2,
-                    )
-                }
-            }
-        }
-
-        private drawActionFocusLabel(
-            surface: ui.DrawSurface,
-            text: string,
-            centerX: number,
-            top: number,
-        ): void {
-            const font = user_interface_base.font
-            const textWidth = font.charWidth * text.length
-            const textHeight = font.charHeight
-            const maxX = Math.max(1, UI_DESIGN_WIDTH - 1 - textWidth)
-            const x = Math.max(1, Math.min(maxX, centerX - (textWidth >> 1)))
-            const y = Math.min(top, UI_DESIGN_HEIGHT - 1 - font.charHeight)
-
-            this.labelRect_.set(x - 1, y - 1, textWidth + 1, textHeight + 2)
-            surface.fillRect(this.labelRect_, HOME_FOCUS_LABEL_BACKGROUND)
-            surface.drawText(text, x, y, {
-                color: HOME_FOCUS_LABEL_COLOR,
-                font,
-            })
-        }
-
-        private actionText(item: ui.UiActionItem<HomeAction>): string {
-            if (item.text !== undefined) return item.text
-            if (item.textId !== undefined)
-                return this.assets_.getText(item.textId)
-            return ""
         }
 
         private drawLogo(surface: ui.DrawSurface): void {
