@@ -84,7 +84,7 @@ namespace microcode {
             // they need after `enter`; Home needs asset and text resolution.
             this.assets_ = runtime.assets
             this.widgets_ = new ui.UiWidgetController()
-            this.registerFocus()
+            this.widgets_.registerActionRow(this.row_)
             this.widgets_.registerInput(input, event =>
                 this.handleFocusInput(event),
             )
@@ -197,28 +197,13 @@ namespace microcode {
             return (UI_DESIGN_HEIGHT >> 1) + HOME_ACTION_CENTER_OFFSET_Y
         }
 
-        private registerFocus(): void {
-            // Focus registration happens after layout because focus targets need
-            // final rectangles for controller movement and pointer hit testing.
-            this.row_.registerFocusTargets(this.widgets_.focus, {
-                id: HOME_ACTION_SCOPE,
-                preferredTargetId: this.row_.resolvePreferredTargetId(),
-            })
-            this.row_.registerNavigation(this.widgets_.focusInput)
-            this.row_.focusDefault(this.widgets_.focus)
-        }
-
         private handleFocusInput(event: ui.UiInputEvent): boolean {
             if (this.diskModal_) return this.handleDiskModalInput(event)
             // Root Home consumes B/cancel without changing screens. Release is
             // left unhandled because press already handled the root behavior.
             if (event.action == "cancel" && event.phase != "released")
                 return true
-            return this.widgets_.handleInput(event, result => {
-                const rowResult = this.row_.handleFocusInput(result)
-                if (rowResult && rowResult.kind == "activated") return true
-                return undefined
-            })
+            return this.widgets_.handleActionRowInput(event, this.row_)
         }
 
         private dispatchAction(action: HomeAction): void {
@@ -258,20 +243,11 @@ namespace microcode {
                 onCancel: () => this.closeDiskModal(),
             })
             this.layoutDiskModal()
-            this.diskModal_.open(
-                this.widgets_.focus,
-                this.widgets_.focusInput,
-            )
+            this.widgets_.openModal(this.diskModal_)
         }
 
         private handleDiskModalInput(event: ui.UiInputEvent): boolean {
-            return this.widgets_.handleInput(event, result => {
-                const modalResult = this.diskModal_.handleFocusInput(result)
-                if (modalResult) return true
-                if (event.action == "pointerClick" && result.kind == "miss")
-                    return true
-                return undefined
-            })
+            return this.widgets_.handleModalInput(event, this.diskModal_)
         }
 
         private loadDiskSlot(slot: HomeDiskSlot): void {
@@ -284,10 +260,7 @@ namespace microcode {
 
         private closeDiskModal(): void {
             if (!this.diskModal_) return
-            const modalScopeId = this.diskModal_.modalScopeId
-            this.diskModal_.close(this.widgets_.focus)
-            this.widgets_.focusInput.clearNavigation(modalScopeId)
-            this.widgets_.focus.removeScope(modalScopeId)
+            this.widgets_.closeModal(this.diskModal_)
             this.diskModal_ = undefined
         }
 
