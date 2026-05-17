@@ -1,12 +1,18 @@
 namespace microcode {
     type HomeAction = "edit" | "samples" | "load" | "settings"
+    type HomeDiskSlot = string
 
     const HOME_ACTION_SCOPE = "home/actions"
+    const HOME_DISK_MODAL_SCOPE = "home/load"
     const HOME_ADD_SETTINGS = false
     const HOME_ACTION_CENTER_OFFSET_Y = 30
     const HOME_ACTION_WIDTH = 32
     const HOME_ACTION_HEIGHT = 33
     const HOME_ACTION_GAP = 8
+    const HOME_DISK_ITEM_WIDTH = 18
+    const HOME_DISK_ITEM_HEIGHT = 18
+    const HOME_DISK_COLUMN_COUNT = 3
+    const HOME_DISK_MODAL_MARGIN = 4
     const HOME_FOCUS_COLOR = 9
     const HOME_FOCUS_THICKNESS = 3
     const HOME_FOCUS_LABEL_BACKGROUND = 15
@@ -28,6 +34,12 @@ namespace microcode {
         private input_: ui.UiFocusInputController
         private actions_: ui.UiActionItem<HomeAction>[]
         private row_: ui.UiActionRow<HomeAction>
+        private actionButtonView_: ui.UiButtonView
+        private diskItems_: ui.UiActionItem<HomeDiskSlot>[]
+        private diskModal_: ui.UiModalGrid<HomeDiskSlot>
+        private diskModalRect_: ui.Rect
+        private diskModalSize_: ui.UiMeasuredSize
+        private iconRect_: ui.Rect
         private rowLayout_: ui.UiAlignLayout
         private rowBandRect_: ui.Rect
         private labelRect_: ui.Rect
@@ -36,6 +48,10 @@ namespace microcode {
         constructor(navigation: AppNavigation) {
             this.navigation_ = navigation
             this.actions_ = this.createActions()
+            this.diskItems_ = this.createDiskItems()
+            this.actionButtonView_ = new ui.UiButtonView({
+                style: ui.UiButtonStyles.Transparent,
+            })
             // Widgets are retained objects. Build them once, then update their
             // layout, focus registration, and render pass as screen state changes.
             this.row_ = new ui.UiActionRow<HomeAction>({
@@ -54,12 +70,15 @@ namespace microcode {
                 horizontalAlignment: "center",
                 verticalAlignment: "center",
             })
+            this.diskModalRect_ = new ui.Rect()
+            this.diskModalSize_ = new ui.UiMeasuredSize()
+            this.iconRect_ = new ui.Rect()
             this.rowBandRect_ = new ui.Rect()
             this.labelRect_ = new ui.Rect()
             this.layoutActions()
             this.yOffset_ = -(UI_DESIGN_HEIGHT >> 1)
         }
-      
+
         public enter(runtime: ui.UiRuntime, input: ui.UiInputScope): void {
             // The host owns the runtime. Screens keep only the runtime services
             // they need after `enter`; Home needs asset and text resolution.
@@ -86,6 +105,9 @@ namespace microcode {
             this.drawLogo(surface)
             this.drawVersion(surface)
             this.row_.render(surface, this.assets_, this.focus_)
+            if (this.diskModal_) {
+                this.diskModal_.render(surface, this.assets_, this.focus_)
+            }
         }
 
         public handleInput(event: ui.UiInputEvent): boolean {
@@ -100,16 +122,30 @@ namespace microcode {
             ]
             if (HOME_ADD_SETTINGS) {
                 actions.push(
-                    this.createAction("settings", "largeSettingsGear", "settings")
+                    this.createAction(
+                        "settings",
+                        "largeSettingsGear",
+                        "settings",
+                    ),
                 )
             }
             return actions
         }
 
+        private createDiskItems(): ui.UiActionItem<HomeDiskSlot>[] {
+            return diskSlots().map(slot => {
+                return {
+                    id: slot,
+                    value: slot,
+                    bitmapId: slot,
+                }
+            })
+        }
+
         private createAction(
             value: HomeAction,
             bitmapId: string,
-            textId: string
+            textId: string,
         ): ui.UiActionItem<HomeAction> {
             // Action items carry typed app values. The widget reports which
             // value was activated; app navigation stays in this screen.
@@ -122,11 +158,11 @@ namespace microcode {
                     surface: ui.DrawSurface,
                     item: ui.UiActionItem<HomeAction>,
                     rect: ui.Rect,
-                    focused: boolean
+                    focused: boolean,
                 ) => this.drawAction(surface, item, rect, focused),
             }
         }
-      
+
         private layoutActions(): void {
             // `UiAlignLayout` owns centering the row within this screen band;
             // Home only chooses the vertical band where actions belong.
@@ -134,16 +170,34 @@ namespace microcode {
                 0,
                 this.actionCenterY() - Math.idiv(HOME_ACTION_HEIGHT, 2),
                 UI_DESIGN_WIDTH,
-                HOME_ACTION_HEIGHT
+                HOME_ACTION_HEIGHT,
             )
             this.rowLayout_.arrange(this.rowBandRect_)
         }
 
-        private actionCenterY(): number {
-            return (
-                (UI_DESIGN_HEIGHT >> 1) +
-                HOME_ACTION_CENTER_OFFSET_Y
+        private layoutDiskModal(): void {
+            if (!this.diskModal_) return
+            this.diskModal_.measure(
+                { maxWidth: UI_DESIGN_WIDTH, maxHeight: UI_DESIGN_HEIGHT },
+                this.diskModalSize_,
             )
+            this.diskModalRect_.set(
+                Math.idiv(
+                    UI_DESIGN_WIDTH - this.diskModalSize_.preferredWidth,
+                    2,
+                ),
+                Math.idiv(
+                    UI_DESIGN_HEIGHT - this.diskModalSize_.preferredHeight,
+                    2,
+                ),
+                this.diskModalSize_.preferredWidth,
+                this.diskModalSize_.preferredHeight,
+            )
+            this.diskModal_.arrange(this.diskModalRect_)
+        }
+
+        private actionCenterY(): number {
+            return (UI_DESIGN_HEIGHT >> 1) + HOME_ACTION_CENTER_OFFSET_Y
         }
 
         private registerFocus(): void {
@@ -168,14 +222,18 @@ namespace microcode {
             input.onAction("activate", event => this.handleFocusInput(event))
             input.onAction("cancel", event => this.handleFocusInput(event))
             input.onAction("pointerMove", event => this.handleFocusInput(event))
-            input.onAction("pointerClick", event => this.handleFocusInput(event))
+            input.onAction("pointerClick", event =>
+                this.handleFocusInput(event),
+            )
             input.onAction("wheel", event => this.handleFocusInput(event))
         }
 
         private handleFocusInput(event: ui.UiInputEvent): boolean {
+            if (this.diskModal_) return this.handleDiskModalInput(event)
             // Root Home consumes B/cancel without changing screens. Release is
             // left unhandled because press already handled the root behavior.
-            if (event.action == "cancel" && event.phase != "released") return true
+            if (event.action == "cancel" && event.phase != "released")
+                return true
             const result = this.input_.handleInput(event)
             const rowResult = this.row_.handleFocusInput(result)
             if (rowResult && rowResult.kind == "activated") {
@@ -196,6 +254,7 @@ namespace microcode {
                     this.navigation_.launchSamples()
                     break
                 case "load":
+                    this.openDiskModal()
                     break
                 case "settings":
                     this.navigation_.launchSettings()
@@ -203,113 +262,103 @@ namespace microcode {
             }
         }
 
+        private openDiskModal(): void {
+            if (this.diskModal_) return
+            this.diskModal_ = new ui.UiModalGrid<HomeDiskSlot>({
+                parentScopeId: HOME_ACTION_SCOPE,
+                modalScopeId: HOME_DISK_MODAL_SCOPE,
+                items: this.diskItems_,
+                titleId: "load",
+                columnCount: HOME_DISK_COLUMN_COUNT,
+                itemWidth: HOME_DISK_ITEM_WIDTH,
+                itemHeight: HOME_DISK_ITEM_HEIGHT,
+                buttonStyle: ui.UiButtonStyles.LightShadowedWhite,
+                contentMargin: HOME_DISK_MODAL_MARGIN,
+                panelColor: this.backgroundColor,
+                titleColor: 1,
+            })
+            this.layoutDiskModal()
+            this.diskModal_.open(this.focus_, this.input_)
+        }
+
+        private handleDiskModalInput(event: ui.UiInputEvent): boolean {
+            const result = this.input_.handleInput(event)
+            const modalResult = this.diskModal_.handleFocusInput(result)
+            if (modalResult) {
+                this.handleDiskModalResult(modalResult)
+                return true
+            }
+            if (event.action == "pointerClick" && result.kind == "miss")
+                return true
+            return result.handled
+        }
+
+        private handleDiskModalResult(
+            result: ui.UiModalGridResult<HomeDiskSlot>,
+        ): void {
+            if (result.kind == "activated") {
+                const slot = result.value
+                let buf = settings.readBuffer(slot)
+                if (!buf) buf = this.createEmptyProgramBuffer()
+                settings.writeBuffer(SAVESLOT_AUTO, buf)
+                this.closeDiskModal()
+                this.navigation_.launchEditor()
+            } else if (result.kind == "cancelled") {
+                this.closeDiskModal()
+            }
+        }
+
+        private closeDiskModal(): void {
+            if (!this.diskModal_) return
+            const modalScopeId = this.diskModal_.modalScopeId
+            this.diskModal_.close(this.focus_)
+            this.input_.clearNavigation(modalScopeId)
+            this.focus_.removeScope(modalScopeId)
+            this.diskModal_ = undefined
+        }
+
+        private createEmptyProgramBuffer(): Buffer {
+            const buf = Buffer.create(6)
+            for (let i = 0; i < 5; ++i) buf[i] = Tid.END_OF_PAGE
+            buf[5] = Tid.END_OF_PROG
+            return buf
+        }
+
         private drawAction(
             surface: ui.DrawSurface,
             item: ui.UiActionItem<HomeAction>,
             rect: ui.Rect,
-            focused: boolean
+            focused: boolean,
         ): void {
             const bitmap = this.assets_.getBitmap(item.bitmapId, true)
-            let focusX = rect.x
-            let focusY = rect.y
-            let focusWidth = rect.width
-            let focusHeight = rect.height
-            if (bitmap) {
-                // Resolve assets through the runtime service. That keeps
-                // screens testable against explicit dependencies.
-                focusX = rect.x + Math.idiv(rect.width - bitmap.width, 2)
-                focusY = rect.y + Math.idiv(rect.height - bitmap.height, 2)
-                focusWidth = bitmap.width
-                focusHeight = bitmap.height
-                surface.drawBitmap(
-                    bitmap,
-                    focusX,
-                    focusY
-                )
-            }
-            if (focused) {
-                this.drawActionFocus(
-                    surface,
-                    item,
-                    focusX,
-                    focusY,
-                    focusWidth,
-                    focusHeight
-                )
-            }
-        }
-
-        private drawActionFocus(
-            surface: ui.DrawSurface,
-            item: ui.UiActionItem<HomeAction>,
-            x: number,
-            y: number,
-            width: number,
-            height: number
-        ): void {
-            // The action focus visual has two parts: a thick outline on the
-            // target and a text label placed below the focused icon.
-            this.drawActionFocusRing(surface, x, y, width, height)
-
-            const text = this.actionText(item)
-            if (text.length > 0) {
-                this.drawActionFocusLabel(
-                    surface,
-                    text,
-                    x + Math.idiv(width, 2),
-                    y + height - 1 + HOME_FOCUS_THICKNESS + 2
-                )
-            }
-        }
-
-        private drawActionFocusRing(
-            surface: ui.DrawSurface,
-            x: number,
-            y: number,
-            width: number,
-            height: number
-        ): void {
-            const right = x + width - 1
-            const bottom = y + height - 1
-            for (let dist = 1; dist <= HOME_FOCUS_THICKNESS; dist++) {
-                surface.drawLine(x - dist, y, x - dist, bottom, HOME_FOCUS_COLOR)
-                surface.drawLine(
-                    right + dist,
-                    y,
-                    right + dist,
-                    bottom,
-                    HOME_FOCUS_COLOR
-                )
-                surface.drawLine(x, y - dist, right, y - dist, HOME_FOCUS_COLOR)
-                surface.drawLine(
-                    x,
-                    bottom + dist,
-                    right,
-                    bottom + dist,
-                    HOME_FOCUS_COLOR
-                )
-                if (dist > 1) {
-                    surface.drawLine(x - dist, y, x, y - dist, HOME_FOCUS_COLOR)
-                    surface.drawLine(
-                        right + dist,
-                        y,
-                        right,
-                        y - dist,
-                        HOME_FOCUS_COLOR
+            this.actionButtonView_.render(
+                surface,
+                rect,
+                { bitmap },
+                { focused, contentRect: this.iconRect_ },
+            )
+            if (focused && bitmap) {
+                const text = this.actionText(item)
+                if (text.length > 0) {
+                    this.drawActionFocusLabel(
+                        surface,
+                        text,
+                        this.iconRect_.x + Math.idiv(this.iconRect_.width, 2),
+                        this.iconRect_.y +
+                            this.iconRect_.height -
+                            1 +
+                            HOME_FOCUS_THICKNESS +
+                            2,
                     )
-                    surface.drawLine(
-                        x - dist,
-                        bottom,
-                        x,
-                        bottom + dist,
-                        HOME_FOCUS_COLOR
-                    )
-                    surface.drawLine(
-                        right + dist,
-                        bottom,
-                        right,
-                        bottom + dist,
-                        HOME_FOCUS_COLOR
+                }
+            } else if (focused) {
+                const text = this.actionText(item)
+                if (text.length > 0) {
+                    this.drawActionFocusLabel(
+                        surface,
+                        text,
+                        rect.x + Math.idiv(rect.width, 2),
+                        rect.y + rect.height - 1 + HOME_FOCUS_THICKNESS + 2,
                     )
                 }
             }
@@ -319,23 +368,14 @@ namespace microcode {
             surface: ui.DrawSurface,
             text: string,
             centerX: number,
-            top: number
+            top: number,
         ): void {
             const font = user_interface_base.font
             const textWidth = font.charWidth * text.length
             const textHeight = font.charHeight
-            const maxX = Math.max(
-                1,
-                UI_DESIGN_WIDTH - 1 - textWidth
-            )
-            const x = Math.max(
-                1,
-                Math.min(maxX, centerX - (textWidth >> 1))
-            )
-            const y = Math.min(
-                top,
-                UI_DESIGN_HEIGHT - 1 - font.charHeight
-            )
+            const maxX = Math.max(1, UI_DESIGN_WIDTH - 1 - textWidth)
+            const x = Math.max(1, Math.min(maxX, centerX - (textWidth >> 1)))
+            const y = Math.min(top, UI_DESIGN_HEIGHT - 1 - font.charHeight)
 
             this.labelRect_.set(x - 1, y - 1, textWidth + 1, textHeight + 2)
             surface.fillRect(this.labelRect_, HOME_FOCUS_LABEL_BACKGROUND)
@@ -347,7 +387,8 @@ namespace microcode {
 
         private actionText(item: ui.UiActionItem<HomeAction>): string {
             if (item.text !== undefined) return item.text
-            if (item.textId !== undefined) return this.assets_.getText(item.textId)
+            if (item.textId !== undefined)
+                return this.assets_.getText(item.textId)
             return ""
         }
 
@@ -359,19 +400,18 @@ namespace microcode {
             const dy = this.yOffset_ == 0 ? (Math.idiv(t, 800) & 1) - 1 : 0
             const word = this.assets_.getBitmap("wordLogo")
             const microbit = this.assets_.getBitmap("microbitLogo")
-            const offset =
-                (UI_DESIGN_HEIGHT >> 1) - word.height - HOME_MARGIN
+            const offset = (UI_DESIGN_HEIGHT >> 1) - word.height - HOME_MARGIN
             const y = offset + dy
 
             surface.drawBitmap(
                 word,
                 Math.idiv(UI_DESIGN_WIDTH - word.width, 2) + dy,
-                y + this.yOffset_
+                y + this.yOffset_,
             )
             surface.drawBitmap(
                 microbit,
                 Math.idiv(UI_DESIGN_WIDTH - microbit.width, 2) + dy,
-                y - word.height + this.yOffset_ + HOME_MARGIN
+                y - word.height + this.yOffset_ + HOME_MARGIN,
             )
             if (!this.yOffset_) {
                 const tagline = this.assets_.getText("tagline")
@@ -382,7 +422,7 @@ namespace microcode {
                         dy -
                         font.charWidth * tagline.length,
                     offset + word.height + dy + this.yOffset_ + 1,
-                    { color: 0xb, font, transparent: true }
+                    { color: 0xb, font, transparent: true },
                 )
             }
         }
@@ -391,12 +431,10 @@ namespace microcode {
             const font = bitmaps.font5
             surface.drawText(
                 microcode.VERSION,
-                UI_DESIGN_WIDTH -
-                    font.charWidth * microcode.VERSION.length,
+                UI_DESIGN_WIDTH - font.charWidth * microcode.VERSION.length,
                 UI_DESIGN_HEIGHT - font.charHeight - 1,
-                { color: 0xb, font, transparent: true }
+                { color: 0xb, font, transparent: true },
             )
         }
-
     }
 }
