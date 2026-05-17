@@ -29,19 +29,17 @@ namespace microcode {
     export class HomeScreen implements ui.UiScreen {
         public backgroundColor = 0xc
         private navigation_: AppNavigation
-        private assets_: ui.UiAssetResolver
-        private widgets_: ui.UiWidgetController
+        private screen_: ui.UiScreenController
         private actions_: ui.UiControl<HomeAction>[]
         private row_: ui.UiControlRow<HomeAction>
         private actionButtonStyle_: ui.UiButtonStyle
         private diskControls_: ui.UiControl<HomeDiskSlot>[]
-        private rowLayout_: ui.UiAlignLayout
-        private rowBandRect_: ui.Rect
         private actionLabelBounds_: ui.Rect
         private yOffset_: number
 
         constructor(navigation: AppNavigation) {
             this.navigation_ = navigation
+            this.screen_ = new ui.UiScreenController()
             this.actions_ = this.createActions()
             this.diskControls_ = this.createDiskControls()
             this.actionButtonStyle_ = ui.buttonStyle(
@@ -63,8 +61,6 @@ namespace microcode {
                 UI_DESIGN_WIDTH,
                 UI_DESIGN_HEIGHT,
             )
-            // Widgets are retained objects. Build them once, then update their
-            // layout, focus registration, and render pass as screen state changes.
             this.row_ = new ui.UiControlRow<HomeAction>({
                 scopeId: HOME_ACTION_SCOPE,
                 controls: this.actions_,
@@ -75,34 +71,25 @@ namespace microcode {
                 labelBounds: this.actionLabelBounds_,
             })
 
-            this.rowLayout_ = new ui.UiAlignLayout({
-                layoutSpec: {
-                    width: { mode: "fixed", value: UI_DESIGN_WIDTH },
-                    height: { mode: "fixed", value: HOME_ACTION_HEIGHT },
-                },
-                child: this.row_,
+            this.screen_.add(this.row_, {
+                x: 0,
+                centerY: (UI_DESIGN_HEIGHT >> 1) + HOME_ACTION_CENTER_OFFSET_Y,
+                width: UI_DESIGN_WIDTH,
+                height: HOME_ACTION_HEIGHT,
                 horizontalAlignment: "center",
                 verticalAlignment: "center",
             })
-            this.rowBandRect_ = new ui.Rect()
-            this.layoutActions()
             this.yOffset_ = -(UI_DESIGN_HEIGHT >> 1)
         }
 
         public enter(runtime: ui.UiRuntime, input: ui.UiInputScope): void {
-            // The host owns the runtime. Screens keep only the runtime services
-            // they need after `enter`; Home needs asset and text resolution.
-            this.assets_ = runtime.assets
-            this.widgets_ = new ui.UiWidgetController()
-            this.widgets_.registerWidget(this.row_)
-            this.widgets_.registerInput(input, event =>
-                this.handleFocusInput(event),
+            this.screen_.enter(runtime, input, event =>
+                this.handleRootInput(event),
             )
         }
 
         public exit(): void {
-            this.assets_ = undefined
-            this.widgets_ = undefined
+            this.screen_.exit()
         }
 
         public render(surface: ui.DrawSurface): void {
@@ -111,99 +98,59 @@ namespace microcode {
             surface.clear(this.backgroundColor)
             this.drawLogo(surface)
             this.drawVersion(surface)
-            this.widgets_.render(surface, this.assets_, this.row_)
-            this.widgets_.renderModal(surface, this.assets_)
-        }
-
-        public handleInput(event: ui.UiInputEvent): boolean {
-            return event.action == "cancel"
+            this.screen_.render(surface)
         }
 
         private createActions(): ui.UiControl<HomeAction>[] {
             const actions: ui.UiControl<HomeAction>[] = [
-                this.createAction("edit", "edit_program", "C0", () =>
-                    this.navigation_.launchEditor(),
-                ),
-                this.createAction("samples", "smiley_buttons", "C1", () =>
-                    this.navigation_.launchSamples(),
-                ),
-                this.createAction("load", "largeDisk", "load", () =>
-                    this.openDiskModal(),
-                ),
+                ui.createControl<HomeAction>("edit", "edit", {
+                    bitmapId: "edit_program",
+                    textId: "C0",
+                    onActivate: () => this.navigation_.launchEditor(),
+                }),
+                ui.createControl<HomeAction>("samples", "samples", {
+                    bitmapId: "smiley_buttons",
+                    textId: "C1",
+                    onActivate: () => this.navigation_.launchSamples(),
+                }),
+                ui.createControl<HomeAction>("load", "load", {
+                    bitmapId: "largeDisk",
+                    textId: "load",
+                    onActivate: () => this.openDiskModal(),
+                }),
             ]
             if (HOME_ADD_SETTINGS) {
                 actions.push(
-                    this.createAction(
-                        "settings",
-                        "largeSettingsGear",
-                        "settings",
-                        () => this.navigation_.launchSettings(),
-                    ),
+                    ui.createControl<HomeAction>("settings", "settings", {
+                        bitmapId: "largeSettingsGear",
+                        textId: "settings",
+                        onActivate: () => this.navigation_.launchSettings(),
+                    }),
                 )
             }
             return actions
         }
 
         private createDiskControls(): ui.UiControl<HomeDiskSlot>[] {
-            return diskSlots().map(slot => {
-                return {
-                    id: slot,
-                    value: slot,
+            return diskSlots().map(slot =>
+                ui.createControl<HomeDiskSlot>(slot, slot, {
                     bitmapId: slot,
                     onActivate: () => this.loadDiskSlot(slot),
-                }
-            })
-        }
-
-        private createAction(
-            value: HomeAction,
-            bitmapId: string,
-            textId: string,
-            onActivate: () => void,
-        ): ui.UiControl<HomeAction> {
-            return {
-                id: value,
-                value,
-                bitmapId,
-                textId,
-                onActivate,
-            }
-        }
-
-        private layoutActions(): void {
-            // `UiAlignLayout` owns centering the row within this screen band;
-            // Home only chooses the vertical band where actions belong.
-            this.rowBandRect_.set(
-                0,
-                this.actionCenterY() - Math.idiv(HOME_ACTION_HEIGHT, 2),
-                UI_DESIGN_WIDTH,
-                HOME_ACTION_HEIGHT,
+                }),
             )
-            this.rowLayout_.arrange(this.rowBandRect_)
         }
 
-        private actionCenterY(): number {
-            return (UI_DESIGN_HEIGHT >> 1) + HOME_ACTION_CENTER_OFFSET_Y
-        }
-
-        private handleFocusInput(event: ui.UiInputEvent): boolean {
-            if (this.widgets_.hasModal)
-                return this.widgets_.handleModalInput(event)
+        private handleRootInput(event: ui.UiInputEvent): boolean | undefined {
             // Root Home consumes B/cancel without changing screens. Release is
             // left unhandled because press already handled the root behavior.
             if (event.action == "cancel" && event.phase != "released")
                 return true
-            return this.widgets_.handleInput(event, this.row_)
+            return undefined
         }
 
         private openDiskModal(): void {
-            if (this.widgets_.hasModal) return
-            this.widgets_.openModal(this.createDiskModal(), {
-                constraints: {
-                    maxWidth: UI_DESIGN_WIDTH,
-                    maxHeight: UI_DESIGN_HEIGHT,
-                },
-            })
+            if (this.screen_.hasModal) return
+            this.screen_.openModal(this.createDiskModal())
         }
 
         private createDiskModal(): ui.UiModalGrid<HomeDiskSlot> {
@@ -233,7 +180,7 @@ namespace microcode {
         }
 
         private closeDiskModal(): void {
-            this.widgets_.closeModal()
+            this.screen_.closeModal()
         }
 
         private drawLogo(surface: ui.DrawSurface): void {
@@ -242,8 +189,8 @@ namespace microcode {
             this.yOffset_ = Math.min(0, this.yOffset_ + 2)
             const t = control.millis()
             const dy = this.yOffset_ == 0 ? (Math.idiv(t, 800) & 1) - 1 : 0
-            const word = this.assets_.getBitmap("wordLogo")
-            const microbit = this.assets_.getBitmap("microbitLogo")
+            const word = this.screen_.assets.getBitmap("wordLogo")
+            const microbit = this.screen_.assets.getBitmap("microbitLogo")
             const offset = (UI_DESIGN_HEIGHT >> 1) - word.height - HOME_MARGIN
             const y = offset + dy
 
@@ -258,7 +205,7 @@ namespace microcode {
                 y - word.height + this.yOffset_ + HOME_MARGIN,
             )
             if (!this.yOffset_) {
-                const tagline = this.assets_.getText("tagline")
+                const tagline = this.screen_.assets.getText("tagline")
                 const font = bitmaps.font5
                 surface.drawText(
                     tagline,
