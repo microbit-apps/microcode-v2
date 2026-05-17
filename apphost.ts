@@ -2,14 +2,14 @@ namespace microcode {
     import Scene = user_interface_base.Scene
 
     const HOST_FRAME_PRIORITY = 30
-    export const UI_DESIGN_WIDTH = ui.STANDARD_DISPLAY_WIDTH
-    export const UI_DESIGN_HEIGHT = ui.STANDARD_DISPLAY_HEIGHT
+    export const UI_SCREEN_WIDTH = ui.STANDARD_DISPLAY_WIDTH
+    export const UI_SCREEN_HEIGHT = ui.STANDARD_DISPLAY_HEIGHT
     export const UI_DISPLAY_PROFILE = ui.UiDisplayProfileId.Standard
 
     class AppAssetResolver implements ui.UiAssetResolver {
         public getBitmap(
             id: string | number,
-            nullIfMissing?: boolean
+            nullIfMissing?: boolean,
         ): Bitmap | undefined {
             if (id == "wordLogo") return wordLogo
             const bitmap = icons.get(id, !!nullIfMissing)
@@ -171,11 +171,9 @@ namespace microcode {
             this.owner_.didClose(this)
         }
 
-        public update(): void {
-        }
+        public update(): void {}
 
-        public draw(): void {
-        }
+        public draw(): void {}
 
         public pushScreen(screen: ui.UiScreen): void {
             if (!this.runtime_) return
@@ -219,14 +217,14 @@ namespace microcode {
                 HOST_FRAME_PRIORITY,
                 () => {
                     if (this.runtime_) this.runtime_.runFrame()
-                }
+                },
             )
         }
 
         private dispatchPointerInput(
             action: "pointerMove" | "pointerClick",
             x: number,
-            y: number
+            y: number,
         ): void {
             if (!this.runtime_) return
             this.runtime_.dispatchInput({

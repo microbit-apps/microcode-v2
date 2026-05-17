@@ -58,8 +58,8 @@ namespace microcode {
             this.actionLabelBounds_ = new ui.Rect(
                 0,
                 0,
-                UI_DESIGN_WIDTH,
-                UI_DESIGN_HEIGHT,
+                UI_SCREEN_WIDTH,
+                UI_SCREEN_HEIGHT,
             )
             this.row_ = new ui.UiControlRow<HomeAction>({
                 scopeId: HOME_ACTION_SCOPE,
@@ -73,13 +73,13 @@ namespace microcode {
 
             this.screen_.add(this.row_, {
                 x: 0,
-                centerY: (UI_DESIGN_HEIGHT >> 1) + HOME_ACTION_CENTER_OFFSET_Y,
-                width: UI_DESIGN_WIDTH,
+                centerY: (UI_SCREEN_HEIGHT >> 1) + HOME_ACTION_CENTER_OFFSET_Y,
+                width: UI_SCREEN_WIDTH,
                 height: HOME_ACTION_HEIGHT,
                 horizontalAlignment: "center",
                 verticalAlignment: "center",
             })
-            this.yOffset_ = -(UI_DESIGN_HEIGHT >> 1)
+            this.yOffset_ = -(UI_SCREEN_HEIGHT >> 1)
         }
 
         public enter(runtime: ui.UiRuntime, input: ui.UiInputScope): void {
@@ -191,17 +191,17 @@ namespace microcode {
             const dy = this.yOffset_ == 0 ? (Math.idiv(t, 800) & 1) - 1 : 0
             const word = this.screen_.assets.getBitmap("wordLogo")
             const microbit = this.screen_.assets.getBitmap("microbitLogo")
-            const offset = (UI_DESIGN_HEIGHT >> 1) - word.height - HOME_MARGIN
+            const offset = (UI_SCREEN_HEIGHT >> 1) - word.height - HOME_MARGIN
             const y = offset + dy
 
             surface.drawBitmap(
                 word,
-                Math.idiv(UI_DESIGN_WIDTH - word.width, 2) + dy,
+                Math.idiv(UI_SCREEN_WIDTH - word.width, 2) + dy,
                 y + this.yOffset_,
             )
             surface.drawBitmap(
                 microbit,
-                Math.idiv(UI_DESIGN_WIDTH - microbit.width, 2) + dy,
+                Math.idiv(UI_SCREEN_WIDTH - microbit.width, 2) + dy,
                 y - word.height + this.yOffset_ + HOME_MARGIN,
             )
             if (!this.yOffset_) {
@@ -209,7 +209,7 @@ namespace microcode {
                 const font = bitmaps.font5
                 surface.drawText(
                     tagline,
-                    Math.idiv(UI_DESIGN_WIDTH + word.width, 2) +
+                    Math.idiv(UI_SCREEN_WIDTH + word.width, 2) +
                         dy -
                         font.charWidth * tagline.length,
                     offset + word.height + dy + this.yOffset_ + 1,
@@ -222,8 +222,8 @@ namespace microcode {
             const font = bitmaps.font5
             surface.drawText(
                 microcode.VERSION,
-                UI_DESIGN_WIDTH - font.charWidth * microcode.VERSION.length,
-                UI_DESIGN_HEIGHT - font.charHeight - 1,
+                UI_SCREEN_WIDTH - font.charWidth * microcode.VERSION.length,
+                UI_SCREEN_HEIGHT - font.charHeight - 1,
                 { color: 0xb, font, transparent: true },
             )
         }
