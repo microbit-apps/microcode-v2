@@ -19,30 +19,18 @@ namespace microcode {
     const HOME_FOCUS_LABEL_COLOR = 1
     const HOME_MARGIN = 2
 
-    /**
-     * Home screen implemented directly on `ui-core` and `ui-widgets`.
-     *
-     * This screen is intentionally small enough to be a reference for app
-     * screens: app code owns flow decisions, widgets own reusable focus and
-     * activation mechanics, and all drawing happens through the frame surface.
-     */
     export class HomeScreen implements ui.UiScreen {
         public backgroundColor = 0xc
         private navigation_: AppNavigation
         private screen_: ui.UiScreenController
         private actions_: ui.UiControl<HomeAction>[]
-        private row_: ui.UiControlRow<HomeAction>
-        private actionButtonStyle_: ui.UiButtonStyle
-        private diskControls_: ui.UiControl<HomeDiskSlot>[]
-        private actionLabelBounds_: ui.Rect
-        private yOffset_: number
+        private logoOffset_: number
 
         constructor(navigation: AppNavigation) {
             this.navigation_ = navigation
             this.screen_ = new ui.UiScreenController()
             this.actions_ = this.createActions()
-            this.diskControls_ = this.createDiskControls()
-            this.actionButtonStyle_ = ui.buttonStyle(
+            const actionButtonStyle = ui.buttonStyle(
                 ui.UiButtonStyles.Transparent,
                 ui.UiButtonStyles.FocusLabel,
                 {
@@ -55,23 +43,23 @@ namespace microcode {
                     focusLabelPadding: 1,
                 },
             )
-            this.actionLabelBounds_ = new ui.Rect(
+            const actionLabelBounds = new ui.Rect(
                 0,
                 0,
                 UI_SCREEN_WIDTH,
                 UI_SCREEN_HEIGHT,
             )
-            this.row_ = new ui.UiControlRow<HomeAction>({
+            const actionRow = new ui.UiControlRow<HomeAction>({
                 scopeId: HOME_ACTION_SCOPE,
                 controls: this.actions_,
                 controlWidth: HOME_ACTION_WIDTH,
                 controlHeight: HOME_ACTION_HEIGHT,
                 gap: HOME_ACTION_GAP,
-                controlStyle: this.actionButtonStyle_,
-                labelBounds: this.actionLabelBounds_,
+                controlStyle: actionButtonStyle,
+                labelBounds: actionLabelBounds,
             })
 
-            this.screen_.add(this.row_, {
+            this.screen_.add(actionRow, {
                 x: 0,
                 centerY: (UI_SCREEN_HEIGHT >> 1) + HOME_ACTION_CENTER_OFFSET_Y,
                 width: UI_SCREEN_WIDTH,
@@ -79,7 +67,7 @@ namespace microcode {
                 horizontalAlignment: "center",
                 verticalAlignment: "center",
             })
-            this.yOffset_ = -(UI_SCREEN_HEIGHT >> 1)
+            this.logoOffset_ = -(UI_SCREEN_HEIGHT >> 1)
         }
 
         public enter(runtime: ui.UiRuntime, input: ui.UiInputScope): void {
@@ -93,8 +81,7 @@ namespace microcode {
         }
 
         public render(surface: ui.DrawSurface): void {
-            // Draw from back to front in one render pass. The host commits the
-            // frame after this method returns.
+            // Draw from back to front
             surface.clear(this.backgroundColor)
             this.drawLogo(surface)
             this.drawVersion(surface)
@@ -141,8 +128,6 @@ namespace microcode {
         }
 
         private handleRootInput(event: ui.UiInputEvent): boolean | undefined {
-            // Root Home consumes B/cancel without changing screens. Release is
-            // left unhandled because press already handled the root behavior.
             if (event.action == "cancel" && event.phase != "released")
                 return true
             return undefined
@@ -157,7 +142,7 @@ namespace microcode {
             return new ui.UiModalGrid<HomeDiskSlot>({
                 parentScopeId: HOME_ACTION_SCOPE,
                 modalScopeId: HOME_DISK_MODAL_SCOPE,
-                controls: this.diskControls_,
+                controls: this.createDiskControls(),
                 titleId: "load",
                 columnCount: HOME_DISK_COLUMN_COUNT,
                 controlWidth: HOME_DISK_ITEM_WIDTH,
@@ -186,9 +171,9 @@ namespace microcode {
         private drawLogo(surface: ui.DrawSurface): void {
             // The animation is ordinary screen state. It advances during render
             // because the host runs frames continuously while this screen is top.
-            this.yOffset_ = Math.min(0, this.yOffset_ + 2)
+            this.logoOffset_ = Math.min(0, this.logoOffset_ + 2)
             const t = control.millis()
-            const dy = this.yOffset_ == 0 ? (Math.idiv(t, 800) & 1) - 1 : 0
+            const dy = this.logoOffset_ == 0 ? (Math.idiv(t, 800) & 1) - 1 : 0
             const word = this.screen_.assets.getBitmap("wordLogo")
             const microbit = this.screen_.assets.getBitmap("microbitLogo")
             const offset = (UI_SCREEN_HEIGHT >> 1) - word.height - HOME_MARGIN
@@ -197,14 +182,14 @@ namespace microcode {
             surface.drawBitmap(
                 word,
                 Math.idiv(UI_SCREEN_WIDTH - word.width, 2) + dy,
-                y + this.yOffset_,
+                y + this.logoOffset_,
             )
             surface.drawBitmap(
                 microbit,
                 Math.idiv(UI_SCREEN_WIDTH - microbit.width, 2) + dy,
-                y - word.height + this.yOffset_ + HOME_MARGIN,
+                y - word.height + this.logoOffset_ + HOME_MARGIN,
             )
-            if (!this.yOffset_) {
+            if (!this.logoOffset_) {
                 const tagline = this.screen_.assets.getText("tagline")
                 const font = bitmaps.font5
                 surface.drawText(
@@ -212,7 +197,7 @@ namespace microcode {
                     Math.idiv(UI_SCREEN_WIDTH + word.width, 2) +
                         dy -
                         font.charWidth * tagline.length,
-                    offset + word.height + dy + this.yOffset_ + 1,
+                    offset + word.height + dy + this.logoOffset_ + 1,
                     { color: 0xb, font, transparent: true },
                 )
             }
