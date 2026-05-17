@@ -65,6 +65,19 @@ function findLocalPackageRoot(name, dependentRoot) {
     return undefined
 }
 
+function findResolvedPackageRoot(name, dependentRoot) {
+    const candidates = [
+        path.join(dependentRoot, "pxt_modules", name),
+        path.join(projectRoot, "pxt_modules", name),
+    ]
+
+    for (const candidate of candidates) {
+        if (fs.existsSync(path.join(candidate, "pxt.json"))) return candidate
+    }
+
+    return undefined
+}
+
 function pxtFileNames(pxt) {
     const seen = {}
     const names = ["pxt.json"]
@@ -108,33 +121,44 @@ function writeCacheBlobs(cacheName, blob) {
     return paths
 }
 
-function syncDependency(name, spec, dependentRoot, synced) {
+function syncDependency(name, spec, dependentRoot, synced, visited) {
     if (!isGitHubSpec(spec)) return
 
     const cacheName = cacheNameForGitHubSpec(spec)
-    if (synced[cacheName]) return
+    if (visited[cacheName]) return
+    visited[cacheName] = true
 
     const localRoot = findLocalPackageRoot(name, dependentRoot)
-    if (!localRoot) return
+    const resolvedRoot = localRoot || findResolvedPackageRoot(name, dependentRoot)
 
-    const packed = packPackage(localRoot)
-    const cachePaths = writeCacheBlobs(cacheName, packed.blob)
-    synced[cacheName] = true
+    if (!resolvedRoot) return
+    const packed = packPackage(resolvedRoot)
 
-    console.log(
-        name +
-            " -> " +
-            cachePaths.join(", ") +
-            " (" +
-            packed.count +
-            " files from " +
-            localRoot +
-            ")"
-    )
+    if (localRoot) {
+        const cachePaths = writeCacheBlobs(cacheName, packed.blob)
+        synced[cacheName] = true
+
+        console.log(
+            name +
+                " -> " +
+                cachePaths.join(", ") +
+                " (" +
+                packed.count +
+                " files from " +
+                localRoot +
+                ")"
+        )
+    }
 
     const dependencies = packed.pxt.dependencies || {}
     Object.keys(dependencies).forEach(childName => {
-        syncDependency(childName, dependencies[childName], localRoot, synced)
+        syncDependency(
+            childName,
+            dependencies[childName],
+            resolvedRoot,
+            synced,
+            visited,
+        )
     })
 }
 
@@ -142,11 +166,12 @@ function main() {
     const pxt = readJson(path.join(projectRoot, "pxt.json"))
     const dependencies = pxt.dependencies || {}
     const synced = {}
+    const visited = {}
 
     console.log("cache roots: " + cacheRoots.join(", "))
 
     Object.keys(dependencies).forEach(name => {
-        syncDependency(name, dependencies[name], projectRoot, synced)
+        syncDependency(name, dependencies[name], projectRoot, synced, visited)
     })
 
     const count = Object.keys(synced).length
