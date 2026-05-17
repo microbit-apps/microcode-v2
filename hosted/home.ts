@@ -31,10 +31,10 @@ namespace microcode {
         private navigation_: AppNavigation
         private assets_: ui.UiAssetResolver
         private widgets_: ui.UiWidgetController
-        private actions_: ui.UiActionItem<HomeAction>[]
-        private row_: ui.UiActionRow<HomeAction>
+        private actions_: ui.UiControl<HomeAction>[]
+        private row_: ui.UiControlRow<HomeAction>
         private actionButtonStyle_: ui.UiButtonStyle
-        private diskItems_: ui.UiActionItem<HomeDiskSlot>[]
+        private diskControls_: ui.UiControl<HomeDiskSlot>[]
         private rowLayout_: ui.UiAlignLayout
         private rowBandRect_: ui.Rect
         private actionLabelBounds_: ui.Rect
@@ -43,7 +43,7 @@ namespace microcode {
         constructor(navigation: AppNavigation) {
             this.navigation_ = navigation
             this.actions_ = this.createActions()
-            this.diskItems_ = this.createDiskItems()
+            this.diskControls_ = this.createDiskControls()
             this.actionButtonStyle_ = ui.buttonStyle(
                 ui.UiButtonStyles.Transparent,
                 ui.UiButtonStyles.FocusLabel,
@@ -65,13 +65,13 @@ namespace microcode {
             )
             // Widgets are retained objects. Build them once, then update their
             // layout, focus registration, and render pass as screen state changes.
-            this.row_ = new ui.UiActionRow<HomeAction>({
+            this.row_ = new ui.UiControlRow<HomeAction>({
                 scopeId: HOME_ACTION_SCOPE,
-                items: this.actions_,
-                itemWidth: HOME_ACTION_WIDTH,
-                itemHeight: HOME_ACTION_HEIGHT,
+                controls: this.actions_,
+                controlWidth: HOME_ACTION_WIDTH,
+                controlHeight: HOME_ACTION_HEIGHT,
                 gap: HOME_ACTION_GAP,
-                buttonStyle: this.actionButtonStyle_,
+                controlStyle: this.actionButtonStyle_,
                 labelBounds: this.actionLabelBounds_,
             })
 
@@ -119,8 +119,8 @@ namespace microcode {
             return event.action == "cancel"
         }
 
-        private createActions(): ui.UiActionItem<HomeAction>[] {
-            const actions: ui.UiActionItem<HomeAction>[] = [
+        private createActions(): ui.UiControl<HomeAction>[] {
+            const actions: ui.UiControl<HomeAction>[] = [
                 this.createAction("edit", "edit_program", "C0", () =>
                     this.navigation_.launchEditor(),
                 ),
@@ -144,7 +144,7 @@ namespace microcode {
             return actions
         }
 
-        private createDiskItems(): ui.UiActionItem<HomeDiskSlot>[] {
+        private createDiskControls(): ui.UiControl<HomeDiskSlot>[] {
             return diskSlots().map(slot => {
                 return {
                     id: slot,
@@ -160,7 +160,7 @@ namespace microcode {
             bitmapId: string,
             textId: string,
             onActivate: () => void,
-        ): ui.UiActionItem<HomeAction> {
+        ): ui.UiControl<HomeAction> {
             return {
                 id: value,
                 value,
@@ -210,12 +210,12 @@ namespace microcode {
             return new ui.UiModalGrid<HomeDiskSlot>({
                 parentScopeId: HOME_ACTION_SCOPE,
                 modalScopeId: HOME_DISK_MODAL_SCOPE,
-                items: this.diskItems_,
+                controls: this.diskControls_,
                 titleId: "load",
                 columnCount: HOME_DISK_COLUMN_COUNT,
-                itemWidth: HOME_DISK_ITEM_WIDTH,
-                itemHeight: HOME_DISK_ITEM_HEIGHT,
-                buttonStyle: ui.UiButtonStyles.LightShadowedWhite,
+                controlWidth: HOME_DISK_ITEM_WIDTH,
+                controlHeight: HOME_DISK_ITEM_HEIGHT,
+                controlStyle: ui.UiButtonStyles.LightShadowedWhite,
                 contentMargin: HOME_DISK_MODAL_MARGIN,
                 titleGap: 4,
                 panelColor: this.backgroundColor,
@@ -226,7 +226,7 @@ namespace microcode {
 
         private loadDiskSlot(slot: HomeDiskSlot): void {
             let buf = settings.readBuffer(slot)
-            if (!buf) buf = this.createEmptyProgramBuffer()
+            if (!buf) buf = new ProgramDefn().toBuffer()
             settings.writeBuffer(SAVESLOT_AUTO, buf)
             this.closeDiskModal()
             this.navigation_.launchEditor()
@@ -234,13 +234,6 @@ namespace microcode {
 
         private closeDiskModal(): void {
             this.widgets_.closeModal()
-        }
-
-        private createEmptyProgramBuffer(): Buffer {
-            const buf = Buffer.create(6)
-            for (let i = 0; i < 5; ++i) buf[i] = Tid.END_OF_PAGE
-            buf[5] = Tid.END_OF_PROG
-            return buf
         }
 
         private drawLogo(surface: ui.DrawSurface): void {
