@@ -19,15 +19,14 @@ namespace microcode {
     const HOME_FOCUS_LABEL_COLOR = 1
     const HOME_MARGIN = 2
 
-    export class HomeScreen implements ui.UiScreen {
-        public backgroundColor = 0xc
+    export class HomeScreen extends ui.UiScreen {
         private navigation_: AppNavigation
-        private screen_: ui.UiScreenController
         private logoOffset_: number
 
         constructor(navigation: AppNavigation) {
+            super()
+            this.backgroundColor = 0xc
             this.navigation_ = navigation
-            this.screen_ = new ui.UiScreenController()
             const actionButtonStyle = ui.buttonStyle(
                 ui.UiButtonStyles.Transparent,
                 ui.UiButtonStyles.FocusLabel,
@@ -57,7 +56,7 @@ namespace microcode {
                 labelBounds: actionLabelBounds,
             })
 
-            this.screen_.add(actionRow, {
+            this.add(actionRow, {
                 x: 0,
                 centerY: (UI_SCREEN_HEIGHT >> 1) + HOME_ACTION_CENTER_OFFSET_Y,
                 width: UI_SCREEN_WIDTH,
@@ -68,22 +67,12 @@ namespace microcode {
             this.logoOffset_ = -(UI_SCREEN_HEIGHT >> 1)
         }
 
-        public enter(runtime: ui.UiRuntime, input: ui.UiInputScope): void {
-            this.screen_.enter(runtime, input, event =>
-                this.handleRootInput(event),
-            )
-        }
-
-        public exit(): void {
-            this.screen_.exit()
-        }
-
         public render(surface: ui.DrawSurface): void {
             // Draw from back to front
             surface.clear(this.backgroundColor)
             this.drawLogo(surface)
             this.drawVersion(surface)
-            this.screen_.render(surface)
+            this.renderWidgets(surface)
         }
 
         private createActions(): ui.UiControl<HomeAction>[] {
@@ -135,15 +124,15 @@ namespace microcode {
             })
         }
 
-        private handleRootInput(event: ui.UiInputEvent): boolean | undefined {
+        public handleScreenInput(event: ui.UiInputEvent): boolean | undefined {
             if (event.action == "cancel" && event.phase != "released")
                 return true
             return undefined
         }
 
         private openDiskModal(): void {
-            if (this.screen_.hasModal) return
-            this.screen_.openModal(this.createDiskModal())
+            if (this.hasModal) return
+            this.openModal(this.createDiskModal())
         }
 
         private createDiskModal(): ui.UiModalGrid<HomeDiskSlot> {
@@ -172,7 +161,7 @@ namespace microcode {
         }
 
         private closeDiskModal(): void {
-            this.screen_.closeModal()
+            this.closeModal()
         }
 
         private drawLogo(surface: ui.DrawSurface): void {
@@ -181,8 +170,8 @@ namespace microcode {
             this.logoOffset_ = Math.min(0, this.logoOffset_ + 2)
             const t = control.millis()
             const dy = this.logoOffset_ == 0 ? (Math.idiv(t, 800) & 1) - 1 : 0
-            const word = this.screen_.assets.getBitmap("wordLogo")
-            const microbit = this.screen_.assets.getBitmap("microbitLogo")
+            const word = this.assets.getBitmap("wordLogo")
+            const microbit = this.assets.getBitmap("microbitLogo")
             const offset = (UI_SCREEN_HEIGHT >> 1) - word.height - HOME_MARGIN
             const y = offset + dy
 
@@ -197,7 +186,7 @@ namespace microcode {
                 y - word.height + this.logoOffset_ + HOME_MARGIN,
             )
             if (!this.logoOffset_) {
-                const tagline = this.screen_.assets.getText("tagline")
+                const tagline = this.assets.getText("tagline")
                 const font = bitmaps.font5
                 surface.drawText(
                     tagline,
