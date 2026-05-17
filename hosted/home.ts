@@ -23,13 +23,11 @@ namespace microcode {
         public backgroundColor = 0xc
         private navigation_: AppNavigation
         private screen_: ui.UiScreenController
-        private actions_: ui.UiControl<HomeAction>[]
         private logoOffset_: number
 
         constructor(navigation: AppNavigation) {
             this.navigation_ = navigation
             this.screen_ = new ui.UiScreenController()
-            this.actions_ = this.createActions()
             const actionButtonStyle = ui.buttonStyle(
                 ui.UiButtonStyles.Transparent,
                 ui.UiButtonStyles.FocusLabel,
@@ -51,7 +49,7 @@ namespace microcode {
             )
             const actionRow = new ui.UiControlRow<HomeAction>({
                 scopeId: HOME_ACTION_SCOPE,
-                controls: this.actions_,
+                controls: this.createActions(),
                 controlWidth: HOME_ACTION_WIDTH,
                 controlHeight: HOME_ACTION_HEIGHT,
                 gap: HOME_ACTION_GAP,
@@ -90,41 +88,51 @@ namespace microcode {
 
         private createActions(): ui.UiControl<HomeAction>[] {
             const actions: ui.UiControl<HomeAction>[] = [
-                ui.createControl<HomeAction>("edit", "edit", {
+                {
+                    id: "edit",
+                    value: "edit",
                     bitmapId: "edit_program",
                     textId: "C0",
                     onActivate: () => this.navigation_.launchEditor(),
-                }),
-                ui.createControl<HomeAction>("samples", "samples", {
+                },
+                {
+                    id: "samples",
+                    value: "samples",
                     bitmapId: "smiley_buttons",
                     textId: "C1",
                     onActivate: () => this.navigation_.launchSamples(),
-                }),
-                ui.createControl<HomeAction>("load", "load", {
+                },
+                {
+                    id: "load",
+                    value: "load",
                     bitmapId: "largeDisk",
                     textId: "load",
                     onActivate: () => this.openDiskModal(),
-                }),
+                },
             ]
             if (HOME_ADD_SETTINGS) {
                 actions.push(
-                    ui.createControl<HomeAction>("settings", "settings", {
+                    {
+                        id: "settings",
+                        value: "settings",
                         bitmapId: "largeSettingsGear",
                         textId: "settings",
                         onActivate: () => this.navigation_.launchSettings(),
-                    }),
+                    },
                 )
             }
             return actions
         }
 
         private createDiskControls(): ui.UiControl<HomeDiskSlot>[] {
-            return diskSlots().map(slot =>
-                ui.createControl<HomeDiskSlot>(slot, slot, {
+            return diskSlots().map(slot => {
+                return {
+                    id: slot,
+                    value: slot,
                     bitmapId: slot,
                     onActivate: () => this.loadDiskSlot(slot),
-                }),
-            )
+                }
+            })
         }
 
         private handleRootInput(event: ui.UiInputEvent): boolean | undefined {
@@ -140,7 +148,6 @@ namespace microcode {
 
         private createDiskModal(): ui.UiModalGrid<HomeDiskSlot> {
             return new ui.UiModalGrid<HomeDiskSlot>({
-                parentScopeId: HOME_ACTION_SCOPE,
                 modalScopeId: HOME_DISK_MODAL_SCOPE,
                 controls: this.createDiskControls(),
                 titleId: "load",
