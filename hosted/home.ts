@@ -14,10 +14,6 @@ namespace microcode {
     const HOME_DISK_COLUMN_COUNT = 3
     const HOME_DISK_MODAL_MARGIN = 4
     const HOME_DISK_MODAL_TITLE_GAP = 4
-    const HOME_FOCUS_COLOR = 9
-    const HOME_FOCUS_THICKNESS = 3
-    const HOME_FOCUS_LABEL_BACKGROUND = 15
-    const HOME_FOCUS_LABEL_COLOR = 1
     const HOME_MARGIN = 2
 
     export class HomeScreen extends ui.UiScreen {
@@ -28,26 +24,13 @@ namespace microcode {
             super()
             this.backgroundColor = 0xc
             this.navigation_ = navigation
-            const actionButtonStyle = ui.buttonStyle(
-                ui.UiButtonStyles.Transparent,
-                ui.UiButtonStyles.FocusLabel,
-                {
-                    focusColor: HOME_FOCUS_COLOR,
-                    focusThickness: HOME_FOCUS_THICKNESS,
-                    focusLabelBackgroundColor: HOME_FOCUS_LABEL_BACKGROUND,
-                    focusLabelColor: HOME_FOCUS_LABEL_COLOR,
-                    focusLabelFont: user_interface_base.font,
-                    focusLabelGap: 2,
-                    focusLabelPadding: 1,
-                },
-            )
             const actionRow = new ui.UiRow<HomeAction>({
                 scopeId: HOME_ACTION_SCOPE,
                 controls: this.createActions(),
                 controlWidth: HOME_ACTION_WIDTH,
                 controlHeight: HOME_ACTION_HEIGHT,
                 gap: HOME_ACTION_GAP,
-                controlStyle: actionButtonStyle,
+                controlStyle: appIconButtonStyle(),
                 labelBounds: new ui.Rect(0, 0, UI_SCREEN_WIDTH, UI_SCREEN_HEIGHT),
             })
 

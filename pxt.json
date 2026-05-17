@@ -20,6 +20,7 @@
         "app.ts",
         "apphost.ts",
         "hosted/home.ts",
+        "hosted/gallery.ts",
         "editor.ts",
         "ruleeditor.ts",
         "home.ts",

@@ -5,6 +5,29 @@ namespace microcode {
     export const UI_SCREEN_WIDTH = ui.STANDARD_DISPLAY_WIDTH
     export const UI_SCREEN_HEIGHT = ui.STANDARD_DISPLAY_HEIGHT
     export const UI_DISPLAY_PROFILE = ui.UiDisplayProfileId.Standard
+    const APP_FOCUS_COLOR = 9
+    const APP_FOCUS_THICKNESS = 3
+    const APP_FOCUS_LABEL_BACKGROUND = 15
+    const APP_FOCUS_LABEL_COLOR = 1
+
+    /**
+     * Creates the shared icon-button style used by screen controls.
+     */
+    export function appIconButtonStyle(): ui.UiButtonStyle {
+        return ui.buttonStyle(
+            ui.UiButtonStyles.Transparent,
+            ui.UiButtonStyles.FocusLabel,
+            {
+                focusColor: APP_FOCUS_COLOR,
+                focusThickness: APP_FOCUS_THICKNESS,
+                focusLabelBackgroundColor: APP_FOCUS_LABEL_BACKGROUND,
+                focusLabelColor: APP_FOCUS_LABEL_COLOR,
+                focusLabelFont: user_interface_base.font,
+                focusLabelGap: 2,
+                focusLabelPadding: 1,
+            },
+        )
+    }
 
     class AppAssetResolver implements ui.UiAssetResolver {
         public getBitmap(
@@ -42,16 +65,16 @@ namespace microcode {
     }
 
     /**
-     * Navigation surface used by app screens.
+     * Navigation surface used by screens.
      */
     export interface AppNavigation {
         /**
-         * Pushes a screen onto the app-owned UI runtime.
+         * Pushes a screen above the active screen.
          */
         push(screen: ui.UiScreen): void
 
         /**
-         * Replaces the active screen in the app-owned UI runtime.
+         * Replaces the active screen.
          */
         replace(screen: ui.UiScreen): void
 
@@ -61,23 +84,23 @@ namespace microcode {
         pop(): void
 
         /**
-         * Leaves the UI runtime and opens the old editor scene.
+         * Opens the editor.
          */
         launchEditor(): void
 
         /**
-         * Opens the old samples gallery over the UI runtime.
+         * Opens the samples gallery.
          */
         launchSamples(): void
 
         /**
-         * Opens the old settings screen over the UI runtime.
+         * Opens the settings screen.
          */
         launchSettings(): void
     }
 
     /**
-     * App-local owner for `ui-core` screens.
+     * Owns the screen runtime and app-level navigation.
      */
     export class UiHost implements AppNavigation {
         private app_: App
@@ -88,7 +111,7 @@ namespace microcode {
         }
 
         /**
-         * Opens the UI runtime with a root screen.
+         * Opens the screen runtime with a root screen.
          */
         public open(root: ui.UiScreen): void {
             if (this.scene_) return
@@ -115,7 +138,7 @@ namespace microcode {
         }
 
         public launchSamples(): void {
-            this.app_.pushScene(new SamplesGallery(this.app_))
+            this.push(new SamplesGalleryScreen(this))
         }
 
         public launchSettings(): void {
