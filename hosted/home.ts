@@ -40,12 +40,6 @@ namespace microcode {
                     focusLabelPadding: 1,
                 },
             )
-            const actionLabelBounds = new ui.Rect(
-                0,
-                0,
-                UI_SCREEN_WIDTH,
-                UI_SCREEN_HEIGHT,
-            )
             const actionRow = new ui.UiRow<HomeAction>({
                 scopeId: HOME_ACTION_SCOPE,
                 controls: this.createActions(),
@@ -53,17 +47,15 @@ namespace microcode {
                 controlHeight: HOME_ACTION_HEIGHT,
                 gap: HOME_ACTION_GAP,
                 controlStyle: actionButtonStyle,
-                labelBounds: actionLabelBounds,
+                labelBounds: new ui.Rect(0, 0, UI_SCREEN_WIDTH, UI_SCREEN_HEIGHT),
             })
 
-            this.add(actionRow, {
-                x: 0,
-                centerY: (UI_SCREEN_HEIGHT >> 1) + HOME_ACTION_CENTER_OFFSET_Y,
-                width: UI_SCREEN_WIDTH,
-                height: HOME_ACTION_HEIGHT,
-                horizontalAlignment: "center",
-                verticalAlignment: "center",
-            })
+            this.addCentered(
+                actionRow,
+                (UI_SCREEN_HEIGHT >> 1) + HOME_ACTION_CENTER_OFFSET_Y,
+                UI_SCREEN_WIDTH,
+                HOME_ACTION_HEIGHT,
+            )
             this.logoOffset_ = -(UI_SCREEN_HEIGHT >> 1)
         }
 
@@ -72,42 +64,38 @@ namespace microcode {
             surface.clear(this.backgroundColor)
             this.drawLogo(surface)
             this.drawVersion(surface)
-            this.renderWidgets(surface)
+            super.render(surface)
         }
 
         private createActions(): ui.UiControl<HomeAction>[] {
             const actions: ui.UiControl<HomeAction>[] = [
-                {
-                    id: "edit",
-                    value: "edit",
-                    bitmapId: "edit_program",
-                    textId: "C0",
-                    onActivate: () => this.navigation_.launchEditor(),
-                },
-                {
-                    id: "samples",
-                    value: "samples",
-                    bitmapId: "smiley_buttons",
-                    textId: "C1",
-                    onActivate: () => this.navigation_.launchSamples(),
-                },
-                {
-                    id: "load",
-                    value: "load",
-                    bitmapId: "largeDisk",
-                    textId: "load",
-                    onActivate: () => this.openDiskModal(),
-                },
+                ui.button<HomeAction>(
+                    "edit",
+                    "edit_program",
+                    "C0",
+                    () => this.navigation_.launchEditor(),
+                ),
+                ui.button<HomeAction>(
+                    "samples",
+                    "smiley_buttons",
+                    "C1",
+                    () => this.navigation_.launchSamples(),
+                ),
+                ui.button<HomeAction>(
+                    "load",
+                    "largeDisk",
+                    "load",
+                    () => this.openDiskModal(),
+                ),
             ]
             if (HOME_ADD_SETTINGS) {
                 actions.push(
-                    {
-                        id: "settings",
-                        value: "settings",
-                        bitmapId: "largeSettingsGear",
-                        textId: "settings",
-                        onActivate: () => this.navigation_.launchSettings(),
-                    },
+                    ui.button<HomeAction>(
+                        "settings",
+                        "largeSettingsGear",
+                        "settings",
+                        () => this.navigation_.launchSettings(),
+                    ),
                 )
             }
             return actions
@@ -115,12 +103,11 @@ namespace microcode {
 
         private createDiskControls(): ui.UiControl<HomeDiskSlot>[] {
             return diskSlots().map(slot => {
-                return {
-                    id: slot,
-                    value: slot,
-                    bitmapId: slot,
-                    onActivate: () => this.loadDiskSlot(slot),
-                }
+                return ui.iconButton<HomeDiskSlot>(
+                    slot,
+                    slot,
+                    () => this.loadDiskSlot(slot),
+                )
             })
         }
 
