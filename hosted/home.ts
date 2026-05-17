@@ -56,8 +56,8 @@ namespace microcode {
                 itemWidth: HOME_ACTION_WIDTH,
                 itemHeight: HOME_ACTION_HEIGHT,
                 gap: HOME_ACTION_GAP,
-                onActivate: action => this.dispatchAction(action),
             })
+            
             this.rowLayout_ = new ui.UiAlignLayout({
                 layoutSpec: {
                     width: { mode: "fixed", value: UI_DESIGN_WIDTH },
@@ -106,9 +106,15 @@ namespace microcode {
 
         private createActions(): ui.UiActionItem<HomeAction>[] {
             const actions: ui.UiActionItem<HomeAction>[] = [
-                this.createAction("edit", "edit_program", "C0"),
-                this.createAction("samples", "smiley_buttons", "C1"),
-                this.createAction("load", "largeDisk", "load"),
+                this.createAction("edit", "edit_program", "C0", () =>
+                    this.navigation_.launchEditor(),
+                ),
+                this.createAction("samples", "smiley_buttons", "C1", () =>
+                    this.navigation_.launchSamples(),
+                ),
+                this.createAction("load", "largeDisk", "load", () =>
+                    this.openDiskModal(),
+                ),
             ]
             if (HOME_ADD_SETTINGS) {
                 actions.push(
@@ -116,6 +122,7 @@ namespace microcode {
                         "settings",
                         "largeSettingsGear",
                         "settings",
+                        () => this.navigation_.launchSettings(),
                     ),
                 )
             }
@@ -128,6 +135,7 @@ namespace microcode {
                     id: slot,
                     value: slot,
                     bitmapId: slot,
+                    onActivate: () => this.loadDiskSlot(slot),
                 }
             })
         }
@@ -136,14 +144,14 @@ namespace microcode {
             value: HomeAction,
             bitmapId: string,
             textId: string,
+            onActivate: () => void,
         ): ui.UiActionItem<HomeAction> {
-            // Action items carry typed app values. The widget reports which
-            // value was activated; app navigation stays in this screen.
             return {
                 id: value,
                 value,
                 bitmapId,
                 textId,
+                onActivate,
                 draw: (
                     surface: ui.DrawSurface,
                     item: ui.UiActionItem<HomeAction>,
@@ -179,25 +187,6 @@ namespace microcode {
             return this.widgets_.handleInput(event, this.row_)
         }
 
-        private dispatchAction(action: HomeAction): void {
-            // Navigation remains app-owned. Home decides the action; AppNavigation
-            // decides how that action changes the current app surface.
-            switch (action) {
-                case "edit":
-                    this.navigation_.launchEditor()
-                    break
-                case "samples":
-                    this.navigation_.launchSamples()
-                    break
-                case "load":
-                    this.openDiskModal()
-                    break
-                case "settings":
-                    this.navigation_.launchSettings()
-                    break
-            }
-        }
-
         private openDiskModal(): void {
             if (this.widgets_.hasModal) return
             this.widgets_.openModal(this.createDiskModal(), {
@@ -221,7 +210,6 @@ namespace microcode {
                 contentMargin: HOME_DISK_MODAL_MARGIN,
                 panelColor: this.backgroundColor,
                 titleColor: 1,
-                onActivate: slot => this.loadDiskSlot(slot),
                 onCancel: () => this.closeDiskModal(),
             })
         }
