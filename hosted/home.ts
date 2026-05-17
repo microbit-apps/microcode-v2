@@ -30,8 +30,7 @@ namespace microcode {
         public backgroundColor = 0xc
         private navigation_: AppNavigation
         private assets_: ui.UiAssetResolver
-        private focus_: ui.UiFocusState
-        private input_: ui.UiFocusInputController
+        private widgets_: ui.UiWidgetController
         private actions_: ui.UiActionItem<HomeAction>[]
         private row_: ui.UiActionRow<HomeAction>
         private actionButtonView_: ui.UiButtonView
@@ -83,19 +82,16 @@ namespace microcode {
             // The host owns the runtime. Screens keep only the runtime services
             // they need after `enter`; Home needs asset and text resolution.
             this.assets_ = runtime.assets
-            // A screen owns its focus state. The runtime owns when this screen
-            // receives input and frames; the screen decides how focus maps to
-            // its widgets.
-            this.focus_ = new ui.UiFocusState()
-            this.input_ = new ui.UiFocusInputController({ focus: this.focus_ })
+            this.widgets_ = new ui.UiWidgetController()
             this.registerFocus()
-            this.registerInput(input)
+            this.widgets_.registerInput(input, event =>
+                this.handleFocusInput(event),
+            )
         }
 
         public exit(): void {
             this.assets_ = undefined
-            this.focus_ = undefined
-            this.input_ = undefined
+            this.widgets_ = undefined
         }
 
         public render(surface: ui.DrawSurface): void {
@@ -104,9 +100,9 @@ namespace microcode {
             surface.clear(this.backgroundColor)
             this.drawLogo(surface)
             this.drawVersion(surface)
-            this.row_.render(surface, this.assets_, this.focus_)
+            this.row_.render(surface, this.assets_, this.widgets_.focus)
             if (this.diskModal_) {
-                this.diskModal_.render(surface, this.assets_, this.focus_)
+                this.diskModal_.render(surface, this.assets_, this.widgets_.focus)
             }
         }
 
@@ -203,29 +199,12 @@ namespace microcode {
         private registerFocus(): void {
             // Focus registration happens after layout because focus targets need
             // final rectangles for controller movement and pointer hit testing.
-            this.row_.registerFocusTargets(this.focus_, {
+            this.row_.registerFocusTargets(this.widgets_.focus, {
                 id: HOME_ACTION_SCOPE,
                 preferredTargetId: this.row_.resolvePreferredTargetId(),
             })
-            this.row_.registerNavigation(this.input_)
-            this.row_.focusDefault(this.focus_)
-        }
-
-        private registerInput(input: ui.UiInputScope): void {
-            // `UiFocusInputController` converts semantic input events into
-            // focus moves, activation, hit testing, and cancel results. The
-            // screen still interprets the resulting app action.
-            input.onAction("left", event => this.handleFocusInput(event))
-            input.onAction("right", event => this.handleFocusInput(event))
-            input.onAction("up", event => this.handleFocusInput(event))
-            input.onAction("down", event => this.handleFocusInput(event))
-            input.onAction("activate", event => this.handleFocusInput(event))
-            input.onAction("cancel", event => this.handleFocusInput(event))
-            input.onAction("pointerMove", event => this.handleFocusInput(event))
-            input.onAction("pointerClick", event =>
-                this.handleFocusInput(event),
-            )
-            input.onAction("wheel", event => this.handleFocusInput(event))
+            this.row_.registerNavigation(this.widgets_.focusInput)
+            this.row_.focusDefault(this.widgets_.focus)
         }
 
         private handleFocusInput(event: ui.UiInputEvent): boolean {
@@ -234,13 +213,14 @@ namespace microcode {
             // left unhandled because press already handled the root behavior.
             if (event.action == "cancel" && event.phase != "released")
                 return true
-            const result = this.input_.handleInput(event)
-            const rowResult = this.row_.handleFocusInput(result)
-            if (rowResult && rowResult.kind == "activated") {
-                this.dispatchAction(rowResult.value)
-                return true
-            }
-            return result.handled
+            return this.widgets_.handleInput(event, result => {
+                const rowResult = this.row_.handleFocusInput(result)
+                if (rowResult && rowResult.kind == "activated") {
+                    this.dispatchAction(rowResult.value)
+                    return true
+                }
+                return undefined
+            })
         }
 
         private dispatchAction(action: HomeAction): void {
@@ -278,19 +258,23 @@ namespace microcode {
                 titleColor: 1,
             })
             this.layoutDiskModal()
-            this.diskModal_.open(this.focus_, this.input_)
+            this.diskModal_.open(
+                this.widgets_.focus,
+                this.widgets_.focusInput,
+            )
         }
 
         private handleDiskModalInput(event: ui.UiInputEvent): boolean {
-            const result = this.input_.handleInput(event)
-            const modalResult = this.diskModal_.handleFocusInput(result)
-            if (modalResult) {
-                this.handleDiskModalResult(modalResult)
-                return true
-            }
-            if (event.action == "pointerClick" && result.kind == "miss")
-                return true
-            return result.handled
+            return this.widgets_.handleInput(event, result => {
+                const modalResult = this.diskModal_.handleFocusInput(result)
+                if (modalResult) {
+                    this.handleDiskModalResult(modalResult)
+                    return true
+                }
+                if (event.action == "pointerClick" && result.kind == "miss")
+                    return true
+                return undefined
+            })
         }
 
         private handleDiskModalResult(
@@ -311,9 +295,9 @@ namespace microcode {
         private closeDiskModal(): void {
             if (!this.diskModal_) return
             const modalScopeId = this.diskModal_.modalScopeId
-            this.diskModal_.close(this.focus_)
-            this.input_.clearNavigation(modalScopeId)
-            this.focus_.removeScope(modalScopeId)
+            this.diskModal_.close(this.widgets_.focus)
+            this.widgets_.focusInput.clearNavigation(modalScopeId)
+            this.widgets_.focus.removeScope(modalScopeId)
             this.diskModal_ = undefined
         }
 
