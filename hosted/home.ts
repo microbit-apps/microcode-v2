@@ -46,7 +46,7 @@ namespace microcode {
                 UI_SCREEN_WIDTH,
                 UI_SCREEN_HEIGHT,
             )
-            const actionRow = new ui.UiControlRow<HomeAction>({
+            const actionRow = new ui.UiRow<HomeAction>({
                 scopeId: HOME_ACTION_SCOPE,
                 controls: this.createActions(),
                 controlWidth: HOME_ACTION_WIDTH,
@@ -135,8 +135,8 @@ namespace microcode {
             this.openModal(this.createDiskModal())
         }
 
-        private createDiskModal(): ui.UiModalGrid<HomeDiskSlot> {
-            return new ui.UiModalGrid<HomeDiskSlot>({
+        private createDiskModal(): ui.UiPicker<HomeDiskSlot> {
+            return new ui.UiPicker<HomeDiskSlot>({
                 modalScopeId: HOME_DISK_MODAL_SCOPE,
                 controls: this.createDiskControls(),
                 titleId: "load",
