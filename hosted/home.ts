@@ -35,9 +35,6 @@ namespace microcode {
         private row_: ui.UiActionRow<HomeAction>
         private actionButtonView_: ui.UiButtonView
         private diskItems_: ui.UiActionItem<HomeDiskSlot>[]
-        private diskModal_: ui.UiModalGrid<HomeDiskSlot>
-        private diskModalRect_: ui.Rect
-        private diskModalSize_: ui.UiMeasuredSize
         private iconRect_: ui.Rect
         private rowLayout_: ui.UiAlignLayout
         private rowBandRect_: ui.Rect
@@ -70,8 +67,6 @@ namespace microcode {
                 horizontalAlignment: "center",
                 verticalAlignment: "center",
             })
-            this.diskModalRect_ = new ui.Rect()
-            this.diskModalSize_ = new ui.UiMeasuredSize()
             this.iconRect_ = new ui.Rect()
             this.rowBandRect_ = new ui.Rect()
             this.labelRect_ = new ui.Rect()
@@ -102,13 +97,7 @@ namespace microcode {
             this.drawLogo(surface)
             this.drawVersion(surface)
             this.widgets_.render(surface, this.assets_, this.row_)
-            if (this.diskModal_) {
-                this.widgets_.render(
-                    surface,
-                    this.assets_,
-                    this.diskModal_,
-                )
-            }
+            this.widgets_.renderModal(surface, this.assets_)
         }
 
         public handleInput(event: ui.UiInputEvent): boolean {
@@ -176,33 +165,13 @@ namespace microcode {
             this.rowLayout_.arrange(this.rowBandRect_)
         }
 
-        private layoutDiskModal(): void {
-            if (!this.diskModal_) return
-            this.diskModal_.measure(
-                { maxWidth: UI_DESIGN_WIDTH, maxHeight: UI_DESIGN_HEIGHT },
-                this.diskModalSize_,
-            )
-            this.diskModalRect_.set(
-                Math.idiv(
-                    UI_DESIGN_WIDTH - this.diskModalSize_.preferredWidth,
-                    2,
-                ),
-                Math.idiv(
-                    UI_DESIGN_HEIGHT - this.diskModalSize_.preferredHeight,
-                    2,
-                ),
-                this.diskModalSize_.preferredWidth,
-                this.diskModalSize_.preferredHeight,
-            )
-            this.diskModal_.arrange(this.diskModalRect_)
-        }
-
         private actionCenterY(): number {
             return (UI_DESIGN_HEIGHT >> 1) + HOME_ACTION_CENTER_OFFSET_Y
         }
 
         private handleFocusInput(event: ui.UiInputEvent): boolean {
-            if (this.diskModal_) return this.handleDiskModalInput(event)
+            if (this.widgets_.hasModal)
+                return this.widgets_.handleModalInput(event)
             // Root Home consumes B/cancel without changing screens. Release is
             // left unhandled because press already handled the root behavior.
             if (event.action == "cancel" && event.phase != "released")
@@ -230,8 +199,17 @@ namespace microcode {
         }
 
         private openDiskModal(): void {
-            if (this.diskModal_) return
-            this.diskModal_ = new ui.UiModalGrid<HomeDiskSlot>({
+            if (this.widgets_.hasModal) return
+            this.widgets_.openModal(this.createDiskModal(), {
+                constraints: {
+                    maxWidth: UI_DESIGN_WIDTH,
+                    maxHeight: UI_DESIGN_HEIGHT,
+                },
+            })
+        }
+
+        private createDiskModal(): ui.UiModalGrid<HomeDiskSlot> {
+            return new ui.UiModalGrid<HomeDiskSlot>({
                 parentScopeId: HOME_ACTION_SCOPE,
                 modalScopeId: HOME_DISK_MODAL_SCOPE,
                 items: this.diskItems_,
@@ -246,12 +224,6 @@ namespace microcode {
                 onActivate: slot => this.loadDiskSlot(slot),
                 onCancel: () => this.closeDiskModal(),
             })
-            this.layoutDiskModal()
-            this.widgets_.openModal(this.diskModal_)
-        }
-
-        private handleDiskModalInput(event: ui.UiInputEvent): boolean {
-            return this.widgets_.handleModalInput(event, this.diskModal_)
         }
 
         private loadDiskSlot(slot: HomeDiskSlot): void {
@@ -263,9 +235,7 @@ namespace microcode {
         }
 
         private closeDiskModal(): void {
-            if (!this.diskModal_) return
-            this.widgets_.closeModal(this.diskModal_)
-            this.diskModal_ = undefined
+            this.widgets_.closeModal()
         }
 
         private createEmptyProgramBuffer(): Buffer {
