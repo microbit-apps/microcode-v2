@@ -84,7 +84,7 @@ namespace microcode {
             // they need after `enter`; Home needs asset and text resolution.
             this.assets_ = runtime.assets
             this.widgets_ = new ui.UiWidgetController()
-            this.widgets_.registerActionRow(this.row_)
+            this.widgets_.registerWidget(this.row_)
             this.widgets_.registerInput(input, event =>
                 this.handleFocusInput(event),
             )
@@ -101,9 +101,13 @@ namespace microcode {
             surface.clear(this.backgroundColor)
             this.drawLogo(surface)
             this.drawVersion(surface)
-            this.row_.render(surface, this.assets_, this.widgets_.focus)
+            this.widgets_.render(surface, this.assets_, this.row_)
             if (this.diskModal_) {
-                this.diskModal_.render(surface, this.assets_, this.widgets_.focus)
+                this.widgets_.render(
+                    surface,
+                    this.assets_,
+                    this.diskModal_,
+                )
             }
         }
 
@@ -203,7 +207,7 @@ namespace microcode {
             // left unhandled because press already handled the root behavior.
             if (event.action == "cancel" && event.phase != "released")
                 return true
-            return this.widgets_.handleActionRowInput(event, this.row_)
+            return this.widgets_.handleInput(event, this.row_)
         }
 
         private dispatchAction(action: HomeAction): void {
