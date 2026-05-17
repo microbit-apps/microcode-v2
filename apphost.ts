@@ -2,6 +2,9 @@ namespace microcode {
     import Scene = user_interface_base.Scene
 
     const HOST_FRAME_PRIORITY = 30
+    export const UI_DESIGN_WIDTH = ui.STANDARD_DISPLAY_WIDTH
+    export const UI_DESIGN_HEIGHT = ui.STANDARD_DISPLAY_HEIGHT
+    export const UI_DISPLAY_PROFILE = ui.UiDisplayProfileId.Standard
 
     class AppAssetResolver implements ui.UiAssetResolver {
         public getBitmap(
@@ -148,6 +151,7 @@ namespace microcode {
             this.runtime_ = new ui.UiRuntime({
                 display: new ui.DisplayShieldFrameAdapter({
                     scaleMode: "cover",
+                    displayProfile: UI_DISPLAY_PROFILE,
                 }),
                 assets: new AppAssetResolver(),
                 accessibility: new AppAccessibilitySink(),
@@ -228,35 +232,9 @@ namespace microcode {
             this.runtime_.dispatchInput({
                 action,
                 source: "pointer",
-                x: this.logicalXFromPhysical(x),
-                y: this.logicalYFromPhysical(y),
+                x,
+                y,
             })
-        }
-
-        private logicalXFromPhysical(x: number): number {
-            const scale = ui.physicalViewportScale(
-                screen().width,
-                screen().height,
-                "cover"
-            )
-            return Math.idiv(
-                (x - ui.physicalViewportOffsetX(screen().width, screen().height, "cover")) *
-                    1000,
-                scale * 1000
-            )
-        }
-
-        private logicalYFromPhysical(y: number): number {
-            const scale = ui.physicalViewportScale(
-                screen().width,
-                screen().height,
-                "cover"
-            )
-            return Math.idiv(
-                (y - ui.physicalViewportOffsetY(screen().width, screen().height, "cover")) *
-                    1000,
-                scale * 1000
-            )
         }
 
         private drainScreens(): void {

@@ -47,7 +47,7 @@ namespace microcode {
             })
             this.rowLayout_ = new ui.UiAlignLayout({
                 layoutSpec: {
-                    width: { mode: "fixed", value: ui.LOGICAL_VIEWPORT_WIDTH },
+                    width: { mode: "fixed", value: UI_DESIGN_WIDTH },
                     height: { mode: "fixed", value: HOME_ACTION_HEIGHT },
                 },
                 child: this.row_,
@@ -57,9 +57,9 @@ namespace microcode {
             this.rowBandRect_ = new ui.Rect()
             this.labelRect_ = new ui.Rect()
             this.layoutActions()
-            this.yOffset_ = -(ui.LOGICAL_VIEWPORT_HEIGHT >> 1)
+            this.yOffset_ = -(UI_DESIGN_HEIGHT >> 1)
         }
-
+      
         public enter(runtime: ui.UiRuntime, input: ui.UiInputScope): void {
             // The host owns the runtime. Screens keep only the runtime services
             // they need after `enter`; Home needs asset and text resolution.
@@ -126,14 +126,14 @@ namespace microcode {
                 ) => this.drawAction(surface, item, rect, focused),
             }
         }
-
+      
         private layoutActions(): void {
             // `UiAlignLayout` owns centering the row within this screen band;
             // Home only chooses the vertical band where actions belong.
             this.rowBandRect_.set(
                 0,
                 this.actionCenterY() - Math.idiv(HOME_ACTION_HEIGHT, 2),
-                ui.LOGICAL_VIEWPORT_WIDTH,
+                UI_DESIGN_WIDTH,
                 HOME_ACTION_HEIGHT
             )
             this.rowLayout_.arrange(this.rowBandRect_)
@@ -141,7 +141,7 @@ namespace microcode {
 
         private actionCenterY(): number {
             return (
-                (ui.LOGICAL_VIEWPORT_HEIGHT >> 1) +
+                (UI_DESIGN_HEIGHT >> 1) +
                 HOME_ACTION_CENTER_OFFSET_Y
             )
         }
@@ -326,7 +326,7 @@ namespace microcode {
             const textHeight = font.charHeight
             const maxX = Math.max(
                 1,
-                ui.LOGICAL_VIEWPORT_WIDTH - 1 - textWidth
+                UI_DESIGN_WIDTH - 1 - textWidth
             )
             const x = Math.max(
                 1,
@@ -334,7 +334,7 @@ namespace microcode {
             )
             const y = Math.min(
                 top,
-                ui.LOGICAL_VIEWPORT_HEIGHT - 1 - font.charHeight
+                UI_DESIGN_HEIGHT - 1 - font.charHeight
             )
 
             this.labelRect_.set(x - 1, y - 1, textWidth + 1, textHeight + 2)
@@ -360,17 +360,17 @@ namespace microcode {
             const word = this.assets_.getBitmap("wordLogo")
             const microbit = this.assets_.getBitmap("microbitLogo")
             const offset =
-                (ui.LOGICAL_VIEWPORT_HEIGHT >> 1) - word.height - HOME_MARGIN
+                (UI_DESIGN_HEIGHT >> 1) - word.height - HOME_MARGIN
             const y = offset + dy
 
             surface.drawBitmap(
                 word,
-                Math.idiv(ui.LOGICAL_VIEWPORT_WIDTH - word.width, 2) + dy,
+                Math.idiv(UI_DESIGN_WIDTH - word.width, 2) + dy,
                 y + this.yOffset_
             )
             surface.drawBitmap(
                 microbit,
-                Math.idiv(ui.LOGICAL_VIEWPORT_WIDTH - microbit.width, 2) + dy,
+                Math.idiv(UI_DESIGN_WIDTH - microbit.width, 2) + dy,
                 y - word.height + this.yOffset_ + HOME_MARGIN
             )
             if (!this.yOffset_) {
@@ -378,7 +378,7 @@ namespace microcode {
                 const font = bitmaps.font5
                 surface.drawText(
                     tagline,
-                    Math.idiv(ui.LOGICAL_VIEWPORT_WIDTH + word.width, 2) +
+                    Math.idiv(UI_DESIGN_WIDTH + word.width, 2) +
                         dy -
                         font.charWidth * tagline.length,
                     offset + word.height + dy + this.yOffset_ + 1,
@@ -391,9 +391,9 @@ namespace microcode {
             const font = bitmaps.font5
             surface.drawText(
                 microcode.VERSION,
-                ui.LOGICAL_VIEWPORT_WIDTH -
+                UI_DESIGN_WIDTH -
                     font.charWidth * microcode.VERSION.length,
-                ui.LOGICAL_VIEWPORT_HEIGHT - font.charHeight - 1,
+                UI_DESIGN_HEIGHT - font.charHeight - 1,
                 { color: 0xb, font, transparent: true }
             )
         }
