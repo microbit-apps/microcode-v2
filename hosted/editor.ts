@@ -4,6 +4,7 @@ namespace microcode {
     type EditorToolbarResult = ui.UiRowResult<EditorToolbarAction>
     type EditorDiskSlot = string
     type EditorPagePickerValue = number
+    type RuleHandleAction = "add" | "delete" | "moveUp" | "moveDown"
 
     interface PageControlValue {
         kind: "page"
@@ -48,6 +49,7 @@ namespace microcode {
     const EDITOR_RULE_OUTLINE_COLOR = 12
     const EDITOR_DISK_MODAL_SCOPE = "editor/disk-save"
     const EDITOR_PAGE_MODAL_SCOPE = "editor/page-picker"
+    const EDITOR_RULE_HANDLE_MODAL_SCOPE = "editor/rule-handle"
     const EDITOR_MODAL_ITEM_SIZE = 18
     const EDITOR_MODAL_COLUMN_COUNT = 3
     const EDITOR_MODAL_MARGIN = 4
@@ -56,7 +58,68 @@ namespace microcode {
     const EDITOR_RULE_TILE_STYLE = ui.buttonStyle(
         ui.UiButtonStyles.FlatWhite,
         ui.UiButtonStyles.RoundedFrame,
+        ui.UiButtonStyles.FocusLabel,
+        {
+            focusLabelFont: user_interface_base.font,
+            focusLabelGap: 4,
+            focusPadding: 1,
+        },
     )
+    const EDITOR_RULE_UNFRAMED_TILE_STYLE = ui.buttonStyle(
+        ui.UiButtonStyles.Transparent,
+        ui.UiButtonStyles.FocusLabel,
+        {
+            focusLabelFont: user_interface_base.font,
+            focusLabelGap: 3,
+            focusPadding: 0,
+        },
+    )
+    const EDITOR_RULE_HANDLE_STYLE = ui.buttonStyle(
+        ui.UiButtonStyles.Transparent,
+        ui.UiButtonStyles.FocusLabel,
+        {
+            focusLabelFont: user_interface_base.font,
+            focusLabelGap: 2,
+        },
+    )
+    const EDITOR_RULE_HANDLE_MODAL_STYLE = ui.buttonStyle(
+        ui.UiButtonStyles.LightShadowedWhite,
+        ui.UiButtonStyles.FocusLabel,
+        {
+            focusLabelFont: user_interface_base.font,
+            focusLabelGap: 5,
+        },
+    )
+
+    function ruleControlId(ruleIndex: number): string {
+        return "rule-" + ruleIndex
+    }
+
+    function ruleTargetControlId(
+        ruleIndex: number,
+        kind: RuleTargetKind,
+        section?: RuleSection,
+        index?: number,
+    ): string {
+        let id = ruleControlId(ruleIndex) + "/" + kind
+        if (section) id += "/" + section
+        if (index !== undefined) id += "-" + index
+        return id
+    }
+
+    function ruleFocusTargetId(
+        ruleIndex: number,
+        kind: RuleTargetKind,
+        section?: RuleSection,
+        index?: number,
+    ): ui.UiFocusId {
+        return EDITOR_PAGE_SCOPE + "/" + ruleTargetControlId(
+            ruleIndex,
+            kind,
+            section,
+            index,
+        )
+    }
 
     /**
      * Brain editor screen.
@@ -79,6 +142,8 @@ namespace microcode {
             this.pageView_ = new PageView(
                 () => this.progdef_,
                 () => this.currPage_,
+                (value: RuleTargetControlValue) =>
+                    this.handlePageTargetActivation(value),
             )
             this.toolbar_ = new EditorToolbar(
                 () => this.progdef_,
@@ -251,6 +316,185 @@ namespace microcode {
             this.closeModal()
         }
 
+        private handlePageTargetActivation(
+            value: RuleTargetControlValue,
+        ): void {
+            if (value.kind == "handle") this.openRuleHandleModal(value)
+        }
+
+        private openRuleHandleModal(value: RuleTargetControlValue): void {
+            if (this.hasModal) return
+            this.openModal(this.createRuleHandleModal(value))
+        }
+
+        private createRuleHandleModal(
+            value: RuleTargetControlValue,
+        ): ui.UiPicker<RuleHandleAction> {
+            const controls = this.createRuleHandleControls(value)
+            return new ui.UiPicker<RuleHandleAction>({
+                modalScopeId: EDITOR_RULE_HANDLE_MODAL_SCOPE,
+                controls,
+                columnCount: controls.length,
+                controlWidth: EDITOR_MODAL_ITEM_SIZE,
+                controlHeight: EDITOR_MODAL_ITEM_SIZE,
+                controlStyle: EDITOR_RULE_HANDLE_MODAL_STYLE,
+                contentMargin: EDITOR_MODAL_MARGIN,
+                panelColor: EDITOR_PAGE_MODAL_PANEL_COLOR,
+                showTitleBar: false,
+                onCancel: () => this.closeModal(),
+            })
+        }
+
+        private createRuleHandleControls(
+            value: RuleTargetControlValue,
+        ): ui.UiControl<RuleHandleAction>[] {
+            const controls: ui.UiControl<RuleHandleAction>[] = [
+                this.ruleHandleControl("add", "plus", "add_rule", value),
+                this.ruleHandleControl("delete", "delete", "delete_rule", value),
+            ]
+            const realRuleCount = this.realRuleCount(this.currentPage())
+            const virtualRule = this.isVirtualRule(value)
+            if (!virtualRule && value.ruleIndex > 0)
+                controls.push(
+                    this.ruleHandleControl(
+                        "moveUp",
+                        "rule_up",
+                        "rule_up",
+                        value,
+                    ),
+                )
+            if (!virtualRule && value.ruleIndex < realRuleCount - 1)
+                controls.push(
+                    this.ruleHandleControl(
+                        "moveDown",
+                        "rule_down",
+                        "rule_down",
+                        value,
+                    ),
+                )
+            return controls
+        }
+
+        private ruleHandleControl(
+            action: RuleHandleAction,
+            bitmapId: string,
+            textId: string,
+            value: RuleTargetControlValue,
+        ): ui.UiControl<RuleHandleAction> {
+            return {
+                id: action,
+                value: action,
+                bitmapId,
+                textId,
+                onActivate: () => this.applyRuleHandleAction(action, value),
+            }
+        }
+
+        private applyRuleHandleAction(
+            action: RuleHandleAction,
+            value: RuleTargetControlValue,
+        ): void {
+            const page = this.currentPage()
+            if (!page) {
+                this.closeModal()
+                return
+            }
+
+            let focusRuleIndex = value.ruleIndex
+            let focusKind: RuleTargetKind = "handle"
+            let focusSection: RuleSection = undefined
+            let focusIndex: number = undefined
+            const virtualRule = this.isVirtualRule(value)
+            const running = isProgramRunning()
+            let stoppedForEdit = false
+            let changed = false
+
+            if (!virtualRule) {
+                if (action == "add") {
+                    if (running) {
+                        stopProgram()
+                        stoppedForEdit = true
+                    }
+                    changed = !!page.insertRuleAt(value.ruleIndex, undefined)
+                    focusKind = "insert"
+                    focusSection = "sensors"
+                    focusIndex = 0
+                } else if (action == "delete") {
+                    if (running) {
+                        stopProgram()
+                        stoppedForEdit = true
+                    }
+                    changed = !!page.deleteRuleAt(value.ruleIndex)
+                } else if (action == "moveUp" && value.ruleIndex > 0) {
+                    if (running) {
+                        stopProgram()
+                        stoppedForEdit = true
+                    }
+                    changed = this.moveRule(page, value.ruleIndex, -1)
+                    focusRuleIndex = value.ruleIndex - 1
+                } else if (
+                    action == "moveDown" &&
+                    value.ruleIndex < this.realRuleCount(page) - 1
+                ) {
+                    if (running) {
+                        stopProgram()
+                        stoppedForEdit = true
+                    }
+                    changed = this.moveRule(page, value.ruleIndex, 1)
+                    focusRuleIndex = value.ruleIndex + 1
+                }
+            }
+
+            if (changed) {
+                this.app_.save(SAVESLOT_AUTO, this.progdef_.toBuffer())
+                this.pageView_.pageChanged()
+            }
+            if (stoppedForEdit) runProgram(this.progdef_)
+
+            this.closeModal()
+            if (
+                !this.pageView_.focusRuleTarget(
+                    this.focus,
+                    focusRuleIndex,
+                    focusKind,
+                    focusSection,
+                    focusIndex,
+                )
+            )
+                this.pageView_.focusRuleTarget(
+                    this.focus,
+                    focusRuleIndex,
+                    "handle",
+                )
+        }
+
+        private moveRule(
+            page: PageDefn,
+            index: number,
+            delta: number,
+        ): boolean {
+            const rule = page.deleteRuleAt(index)
+            if (!rule) return false
+            if (page.insertRuleAt(index + delta, rule)) return true
+            page.insertRuleAt(index, rule)
+            return false
+        }
+
+        private currentPage(): PageDefn {
+            return this.progdef_ ? this.progdef_.pages[this.currPage_] : undefined
+        }
+
+        private isVirtualRule(value: RuleTargetControlValue): boolean {
+            return value.ruleIndex >= this.realRuleCount(this.currentPage())
+        }
+
+        private realRuleCount(page: PageDefn): number {
+            if (!page) return 0
+            let lastRule = page.rules.length - 1
+            while (lastRule >= 0 && page.rules[lastRule].isEmpty()) lastRule--
+            return lastRule + 1
+        }
+
         private moveEditorFocus(direction: ui.UiFocusDirection): void {
             const activeScopeId = this.focus.getActiveScopeId()
             if (activeScopeId == EDITOR_PAGE_SCOPE) {
@@ -269,6 +513,7 @@ namespace microcode {
         public layoutDirty: boolean
         private getProgram_: () => ProgramDefn
         private getPage_: () => number
+        private onActivateTarget_: (value: RuleTargetControlValue) => void
         private contentLayout_: PageContentLayout
         private scrollLayout_: ui.UiScrollViewportLayout
         private focusNavigator_: PageFocusNavigator
@@ -280,7 +525,11 @@ namespace microcode {
         private measuredContentWidth_: number
         private measuredContentHeight_: number
 
-        constructor(getProgram: () => ProgramDefn, getPage: () => number) {
+        constructor(
+            getProgram: () => ProgramDefn,
+            getPage: () => number,
+            onActivateTarget: (value: RuleTargetControlValue) => void,
+        ) {
             this.layoutSpec = {
                 width: { mode: "fixed", value: UI_SCREEN_WIDTH },
                 height: {
@@ -292,6 +541,7 @@ namespace microcode {
             this.layoutDirty = true
             this.getProgram_ = getProgram
             this.getPage_ = getPage
+            this.onActivateTarget_ = onActivateTarget
             this.measuredContentWidth_ = 0
             this.measuredContentHeight_ = 0
             this.contentLayout_ = new PageContentLayout(this)
@@ -359,7 +609,27 @@ namespace microcode {
 
         public pageChanged(): void {
             this.invalidateLayout()
+            if (this.finalRect.width || this.finalRect.height) {
+                this.scrollLayout_.arrange(this.finalRect)
+                this.rebuildLayout(true)
+            }
             this.refreshFocusTargets()
+        }
+
+        public focusRuleTarget(
+            focus: ui.UiFocusState,
+            ruleIndex: number,
+            kind: RuleTargetKind,
+            section?: RuleSection,
+            index?: number,
+        ): boolean {
+            this.refreshFocusTargets()
+            const targetId = ruleFocusTargetId(ruleIndex, kind, section, index)
+            const result = focus.setActiveTarget(EDITOR_PAGE_SCOPE, targetId)
+            if (result.kind != "focused") return false
+            if (!this.handleFocusScrollResult(result))
+                this.scrollTargetIntoView(targetId)
+            return true
         }
 
         public handleFocusInput(result: ui.UiFocusInputResult): PageViewResult {
@@ -509,6 +779,19 @@ namespace microcode {
             return true
         }
 
+        public atHorizontalOrigin(): boolean {
+            return this.scrollLayout_.contentOffsetX == 0
+        }
+
+        public horizontalOriginScrollRect(target: PageNavigationTarget): ui.Rect {
+            return new ui.Rect(
+                0,
+                target.contentRect.y,
+                Math.max(this.finalRect.width, 1),
+                target.contentRect.height,
+            )
+        }
+
         public verticalBoundaryScrollRect(
             direction: ui.UiFocusDirection,
         ): ui.Rect {
@@ -622,7 +905,12 @@ namespace microcode {
             for (let i = 0; i < page.rules.length; i++) {
                 const rule = page.rules[i]
                 if (!rule.isVisible(page)) continue
-                rule.draw(surface, assets, focus, page)
+                rule.draw(surface, assets, page)
+            }
+            for (let i = 0; i < page.rules.length; i++) {
+                const rule = page.rules[i]
+                if (!rule.isVisible(page)) continue
+                rule.drawFocusOverlay(surface, assets, focus, page)
             }
         }
 
@@ -726,6 +1014,8 @@ namespace microcode {
             const target = this.targetByFocusId(activation.targetId)
             if (!target) return undefined
             if (target.control.value.kind == "static") return undefined
+            if (this.onActivateTarget_)
+                this.onActivateTarget_(target.control.value)
             return {
                 kind: "activated",
                 controlId: target.control.id,
@@ -925,7 +1215,6 @@ namespace microcode {
         public draw(
             surface: ui.DrawSurface,
             assets: ui.UiAssetResolver,
-            focus: ui.UiFocusState,
             page: PageLayout,
         ): void {
             this.fillRect(surface, page, this.tray_, EDITOR_RULE_TRAY_COLOR)
@@ -937,7 +1226,17 @@ namespace microcode {
             )
             this.outlineTray(surface, page)
             this.arrangeStrip(page.content)
-            this.strip_.render(surface, assets, focus)
+            this.strip_.render(surface, assets)
+        }
+
+        public drawFocusOverlay(
+            surface: ui.DrawSurface,
+            assets: ui.UiAssetResolver,
+            focus: ui.UiFocusState,
+            page: PageLayout,
+        ): void {
+            this.arrangeStrip(page.content)
+            this.strip_.renderFocusOverlay(surface, assets, focus)
         }
 
         public navigationTargets(page: PageLayout): PageNavigationTarget[] {
@@ -972,7 +1271,7 @@ namespace microcode {
             ruleIndex: number,
         ): ui.UiControl<RuleControlValue> {
             return {
-                id: "rule-" + ruleIndex,
+                id: ruleControlId(ruleIndex),
                 value: {
                     kind: "rule",
                     rule,
@@ -1071,7 +1370,7 @@ namespace microcode {
         ): ui.UiControl<RuleTargetControlValue> {
             const bitmap = this.bitmap(bitmapId)
             return {
-                id: this.control.id + "/static/" + bitmapId,
+                id: ruleTargetControlId(this.ruleIndex, "static") + "/" + bitmapId,
                 value: {
                     kind: "static",
                     rule: this.rule,
@@ -1110,8 +1409,30 @@ namespace microcode {
                 width: framed ? bitmap.width + 2 : bitmap.width,
                 height: framed ? bitmap.height + 2 : bitmap.height,
                 gapBefore,
-                style: framed ? EDITOR_RULE_TILE_STYLE : ui.UiButtonStyles.Transparent,
+                textId: this.targetTextId(kind, tile),
+                style: this.targetStyle(kind, framed),
             }
+        }
+
+        private targetTextId(
+            kind: RuleTargetKind,
+            tile?: Tile,
+        ): string {
+            if (kind == "handle") return "rule"
+            if (kind == "tile" && tile) return tidToString(getTid(tile))
+            return undefined
+        }
+
+        private targetStyle(
+            kind: RuleTargetKind,
+            framed: boolean,
+        ): ui.UiButtonStyle {
+            if (kind == "handle") return EDITOR_RULE_HANDLE_STYLE
+            if (kind == "tile")
+                return framed
+                    ? EDITOR_RULE_TILE_STYLE
+                    : EDITOR_RULE_UNFRAMED_TILE_STYLE
+            return ui.UiButtonStyles.Transparent
         }
 
         private targetId(
@@ -1119,10 +1440,7 @@ namespace microcode {
             section?: RuleSection,
             index?: number,
         ): string {
-            let id = this.control.id + "/" + kind
-            if (section) id += "/" + section
-            if (index !== undefined) id += "-" + index
-            return id
+            return ruleTargetControlId(this.ruleIndex, kind, section, index)
         }
 
         private bitmap(icon: string | number | Bitmap): Bitmap {
@@ -1470,6 +1788,9 @@ namespace microcode {
             })
             if (rowResult.kind == "moved") return rowResult
 
+            if (position.column == 0 && !this.owner_.atHorizontalOrigin())
+                return this.horizontalOriginScrollMove(rows, position)
+
             let row = position.row
             let column = position.column - 1
             if (column < 0) {
@@ -1585,6 +1906,29 @@ namespace microcode {
                 EDITOR_PAGE_SCOPE,
                 rows[row][column].navigation,
             )
+        }
+
+        private horizontalOriginScrollMove(
+            rows: PageNavigationTarget[][],
+            position: PageTargetPosition,
+        ): ui.UiFocusMoveResult {
+            const target = rows[position.row][position.column].navigation
+            return {
+                kind: "moved",
+                fromScopeId: EDITOR_PAGE_SCOPE,
+                fromTargetId: target.id,
+                toScopeId: EDITOR_PAGE_SCOPE,
+                toTargetId: target.id,
+                scrollRequest: {
+                    scopeId: EDITOR_PAGE_SCOPE,
+                    targetId: target.id,
+                    scrollOwnerId: EDITOR_PAGE_SCROLL_OWNER,
+                    targetRect: this.owner_.horizontalOriginScrollRect(
+                        rows[position.row][position.column],
+                    ),
+                    reason: "focus",
+                },
+            }
         }
 
         private boundaryScrollMove(
