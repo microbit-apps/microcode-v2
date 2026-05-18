@@ -2,6 +2,8 @@ namespace microcode {
     type EditorToolbarAction = "disk" | "run" | "stop" | "page"
 
     type EditorToolbarResult = ui.UiRowResult<EditorToolbarAction>
+    type EditorDiskSlot = string
+    type EditorPagePickerValue = number
 
     interface PageControlValue {
         kind: "page"
@@ -44,6 +46,17 @@ namespace microcode {
     const EDITOR_RULE_TRAY_COLOR = 11
     const EDITOR_WHEN_SECTION_COLOR = 13
     const EDITOR_RULE_OUTLINE_COLOR = 12
+    const EDITOR_DISK_MODAL_SCOPE = "editor/disk-save"
+    const EDITOR_PAGE_MODAL_SCOPE = "editor/page-picker"
+    const EDITOR_MODAL_ITEM_SIZE = 18
+    const EDITOR_MODAL_COLUMN_COUNT = 3
+    const EDITOR_MODAL_MARGIN = 4
+    const EDITOR_MODAL_TITLE_GAP = 4
+    const EDITOR_PAGE_MODAL_PANEL_COLOR = 12
+    const EDITOR_RULE_TILE_STYLE = ui.buttonStyle(
+        ui.UiButtonStyles.FlatWhite,
+        ui.UiButtonStyles.RoundedFrame,
+    )
 
     /**
      * Brain editor screen.
@@ -71,8 +84,13 @@ namespace microcode {
                 () => this.progdef_,
                 () => this.currPage_,
                 this.pageView_,
+                () => this.openDiskModal(),
+                () => this.openPageModal(),
             )
             this.pageView_.setToolbar(this.toolbar_)
+            // Root views are registered with the screen here. `UiScreen`
+            // measures, arranges, routes focus input to, and renders these
+            // roots in order of addition.
             this.add(this.pageView_, {
                 x: 0,
                 y: EDITOR_CONTENT_Y,
@@ -90,15 +108,21 @@ namespace microcode {
         public render(surface: ui.DrawSurface): void {
             surface.clear(this.backgroundColor)
             this.drawBackground(surface)
+            // Background drawing happens before registered roots so controls
+            // and their focus affordances appear above the editor backdrop.
             super.render(surface)
         }
 
         public enter(runtime: ui.UiRuntime): void {
             super.enter(runtime)
-            this.toolbar_.focusDefault(this.focus)
+            // The focus state belongs to `UiScreen`; `PageView` chooses the
+            // editor's initial target inside its registered page scope.
+            this.pageView_.focusDefault(this.focus)
         }
 
         public handleScreenInput(event: ui.UiInputEvent): boolean | undefined {
+            // Screen-level input owns commands outside an individual control's
+            // local movement and activation contract.
             if (event.action == "cancel") {
                 if (event.phase != "released") this.handleBack()
                 return true
@@ -148,6 +172,85 @@ namespace microcode {
             return true
         }
 
+        private openDiskModal(): void {
+            if (this.hasModal) return
+            this.openModal(this.createDiskModal())
+        }
+
+        private createDiskModal(): ui.UiPicker<EditorDiskSlot> {
+            return new ui.UiPicker<EditorDiskSlot>({
+                modalScopeId: EDITOR_DISK_MODAL_SCOPE,
+                controls: this.createDiskControls(),
+                titleId: "disk",
+                columnCount: EDITOR_MODAL_COLUMN_COUNT,
+                controlWidth: EDITOR_MODAL_ITEM_SIZE,
+                controlHeight: EDITOR_MODAL_ITEM_SIZE,
+                controlStyle: ui.UiButtonStyles.LightShadowedWhite,
+                contentMargin: EDITOR_MODAL_MARGIN,
+                titleGap: EDITOR_MODAL_TITLE_GAP,
+                panelColor: EDITOR_PAGE_MODAL_PANEL_COLOR,
+                titleColor: 1,
+                onCancel: () => this.closeModal(),
+            })
+        }
+
+        private createDiskControls(): ui.UiControl<EditorDiskSlot>[] {
+            return diskSlots().map(slot =>
+                ui.iconButton<EditorDiskSlot>(
+                    slot,
+                    slot,
+                    () => this.saveDiskSlot(slot),
+                )
+            )
+        }
+
+        private saveDiskSlot(slot: EditorDiskSlot): void {
+            this.app_.save(slot, this.progdef_.toBuffer())
+            this.closeModal()
+        }
+
+        private openPageModal(): void {
+            if (this.hasModal) return
+            this.openModal(this.createPageModal())
+        }
+
+        private createPageModal(): ui.UiPicker<EditorPagePickerValue> {
+            return new ui.UiPicker<EditorPagePickerValue>({
+                modalScopeId: EDITOR_PAGE_MODAL_SCOPE,
+                controls: this.createPageControls(),
+                defaultControlId: "page-" + this.currPage_,
+                columnCount: PAGE_IDS().length,
+                controlWidth: EDITOR_MODAL_ITEM_SIZE,
+                controlHeight: EDITOR_MODAL_ITEM_SIZE,
+                controlStyle: ui.UiButtonStyles.LightShadowedWhite,
+                contentMargin: EDITOR_MODAL_MARGIN,
+                panelColor: EDITOR_PAGE_MODAL_PANEL_COLOR,
+                showTitleBar: false,
+                onCancel: () => this.closeModal(),
+            })
+        }
+
+        private createPageControls(): ui.UiControl<EditorPagePickerValue>[] {
+            const pageIds = PAGE_IDS()
+            return pageIds.map((pageId, index) => {
+                return {
+                    id: "page-" + index,
+                    value: index,
+                    bitmapId: pageId,
+                    selected: index == this.currPage_,
+                    onActivate: (pageIndex: number) =>
+                        this.switchToPage(pageIndex),
+                }
+            })
+        }
+
+        private switchToPage(pageIndex: number): void {
+            if (pageIndex < 0 || pageIndex >= this.progdef_.pages.length) return
+            this.currPage_ = pageIndex
+            this.pageView_.pageChanged()
+            this.closeModal()
+        }
+
         private moveEditorFocus(direction: ui.UiFocusDirection): void {
             const activeScopeId = this.focus.getActiveScopeId()
             if (activeScopeId == EDITOR_PAGE_SCOPE) {
@@ -176,8 +279,6 @@ namespace microcode {
         private navigationTargets_: PageNavigationTarget[]
         private measuredContentWidth_: number
         private measuredContentHeight_: number
-        private buttonView_: ui.UiButtonView
-        private focusStyle_: ui.UiButtonStyle
 
         constructor(getProgram: () => ProgramDefn, getPage: () => number) {
             this.layoutSpec = {
@@ -206,10 +307,6 @@ namespace microcode {
             this.layout_ = undefined
             this.navigationRows_ = []
             this.navigationTargets_ = []
-            this.buttonView_ = new ui.UiButtonView({
-                style: ui.UiButtonStyles.Transparent,
-            })
-            this.focusStyle_ = ui.UiButtonStyles.Transparent
         }
 
         public measure(
@@ -239,6 +336,9 @@ namespace microcode {
 
         public registerFocusTargets(focus: ui.UiFocusState): void {
             this.focus_ = focus
+            // The page view owns one focus scope backed by rule-row controls.
+            // Its targets are rebuilt whenever layout changes because scrolling
+            // can change viewport-space target rectangles.
             this.refreshFocusTargets()
         }
 
@@ -255,6 +355,11 @@ namespace microcode {
             const result = focus.setActiveScope(EDITOR_PAGE_SCOPE)
             this.handleFocusScrollResult(result)
             return result
+        }
+
+        public pageChanged(): void {
+            this.invalidateLayout()
+            this.refreshFocusTargets()
         }
 
         public handleFocusInput(result: ui.UiFocusInputResult): PageViewResult {
@@ -281,8 +386,7 @@ namespace microcode {
             this.rebuildLayout()
             const page = this.layout_
             if (!page) return
-            this.drawPage(surface, page)
-            this.drawFocus(surface, assets, focus, page)
+            this.drawPage(surface, assets, focus, page)
         }
 
         public measureContent(output: ui.UiMeasuredSize): void {
@@ -338,6 +442,13 @@ namespace microcode {
 
         public defaultNavigationTarget(): ui.UiFocusNavigationTarget {
             const rows = this.navigationRows()
+            for (let row = 0; row < rows.length; row++) {
+                for (let column = 0; column < rows[row].length; column++) {
+                    const target = rows[row][column]
+                    if (this.isDefaultRuleTarget(target.control.value))
+                        return target.navigation
+                }
+            }
             if (rows.length && rows[0].length) return rows[0][0].navigation
             return undefined
         }
@@ -502,35 +613,17 @@ namespace microcode {
             )
         }
 
-        private drawPage(surface: ui.DrawSurface, page: PageLayout): void {
-            for (let i = 0; i < page.rules.length; i++) {
-                const rule = page.rules[i]
-                if (!rule.isVisible(page)) continue
-                rule.draw(surface, page)
-            }
-        }
-
-        private drawFocus(
+        private drawPage(
             surface: ui.DrawSurface,
             assets: ui.UiAssetResolver,
             focus: ui.UiFocusState,
             page: PageLayout,
         ): void {
-            if (!focus || focus.getActiveScopeId() != EDITOR_PAGE_SCOPE) return
-            const targetId = focus.getActiveTargetId(EDITOR_PAGE_SCOPE)
-            const target = this.targetByFocusId(targetId)
-            if (!target) return
-            this.buttonView_.renderFocus(
-                surface,
-                target.viewportRect,
-                { bitmap: target.control.bitmap },
-                {
-                    focused: true,
-                    style: this.focusStyle_,
-                    contentRect: target.viewportRect,
-                    labelBounds: page.viewport,
-                },
-            )
+            for (let i = 0; i < page.rules.length; i++) {
+                const rule = page.rules[i]
+                if (!rule.isVisible(page)) continue
+                rule.draw(surface, assets, focus, page)
+            }
         }
 
         private rebuildLayout(force?: boolean): void {
@@ -542,6 +635,10 @@ namespace microcode {
         private refreshFocusTargets(): void {
             if (!this.focus_) return
             this.rebuildLayout()
+            // Focus registration is split from drawing. The focus state stores
+            // target ids, viewport rectangles for hit testing, and content
+            // rectangles for scroll requests; rendering later consumes the same
+            // active target id.
             this.focus_.setScope({
                 id: EDITOR_PAGE_SCOPE,
                 preferredTargetId: this.preferredTargetId(),
@@ -609,6 +706,10 @@ namespace microcode {
             return target ? target.id : undefined
         }
 
+        private isDefaultRuleTarget(value: RuleTargetControlValue): boolean {
+            return value.section == "sensors" || value.section == "filters"
+        }
+
         private activationResult(
             result: ui.UiFocusInputResult,
         ): PageViewResult {
@@ -624,6 +725,7 @@ namespace microcode {
                 return undefined
             const target = this.targetByFocusId(activation.targetId)
             if (!target) return undefined
+            if (target.control.value.kind == "static") return undefined
             return {
                 kind: "activated",
                 controlId: target.control.id,
@@ -735,14 +837,20 @@ namespace microcode {
         public readonly ruleIndex: number
         private x_: number
         private y_: number
+        private width_: number
+        private height_: number
         private tray_: ui.Rect
         private when_: ui.Rect
-        private handle_: RuleTargetLayout
-        private whenTargets_: RuleTargetLayout[]
-        private whenInsert_: RuleTargetLayout
-        private arrow_: RuleIconLayout
-        private doTargets_: RuleTargetLayout[]
-        private doInsert_: RuleTargetLayout
+        private controls_: ui.UiControl<RuleTargetControlValue>[]
+        private whenControlIds_: string[]
+        private doControlIds_: string[]
+        private strip_: ui.UiControlStrip<RuleTargetControlValue>
+        private stripOffsetX_: number
+        private stripOffsetY_: number
+        private measureScratch_: ui.UiMeasuredSize
+        private stripRect_: ui.Rect
+        private controlRectScratch_: ui.Rect
+        private navigationScratch_: ui.UiFocusNavigationTarget[]
 
         constructor(ruledef: RuleDefn, ruleIndex: number) {
             this.rule = ruledef
@@ -750,24 +858,41 @@ namespace microcode {
             this.control = this.ruleControl(ruledef, ruleIndex)
             this.x_ = 0
             this.y_ = 0
+            this.width_ = 0
+            this.height_ = 0
             const ruleRep = ruledef.getRuleRep()
             this.tray_ = new ui.Rect()
             this.when_ = new ui.Rect()
-            this.handle_ = this.iconTarget("handle", "rule_handle")
-            this.whenTargets_ = this.whenTargets(ruleRep)
-            this.whenInsert_ = this.whenInsertionTarget(ruledef)
-            this.arrow_ = this.staticIcon("rule_arrow")
-            this.doTargets_ = this.doTargets(ruleRep)
-            this.doInsert_ = this.doInsertionTarget(ruledef)
-            this.placeTargets()
+            this.controls_ = []
+            this.whenControlIds_ = []
+            this.doControlIds_ = []
+            this.measureScratch_ = new ui.UiMeasuredSize()
+            this.stripRect_ = new ui.Rect()
+            this.controlRectScratch_ = new ui.Rect()
+            this.navigationScratch_ = []
+            this.addRuleControls(ruleRep)
+            this.stripOffsetX_ = 0
+            this.stripOffsetY_ = 0
+            // Rule targets are `ui-controls` records. The strip owns their
+            // horizontal layout, focus rectangles, focus rendering, and built-in
+            // control drawing; `RuleView` only draws the rule tray bands around
+            // the arranged controls.
+            this.strip_ = new ui.UiControlStrip<RuleTargetControlValue>({
+                scopeId: EDITOR_PAGE_SCOPE,
+                controls: this.controls_,
+                controlWidth: 1,
+                controlHeight: 1,
+                gap: 1,
+            })
+            this.placeControls()
         }
 
         public get width(): number {
-            return this.tray_.width
+            return this.width_
         }
 
         public get height(): number {
-            return this.tray_.height
+            return this.height_
         }
 
         public setPosition(x: number, y: number): void {
@@ -777,6 +902,7 @@ namespace microcode {
 
         public setWidth(width: number): void {
             this.tray_.width = width
+            this.width_ = Math.max(width, this.width_)
         }
 
         public contentBounds(): ui.Rect {
@@ -796,7 +922,12 @@ namespace microcode {
             )
         }
 
-        public draw(surface: ui.DrawSurface, page: PageLayout): void {
+        public draw(
+            surface: ui.DrawSurface,
+            assets: ui.UiAssetResolver,
+            focus: ui.UiFocusState,
+            page: PageLayout,
+        ): void {
             this.fillRect(surface, page, this.tray_, EDITOR_RULE_TRAY_COLOR)
             this.fillRect(
                 surface,
@@ -805,29 +936,26 @@ namespace microcode {
                 EDITOR_WHEN_SECTION_COLOR,
             )
             this.outlineTray(surface, page)
-            this.drawTarget(surface, page, this.handle_)
-            if (this.whenInsert_)
-                this.drawTarget(surface, page, this.whenInsert_)
-            this.drawTarget(surface, page, this.arrow_)
-            if (this.doInsert_)
-                this.drawTarget(surface, page, this.doInsert_)
-            this.drawTargetRun(surface, page, this.whenTargets_)
-            this.drawTargetRun(surface, page, this.doTargets_)
+            this.arrangeStrip(page.content)
+            this.strip_.render(surface, assets, focus)
         }
 
         public navigationTargets(page: PageLayout): PageNavigationTarget[] {
-            const targets = this.orderedTargets()
+            this.arrangeStrip(page.content)
+            this.strip_.copyNavigationTargets(this.navigationScratch_)
             const result: PageNavigationTarget[] = []
-            for (let i = 0; i < targets.length; i++) {
-                const target = targets[i]
-                const contentRect = this.targetContentRect(target)
+            for (let i = 0; i < this.navigationScratch_.length; i++) {
+                const target = this.navigationScratch_[i]
+                const control = this.controlForNavigationTarget(target)
+                if (!control || control.value.kind == "static") continue
+                const contentRect = this.targetContentRect(target.rect)
                 const viewportRect = this.targetViewportRect(page, contentRect)
                 result.push({
-                    control: target.control,
+                    control,
                     contentRect,
                     viewportRect,
                     navigation: {
-                        id: EDITOR_PAGE_SCOPE + "/" + target.control.id,
+                        id: target.id,
                         rect: viewportRect,
                         scrollOwnerId: EDITOR_PAGE_SCROLL_OWNER,
                         scrollRect: contentRect,
@@ -853,77 +981,109 @@ namespace microcode {
             }
         }
 
-        private whenTargets(ruleRep: RuleRep): RuleTargetLayout[] {
-            return this.tileTargets("sensors", ruleRep.sensors).concat(
-                this.tileTargets("filters", ruleRep.filters),
+        private addRuleControls(ruleRep: RuleRep): void {
+            this.controls_.push(this.iconTarget("handle", "rule_handle", 0))
+            const firstRuleGap = (this.controls_[0].width >> 1) + 2
+            this.addTileTargets(
+                "sensors",
+                ruleRep.sensors,
+                this.whenControlIds_,
+                firstRuleGap,
             )
+            this.addTileTargets(
+                "filters",
+                ruleRep.filters,
+                this.whenControlIds_,
+                this.whenControlIds_.length ? undefined : firstRuleGap,
+            )
+            const whenInsert = this.whenInsertionTarget(this.rule)
+            if (whenInsert) {
+                whenInsert.gapBefore = this.whenControlIds_.length
+                    ? undefined
+                    : firstRuleGap
+                this.controls_.push(whenInsert)
+                this.whenControlIds_.push(whenInsert.id)
+            }
+
+            this.controls_.push(this.staticIcon("rule_arrow", 1, 0))
+            this.addTileTargets(
+                "actuators",
+                ruleRep.actuators,
+                this.doControlIds_,
+                0,
+            )
+            this.addTileTargets(
+                "modifiers",
+                ruleRep.modifiers,
+                this.doControlIds_,
+                this.doControlIds_.length ? undefined : 0,
+            )
+            const doInsert = this.doInsertionTarget(this.rule)
+            if (doInsert) {
+                if (!this.doControlIds_.length) doInsert.gapBefore = 0
+                this.controls_.push(doInsert)
+                this.doControlIds_.push(doInsert.id)
+            }
         }
 
-        private doTargets(ruleRep: RuleRep): RuleTargetLayout[] {
-            return this.tileTargets("actuators", ruleRep.actuators).concat(
-                this.tileTargets("modifiers", ruleRep.modifiers),
-            )
-        }
-
-        private tileTargets(
+        private addTileTargets(
             section: RuleSection,
             tiles: Tile[],
-        ): RuleTargetLayout[] {
-            const result: RuleTargetLayout[] = []
+            ids: string[],
+            firstGap?: number,
+        ): void {
             for (let i = 0; i < tiles.length; i++) {
                 const tile = tiles[i]
-                result.push(
-                    this.targetLayout(
-                        "tile",
-                        getIcon(tile),
-                        !getFieldEditor(tile),
-                        section,
-                        i,
-                        tile,
-                    ),
+                const control = this.targetControl(
+                    "tile",
+                    this.bitmap(getIcon(tile)),
+                    section,
+                    i,
+                    tile,
                 )
-            }
-            return result
-        }
-
-        private targetLayout(
-            kind: RuleTargetKind,
-            icon: string | number | Bitmap,
-            framed: boolean,
-            section?: RuleSection,
-            index?: number,
-            tile?: Tile,
-        ): RuleTargetLayout {
-            const bitmap = this.bitmap(icon)
-            const iconBounds = this.iconBounds(bitmap)
-            const bounds = iconBounds.clone()
-            if (framed) bounds.inflate(1)
-            return {
-                control: this.targetControl(kind, bitmap, section, index, tile),
-                bitmap,
-                framed,
-                centerX: 0,
-                bounds,
-                iconBounds,
+                if (firstGap !== undefined && ids.length == 0)
+                    control.gapBefore = firstGap
+                this.controls_.push(control)
+                ids.push(control.id)
             }
         }
 
         private iconTarget(
             kind: RuleTargetKind,
             bitmapId: string,
-        ): RuleTargetLayout {
-            return this.targetLayout(kind, bitmapId, false)
+            gapBefore?: number,
+        ): ui.UiControl<RuleTargetControlValue> {
+            const bitmap = this.bitmap(bitmapId)
+            return this.targetControl(
+                kind,
+                bitmap,
+                undefined,
+                undefined,
+                undefined,
+                gapBefore,
+            )
         }
 
-        private staticIcon(bitmapId: string): RuleIconLayout {
+        private staticIcon(
+            bitmapId: string,
+            gapBefore?: number,
+            gapAfter?: number,
+        ): ui.UiControl<RuleTargetControlValue> {
             const bitmap = this.bitmap(bitmapId)
-            const iconBounds = this.iconBounds(bitmap)
             return {
+                id: this.control.id + "/static/" + bitmapId,
+                value: {
+                    kind: "static",
+                    rule: this.rule,
+                    ruleIndex: this.ruleIndex,
+                },
                 bitmap,
-                framed: false,
-                centerX: 0,
-                bounds: iconBounds.clone(),
-                iconBounds,
+                width: bitmap.width,
+                height: bitmap.height,
+                gapBefore,
+                gapAfter,
+                focusable: false,
+                style: ui.UiButtonStyles.Transparent,
             }
         }
 
@@ -933,7 +1093,9 @@ namespace microcode {
             section?: RuleSection,
             index?: number,
             tile?: Tile,
+            gapBefore?: number,
         ): ui.UiControl<RuleTargetControlValue> {
+            const framed = kind == "tile" && tile && !getFieldEditor(tile)
             return {
                 id: this.targetId(kind, section, index),
                 value: {
@@ -945,6 +1107,10 @@ namespace microcode {
                     tile,
                 },
                 bitmap,
+                width: framed ? bitmap.width + 2 : bitmap.width,
+                height: framed ? bitmap.height + 2 : bitmap.height,
+                gapBefore,
+                style: framed ? EDITOR_RULE_TILE_STYLE : ui.UiButtonStyles.Transparent,
             }
         }
 
@@ -965,21 +1131,13 @@ namespace microcode {
                 : icon
         }
 
-        private iconBounds(bitmap: Bitmap): ui.Rect {
-            return new ui.Rect(
-                -(bitmap.width >> 1),
-                -(bitmap.height >> 1),
-                bitmap.width,
-                bitmap.height,
-            )
-        }
-
-        private whenInsertionTarget(rule: RuleDefn): RuleTargetLayout {
+        private whenInsertionTarget(
+            rule: RuleDefn,
+        ): ui.UiControl<RuleTargetControlValue> {
             if (rule.sensors.length == 0)
-                return this.targetLayout(
+                return this.targetControl(
                     "insert",
-                    "when_insertion_point",
-                    false,
+                    this.bitmap("when_insertion_point"),
                     "sensors",
                     0,
                 )
@@ -990,22 +1148,22 @@ namespace microcode {
                     rule.filters.length,
                 ).length
             )
-                return this.targetLayout(
+                return this.targetControl(
                     "insert",
-                    "when_insertion_point",
-                    false,
+                    this.bitmap("when_insertion_point"),
                     "filters",
                     rule.filters.length,
                 )
             return undefined
         }
 
-        private doInsertionTarget(rule: RuleDefn): RuleTargetLayout {
+        private doInsertionTarget(
+            rule: RuleDefn,
+        ): ui.UiControl<RuleTargetControlValue> {
             if (rule.actuators.length == 0)
-                return this.targetLayout(
+                return this.targetControl(
                     "insert",
-                    "do_insertion_point",
-                    false,
+                    this.bitmap("do_insertion_point"),
                     "actuators",
                     0,
                 )
@@ -1016,109 +1174,38 @@ namespace microcode {
                     rule.modifiers.length,
                 ).length
             )
-                return this.targetLayout(
+                return this.targetControl(
                     "insert",
-                    "do_insertion_point",
-                    false,
+                    this.bitmap("do_insertion_point"),
                     "modifiers",
                     rule.modifiers.length,
                 )
             return undefined
         }
 
-        private placeTargets(): void {
-            const whenParts = this.withOptional(this.whenTargets_, this.whenInsert_)
-            const doParts = this.withOptional(this.doTargets_, this.doInsert_)
-            let x = 0
+        private placeControls(): void {
+            this.strip_.measure({ maxWidth: 1000, maxHeight: 1000 }, this.measureScratch_)
+            this.width_ = this.measureScratch_.preferredWidth
+            this.height_ = this.measureScratch_.preferredHeight
+            this.stripOffsetX_ = -(this.controls_[0].width >> 1)
+            this.stripOffsetY_ = -(this.height_ >> 1)
+            this.arrangeStrip(new ui.Rect(0, 0, this.width_, this.height_))
 
-            this.handle_.centerX = x
-            x += this.handle_.bounds.width
-            x = this.placeTargetRun(
-                whenParts,
-                x + (whenParts[0].bounds.width >> 1) + 2,
-            )
-            const whenRight = x
-
-            x += (this.arrow_.bounds.width >> 1) + 1
-            this.arrow_.centerX = x
-            x += this.arrow_.bounds.width + 2
-            this.placeTargetRun(doParts, x)
-
-            const tray = this.targetRunBounds(whenParts)
-            this.addTargetRunBounds(tray, doParts)
+            const tray = this.controlIdsBounds(this.whenControlIds_)
+            this.addControlIdsBounds(tray, this.doControlIds_)
             tray.inflate(1)
             tray.width = Math.max(tray.width, UI_SCREEN_WIDTH)
-            this.tray_ = tray
-            this.when_ = new ui.Rect(
+            this.tray_.copyFrom(tray)
+
+            const whenBounds = this.controlIdsBounds(this.whenControlIds_)
+            this.when_.set(
                 tray.x,
                 tray.y,
-                whenRight - tray.x + 1,
+                whenBounds.right - tray.x + 1,
                 tray.height,
             )
-        }
-
-        private withOptional(
-            targets: RuleTargetLayout[],
-            optional: RuleTargetLayout,
-        ): RuleTargetLayout[] {
-            if (!optional) return targets
-            const result = targets.slice()
-            result.push(optional)
-            return result
-        }
-
-        private placeTargetRun(
-            targets: RuleTargetLayout[],
-            firstCenterX: number,
-        ): number {
-            let x = firstCenterX
-            for (let i = 0; i < targets.length; i++) {
-                const target = targets[i]
-                if (i) {
-                    const previous = targets[i - 1]
-                    x += previous.bounds.width >> 1
-                    x += target.bounds.width >> 1
-                    x += 1
-                }
-                target.centerX = x
-            }
-            const last = targets[targets.length - 1]
-            return last.centerX + (last.bounds.width >> 1)
-        }
-
-        private targetRunBounds(targets: RuleTargetLayout[]): ui.Rect {
-            const result = this.targetBounds(targets[0])
-            for (let i = 1; i < targets.length; i++)
-                result.union(this.targetBounds(targets[i]))
-            return result
-        }
-
-        private addTargetRunBounds(
-            target: ui.Rect,
-            targets: RuleTargetLayout[],
-        ): void {
-            for (let i = 0; i < targets.length; i++)
-                target.union(this.targetBounds(targets[i]))
-        }
-
-        private targetBounds(target: RuleIconLayout): ui.Rect {
-            return new ui.Rect(
-                target.centerX + target.bounds.x,
-                target.bounds.y,
-                target.bounds.width,
-                target.bounds.height,
-            )
-        }
-
-        private drawTargetRun(
-            surface: ui.DrawSurface,
-            page: PageLayout,
-            targets: RuleTargetLayout[],
-        ): void {
-            for (let i = 0; i < targets.length; i++) {
-                if (!this.isTargetVisibleX(page, targets[i])) continue
-                this.drawTarget(surface, page, targets[i])
-            }
+            this.width_ = this.tray_.width
+            this.height_ = this.tray_.height
         }
 
         private fillRect(
@@ -1181,66 +1268,47 @@ namespace microcode {
             )
         }
 
-        private drawTarget(
-            surface: ui.DrawSurface,
-            page: PageLayout,
-            target: RuleIconLayout,
-        ): void {
-            const iconRect = this.targetIconRect(page.content, target)
-            if (target.framed) {
-                surface.fillRect(iconRect, 1)
-                surface.drawRect(iconRect, 1)
+        private arrangeStrip(viewport: ui.Rect): void {
+            this.stripRect_.set(
+                viewport.x + this.x_ + this.stripOffsetX_,
+                viewport.y + this.y_ + this.stripOffsetY_,
+                this.width_,
+                this.height_,
+            )
+            this.strip_.arrange(this.stripRect_)
+        }
+
+        private controlIdsBounds(ids: string[]): ui.Rect {
+            const result = new ui.Rect()
+            if (!ids.length) return result
+            this.copyControlRect(ids[0], result)
+            for (let i = 1; i < ids.length; i++) {
+                this.copyControlRect(ids[i], this.controlRectScratch_)
+                result.union(this.controlRectScratch_)
             }
-            surface.drawBitmap(target.bitmap, iconRect.x, iconRect.y)
-        }
-
-        private targetIconRect(
-            viewport: ui.Rect,
-            target: RuleIconLayout,
-        ): ui.Rect {
-            return new ui.Rect(
-                viewport.x + this.x_ + target.centerX + target.iconBounds.x,
-                viewport.y + this.y_ + target.iconBounds.y,
-                target.iconBounds.width,
-                target.iconBounds.height,
-            )
-        }
-
-        private isTargetVisibleX(
-            page: PageLayout,
-            target: RuleIconLayout,
-        ): boolean {
-            const x = page.content.x + this.x_ + target.centerX
-            const halfWidth = target.bitmap.width >> 1
-            return (
-                x + halfWidth >= page.viewport.x &&
-                x - halfWidth <= page.viewport.right
-            )
-        }
-
-        private orderedTargets(): RuleTargetLayout[] {
-            const result: RuleTargetLayout[] = []
-            result.push(this.handle_)
-            this.pushTargets(result, this.whenTargets_)
-            if (this.whenInsert_) result.push(this.whenInsert_)
-            this.pushTargets(result, this.doTargets_)
-            if (this.doInsert_) result.push(this.doInsert_)
             return result
         }
 
-        private pushTargets(
-            result: RuleTargetLayout[],
-            targets: RuleTargetLayout[],
+        private addControlIdsBounds(
+            target: ui.Rect,
+            ids: string[],
         ): void {
-            for (let i = 0; i < targets.length; i++) result.push(targets[i])
+            for (let i = 0; i < ids.length; i++) {
+                this.copyControlRect(ids[i], this.controlRectScratch_)
+                target.union(this.controlRectScratch_)
+            }
         }
 
-        private targetContentRect(target: RuleIconLayout): ui.Rect {
+        private copyControlRect(controlId: string, output: ui.Rect): void {
+            this.strip_.getControlRect(controlId, output)
+        }
+
+        private targetContentRect(targetRect: ui.Rect): ui.Rect {
             return new ui.Rect(
-                this.x_ + target.centerX + target.bounds.x,
-                this.y_ + target.bounds.y,
-                target.bounds.width,
-                target.bounds.height,
+                targetRect.x - this.stripRect_.x + this.x_ + this.stripOffsetX_,
+                targetRect.y - this.stripRect_.y + this.y_ + this.stripOffsetY_,
+                targetRect.width,
+                targetRect.height,
             )
         }
 
@@ -1264,6 +1332,17 @@ namespace microcode {
                 Math.max(right - left, 0),
                 Math.max(bottom - top, 0),
             )
+        }
+
+        private controlForNavigationTarget(
+            target: ui.UiFocusNavigationTarget,
+        ): ui.UiControl<RuleTargetControlValue> {
+            for (let i = 0; i < this.controls_.length; i++) {
+                const control = this.controls_[i]
+                if (target.id == EDITOR_PAGE_SCOPE + "/" + control.id)
+                    return control
+            }
+            return undefined
         }
     }
 
@@ -1342,9 +1421,11 @@ namespace microcode {
 
     class PageFocusNavigator implements ui.UiFocusNavigationProvider {
         private owner_: PageView
+        private rowNavigationScratch_: ui.UiFocusNavigationTarget[]
 
         constructor(owner: PageView) {
             this.owner_ = owner
+            this.rowNavigationScratch_ = []
         }
 
         public move(
@@ -1378,6 +1459,17 @@ namespace microcode {
             rows: PageNavigationTarget[][],
             position: PageTargetPosition,
         ): ui.UiFocusMoveResult {
+            // First let the framework apply normal row movement inside the
+            // current rule. Boundary results are handled below so page-level
+            // wrapping can cross rule rows.
+            const rowResult = ui.moveFocusInRow({
+                scopeId: EDITOR_PAGE_SCOPE,
+                currentTargetId: rows[position.row][position.column].navigation.id,
+                direction: "left",
+                targets: this.copyRowNavigationTargets(rows[position.row]),
+            })
+            if (rowResult.kind == "moved") return rowResult
+
             let row = position.row
             let column = position.column - 1
             if (column < 0) {
@@ -1392,6 +1484,22 @@ namespace microcode {
             rows: PageNavigationTarget[][],
             position: PageTargetPosition,
         ): ui.UiFocusMoveResult {
+            // Right movement inside a rule is ordinary row navigation. At the
+            // end of a row, the page navigator advances to the next rule row,
+            // and the final row wraps back to the first rule handle.
+            const rowResult = ui.moveFocusInRow({
+                scopeId: EDITOR_PAGE_SCOPE,
+                currentTargetId: rows[position.row][position.column].navigation.id,
+                direction: "right",
+                targets: this.copyRowNavigationTargets(rows[position.row]),
+            })
+            if (rowResult.kind == "moved") return rowResult
+            if (
+                position.row == rows.length - 1 &&
+                position.column == rows[position.row].length - 1
+            )
+                return this.moveToPosition(rows, position, 0, 0)
+
             let row = position.row
             let column = position.column + 1
             if (column >= rows[row].length) {
@@ -1407,6 +1515,10 @@ namespace microcode {
             position: PageTargetPosition,
         ): ui.UiFocusMoveResult {
             if (position.row == 0) {
+                // When the first visible row is not at the top of the scroll
+                // content, an up action scrolls the page before leaving the
+                // page scope. At the top boundary, focus exits to the nearest
+                // toolbar target.
                 if (!this.owner_.atVerticalBoundary("up"))
                     return this.boundaryScrollMove(rows, position, "up")
                 const target = this.owner_.nearestToolbarTarget(
@@ -1442,6 +1554,9 @@ namespace microcode {
             position: PageTargetPosition,
         ): ui.UiFocusMoveResult {
             if (position.row == rows.length - 1) {
+                // Down from the last rule mirrors the top boundary: scroll if
+                // hidden content remains below, otherwise stay on the last
+                // target. It does not wrap vertically to the first row.
                 if (!this.owner_.atVerticalBoundary("down"))
                     return this.boundaryScrollMove(rows, position, "down")
                 return {
@@ -1518,6 +1633,15 @@ namespace microcode {
             return result
         }
 
+        private copyRowNavigationTargets(
+            row: PageNavigationTarget[],
+        ): ui.UiFocusNavigationTarget[] {
+            while (this.rowNavigationScratch_.length) this.rowNavigationScratch_.pop()
+            for (let i = 0; i < row.length; i++)
+                this.rowNavigationScratch_.push(row[i].navigation)
+            return this.rowNavigationScratch_
+        }
+
         private positionForTarget(
             rows: PageNavigationTarget[][],
             targetId: ui.UiFocusId,
@@ -1534,19 +1658,7 @@ namespace microcode {
 
     type RuleSection = "sensors" | "filters" | "actuators" | "modifiers"
 
-    type RuleTargetKind = "handle" | "tile" | "insert"
-
-    interface RuleIconLayout {
-        bitmap: Bitmap
-        framed: boolean
-        centerX: number
-        bounds: ui.Rect
-        iconBounds: ui.Rect
-    }
-
-    interface RuleTargetLayout extends RuleIconLayout {
-        control: ui.UiControl<RuleTargetControlValue>
-    }
+    type RuleTargetKind = "handle" | "tile" | "insert" | "static"
 
     class EditorToolbar implements ui.UiFocusableView<EditorToolbarResult> {
         public readonly layoutSpec: ui.UiLayoutSpec
@@ -1565,6 +1677,8 @@ namespace microcode {
             getProgram: () => ProgramDefn,
             getPage: () => number,
             pageView: PageView,
+            openDisk: () => void,
+            openPage: () => void,
         ) {
             this.layoutSpec = {
                 width: { mode: "fixed", value: UI_SCREEN_WIDTH },
@@ -1589,7 +1703,7 @@ namespace microcode {
             this.pageControl_ = {
                 id: "page",
                 value: "page",
-                onActivate: () => {},
+                onActivate: openPage,
             }
             const toolbarControls: ui.UiControl<EditorToolbarAction>[] = [
                 {
@@ -1597,7 +1711,7 @@ namespace microcode {
                     value: "disk",
                     bitmap: icondb.disk,
                     textId: "disk",
-                    onActivate: () => {},
+                    onActivate: openDisk,
                 },
                 this.runControl_,
                 this.stopControl_,
