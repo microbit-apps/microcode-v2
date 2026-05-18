@@ -84,6 +84,11 @@ namespace microcode {
         pop(): void
 
         /**
+         * Opens the home screen.
+         */
+        launchHome(): void
+
+        /**
          * Opens the editor.
          */
         launchEditor(): void
@@ -131,10 +136,17 @@ namespace microcode {
             if (this.scene_) this.scene_.popScreen()
         }
 
+        public launchHome(): void {
+            const screen = new HomeScreen(this)
+            if (this.scene_) this.scene_.replaceScreen(screen)
+            else this.open(screen)
+        }
+
         public launchEditor(): void {
-            this.close()
-            stopProgram()
-            this.app_.pushScene(new Editor(this.app_))
+            stopProgramIfRunning()
+            const screen = new EditorScreen(this, this.app_)
+            if (this.scene_) this.scene_.replaceScreen(screen)
+            else this.open(screen)
         }
 
         public launchSamples(): void {
@@ -154,6 +166,10 @@ namespace microcode {
 
         public didClose(scene: UiHostScene): void {
             if (this.scene_ == scene) this.scene_ = undefined
+        }
+
+        public currentEditorProgram(): ProgramDefn {
+            return this.scene_ ? this.scene_.currentEditorProgram() : undefined
         }
     }
 
@@ -208,6 +224,13 @@ namespace microcode {
             if (!this.runtime_) return
             this.runtime_.replace(screen)
             this.bindFramePump()
+        }
+
+        public currentEditorProgram(): ProgramDefn {
+            const screen = this.runtime_ ? this.runtime_.top() : undefined
+            return screen instanceof EditorScreen
+                ? screen.currentProgram()
+                : undefined
         }
 
         public popScreen(): void {

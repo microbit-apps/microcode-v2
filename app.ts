@@ -71,10 +71,15 @@ namespace microcode {
         }
 
         public openHome() {
-            this.uiHost.open(new HomeScreen(this.uiHost))
+            this.uiHost.launchHome()
         }
 
         public runFromEditor() {
+            const hostedProgram = this.uiHost.currentEditorProgram()
+            if (hostedProgram) {
+                runProgramIfStopped(hostedProgram)
+                return
+            }
             const topIndex = this.sceneManager.scenes.length - 1
             const topScene = this.sceneManager.scenes[topIndex]
             if (topScene instanceof Editor) {
@@ -91,9 +96,23 @@ namespace microcode {
         theInterpreter = new Interpreter(prog, runtimeHost)
     }
 
+    export function runProgramIfStopped(prog: ProgramDefn): boolean {
+        if (isProgramRunning()) return false
+        runProgram(prog)
+        return true
+    }
+
     export function stopProgram() {
         if (theInterpreter) theInterpreter.stop()
         theInterpreter = undefined
+    }
+
+    export function stopProgramIfRunning(): boolean {
+        if (!isProgramRunning()) return false
+        stopProgram()
+        basic.showIcon(IconNames.No, 100)
+        basic.clearScreen()
+        return true
     }
 
     export function isProgramRunning() {
