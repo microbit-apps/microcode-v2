@@ -3,6 +3,27 @@ namespace microcode {
 
     type EditorToolbarResult = ui.UiRowResult<EditorToolbarAction>
 
+    interface PageControlValue {
+        kind: "page"
+        page: PageDefn
+        pageIndex: number
+    }
+
+    interface RuleControlValue {
+        kind: "rule"
+        rule: RuleDefn
+        ruleIndex: number
+    }
+
+    interface RuleTargetControlValue {
+        kind: RuleTargetKind
+        rule: RuleDefn
+        ruleIndex: number
+        section?: RuleSection
+        index?: number
+        tile?: Tile
+    }
+
     const EDITOR_TOOLBAR_SCOPE = "editor/toolbar"
     const EDITOR_PAGE_SELECTOR_SCOPE = "editor/page-selector"
     const EDITOR_BACKGROUND_COLOR = 6
@@ -15,6 +36,12 @@ namespace microcode {
     const EDITOR_TOOLBAR_LEFT_WIDTH =
         EDITOR_TOOLBAR_BUTTON_SIZE * 3 + EDITOR_TOOLBAR_GAP * 2
     const EDITOR_TOOLBAR_PAGE_X = UI_SCREEN_WIDTH - 21
+    const EDITOR_CONTENT_Y = EDITOR_TOOLBAR_HEIGHT + 2
+    const EDITOR_PAGE_MARGIN = 10
+    const EDITOR_RULE_MARGIN = 3
+    const EDITOR_RULE_TRAY_COLOR = 11
+    const EDITOR_WHEN_SECTION_COLOR = 13
+    const EDITOR_RULE_OUTLINE_COLOR = 12
 
     /**
      * Brain editor screen.
@@ -24,6 +51,7 @@ namespace microcode {
         private app_: App
         private progdef_: ProgramDefn
         private currPage_: number
+        private pageView_: PageView
         private toolbar_: EditorToolbar
 
         constructor(navigation: AppNavigation, app: App) {
@@ -33,6 +61,18 @@ namespace microcode {
             this.app_ = app
             this.currPage_ = 0
             this.loadProgram()
+            this.pageView_ = new PageView(
+                () => this.progdef_,
+                () => this.currPage_,
+            )
+            this.pageView_.arrange(
+                new ui.Rect(
+                    0,
+                    EDITOR_CONTENT_Y,
+                    UI_SCREEN_WIDTH,
+                    UI_SCREEN_HEIGHT - EDITOR_CONTENT_Y,
+                ),
+            )
             this.toolbar_ = new EditorToolbar(
                 () => this.progdef_,
                 () => this.currPage_,
@@ -48,6 +88,7 @@ namespace microcode {
         public render(surface: ui.DrawSurface): void {
             surface.clear(this.backgroundColor)
             this.drawBackground(surface)
+            this.pageView_.render(surface)
             super.render(surface)
         }
 
@@ -88,6 +129,558 @@ namespace microcode {
             }
         }
     }
+
+    class PageView {
+        private getProgram_: () => ProgramDefn
+        private getPage_: () => number
+        private viewportRect_: ui.Rect
+
+        constructor(getProgram: () => ProgramDefn, getPage: () => number) {
+            this.getProgram_ = getProgram
+            this.getPage_ = getPage
+            this.viewportRect_ = new ui.Rect()
+        }
+
+        public arrange(rect: ui.Rect): void {
+            this.viewportRect_.copyFrom(rect)
+        }
+
+        public render(surface: ui.DrawSurface): void {
+            const page = this.pageLayout()
+            if (!page) return
+            this.drawPage(surface, page)
+        }
+
+        private pageLayout(): PageLayout {
+            const page = this.currentPage()
+            if (!page) return undefined
+
+            const rules = this.layoutRules(page)
+            this.arrangeRules(rules)
+            return {
+                control: this.pageControl(page),
+                viewport: this.viewportRect_.clone(),
+                rules,
+            }
+        }
+
+        private currentPage(): PageDefn {
+            const program = this.getProgram_()
+            return program ? program.pages[this.getPage_()] : undefined
+        }
+
+        private layoutRules(page: PageDefn): RuleView[] {
+            const rules: RuleView[] = []
+            let lastRule = page.rules.length - 1
+            while (lastRule >= 0 && page.rules[lastRule].isEmpty()) lastRule--
+            for (let i = 0; i <= lastRule; i++)
+                rules.push(new RuleView(page.rules[i], rules.length))
+            rules.push(new RuleView(new RuleDefn(), rules.length))
+            return rules
+        }
+
+        private pageControl(page: PageDefn): ui.UiControl<PageControlValue> {
+            const pageIndex = this.getPage_()
+            return {
+                id: "page-" + pageIndex,
+                value: {
+                    kind: "page",
+                    page,
+                    pageIndex,
+                },
+            }
+        }
+
+        private arrangeRules(rules: RuleView[]): void {
+            let top = EDITOR_PAGE_MARGIN
+            let maxTrayWidth = 0
+
+            for (let i = 0; i < rules.length; i++) {
+                const rule = rules[i]
+                if (i) {
+                    top += rules[i - 1].height >> 1
+                    top += rule.height >> 1
+                    top += EDITOR_RULE_MARGIN
+                }
+                rule.setPosition(EDITOR_PAGE_MARGIN, top)
+                maxTrayWidth = Math.max(maxTrayWidth, rule.width)
+            }
+
+            for (let i = 0; i < rules.length; i++)
+                rules[i].setWidth(maxTrayWidth)
+        }
+
+        private drawPage(surface: ui.DrawSurface, page: PageLayout): void {
+            for (let i = 0; i < page.rules.length; i++) {
+                const rule = page.rules[i]
+                if (!rule.isVisible(page.viewport)) continue
+                rule.draw(surface, page.viewport)
+            }
+        }
+    }
+
+    class RuleView {
+        public readonly control: ui.UiControl<RuleControlValue>
+        public readonly rule: RuleDefn
+        public readonly ruleIndex: number
+        private x_: number
+        private y_: number
+        private tray_: ui.Rect
+        private when_: ui.Rect
+        private handle_: RuleTargetLayout
+        private whenTargets_: RuleTargetLayout[]
+        private whenInsert_: RuleTargetLayout
+        private arrow_: RuleTargetLayout
+        private doTargets_: RuleTargetLayout[]
+        private doInsert_: RuleTargetLayout
+
+        constructor(ruledef: RuleDefn, ruleIndex: number) {
+            this.rule = ruledef
+            this.ruleIndex = ruleIndex
+            this.control = this.ruleControl(ruledef, ruleIndex)
+            this.x_ = 0
+            this.y_ = 0
+            const ruleRep = ruledef.getRuleRep()
+            this.tray_ = new ui.Rect()
+            this.when_ = new ui.Rect()
+            this.handle_ = this.iconTarget("handle", "rule_handle")
+            this.whenTargets_ = this.whenTargets(ruleRep)
+            this.whenInsert_ = this.whenInsertionTarget(ruledef)
+            this.arrow_ = this.iconTarget("arrow", "rule_arrow")
+            this.doTargets_ = this.doTargets(ruleRep)
+            this.doInsert_ = this.doInsertionTarget(ruledef)
+            this.placeTargets()
+        }
+
+        public get width(): number {
+            return this.tray_.width
+        }
+
+        public get height(): number {
+            return this.tray_.height
+        }
+
+        public setPosition(x: number, y: number): void {
+            this.x_ = x
+            this.y_ = y
+        }
+
+        public setWidth(width: number): void {
+            this.tray_.width = width
+        }
+
+        public isVisible(viewport: ui.Rect): boolean {
+            const y = viewport.y + this.y_
+            return (
+                y + this.tray_.y <= viewport.bottom &&
+                y + this.tray_.bottom >= viewport.y
+            )
+        }
+
+        public draw(surface: ui.DrawSurface, viewport: ui.Rect): void {
+            this.fillRect(surface, viewport, this.tray_, EDITOR_RULE_TRAY_COLOR)
+            this.fillRect(
+                surface,
+                viewport,
+                this.when_,
+                EDITOR_WHEN_SECTION_COLOR,
+            )
+            this.outlineTray(surface, viewport)
+            this.drawTarget(surface, viewport, this.handle_)
+            if (this.whenInsert_)
+                this.drawTarget(surface, viewport, this.whenInsert_)
+            this.drawTarget(surface, viewport, this.arrow_)
+            if (this.doInsert_)
+                this.drawTarget(surface, viewport, this.doInsert_)
+            this.drawTargetRun(surface, viewport, this.whenTargets_)
+            this.drawTargetRun(surface, viewport, this.doTargets_)
+        }
+
+        private ruleControl(
+            rule: RuleDefn,
+            ruleIndex: number,
+        ): ui.UiControl<RuleControlValue> {
+            return {
+                id: "rule-" + ruleIndex,
+                value: {
+                    kind: "rule",
+                    rule,
+                    ruleIndex,
+                },
+            }
+        }
+
+        private whenTargets(ruleRep: RuleRep): RuleTargetLayout[] {
+            return this.tileTargets("sensors", ruleRep.sensors).concat(
+                this.tileTargets("filters", ruleRep.filters),
+            )
+        }
+
+        private doTargets(ruleRep: RuleRep): RuleTargetLayout[] {
+            return this.tileTargets("actuators", ruleRep.actuators).concat(
+                this.tileTargets("modifiers", ruleRep.modifiers),
+            )
+        }
+
+        private tileTargets(
+            section: RuleSection,
+            tiles: Tile[],
+        ): RuleTargetLayout[] {
+            const result: RuleTargetLayout[] = []
+            for (let i = 0; i < tiles.length; i++) {
+                const tile = tiles[i]
+                result.push(
+                    this.targetLayout(
+                        "tile",
+                        getIcon(tile),
+                        !getFieldEditor(tile),
+                        section,
+                        i,
+                        tile,
+                    ),
+                )
+            }
+            return result
+        }
+
+        private targetLayout(
+            kind: RuleTargetKind,
+            icon: string | number | Bitmap,
+            framed: boolean,
+            section?: RuleSection,
+            index?: number,
+            tile?: Tile,
+        ): RuleTargetLayout {
+            const bitmap = this.bitmap(icon)
+            const iconBounds = this.iconBounds(bitmap)
+            const bounds = iconBounds.clone()
+            if (framed) bounds.inflate(1)
+            return {
+                control: this.targetControl(kind, bitmap, section, index, tile),
+                framed,
+                centerX: 0,
+                bounds,
+                iconBounds,
+            }
+        }
+
+        private iconTarget(
+            kind: RuleTargetKind,
+            bitmapId: string,
+        ): RuleTargetLayout {
+            return this.targetLayout(kind, bitmapId, false)
+        }
+
+        private targetControl(
+            kind: RuleTargetKind,
+            bitmap: Bitmap,
+            section?: RuleSection,
+            index?: number,
+            tile?: Tile,
+        ): ui.UiControl<RuleTargetControlValue> {
+            return {
+                id: this.targetId(kind, section, index),
+                value: {
+                    kind,
+                    rule: this.rule,
+                    ruleIndex: this.ruleIndex,
+                    section,
+                    index,
+                    tile,
+                },
+                bitmap,
+            }
+        }
+
+        private targetId(
+            kind: RuleTargetKind,
+            section?: RuleSection,
+            index?: number,
+        ): string {
+            let id = this.control.id + "/" + kind
+            if (section) id += "/" + section
+            if (index !== undefined) id += "-" + index
+            return id
+        }
+
+        private bitmap(icon: string | number | Bitmap): Bitmap {
+            return typeof icon == "string" || typeof icon == "number"
+                ? icons.get(icon)
+                : icon
+        }
+
+        private iconBounds(bitmap: Bitmap): ui.Rect {
+            return new ui.Rect(
+                -(bitmap.width >> 1),
+                -(bitmap.height >> 1),
+                bitmap.width,
+                bitmap.height,
+            )
+        }
+
+        private whenInsertionTarget(rule: RuleDefn): RuleTargetLayout {
+            if (rule.sensors.length == 0)
+                return this.targetLayout(
+                    "insert",
+                    "when_insertion_point",
+                    false,
+                    "sensors",
+                    0,
+                )
+            if (
+                Language.getTileSuggestions(
+                    rule,
+                    "filters",
+                    rule.filters.length,
+                ).length
+            )
+                return this.targetLayout(
+                    "insert",
+                    "when_insertion_point",
+                    false,
+                    "filters",
+                    rule.filters.length,
+                )
+            return undefined
+        }
+
+        private doInsertionTarget(rule: RuleDefn): RuleTargetLayout {
+            if (rule.actuators.length == 0)
+                return this.targetLayout(
+                    "insert",
+                    "do_insertion_point",
+                    false,
+                    "actuators",
+                    0,
+                )
+            if (
+                Language.getTileSuggestions(
+                    rule,
+                    "modifiers",
+                    rule.modifiers.length,
+                ).length
+            )
+                return this.targetLayout(
+                    "insert",
+                    "do_insertion_point",
+                    false,
+                    "modifiers",
+                    rule.modifiers.length,
+                )
+            return undefined
+        }
+
+        private placeTargets(): void {
+            const whenParts = this.withOptional(this.whenTargets_, this.whenInsert_)
+            const doParts = this.withOptional(this.doTargets_, this.doInsert_)
+            let x = 0
+
+            this.handle_.centerX = x
+            x += this.handle_.bounds.width
+            x = this.placeTargetRun(
+                whenParts,
+                x + (whenParts[0].bounds.width >> 1) + 2,
+            )
+            const whenRight = x
+
+            x += (this.arrow_.bounds.width >> 1) + 1
+            this.arrow_.centerX = x
+            x += this.arrow_.bounds.width + 2
+            this.placeTargetRun(doParts, x)
+
+            const tray = this.targetRunBounds(whenParts)
+            this.addTargetRunBounds(tray, doParts)
+            tray.inflate(1)
+            tray.width = Math.max(tray.width, UI_SCREEN_WIDTH)
+            this.tray_ = tray
+            this.when_ = new ui.Rect(
+                tray.x,
+                tray.y,
+                whenRight - tray.x + 1,
+                tray.height,
+            )
+        }
+
+        private withOptional(
+            targets: RuleTargetLayout[],
+            optional: RuleTargetLayout,
+        ): RuleTargetLayout[] {
+            if (!optional) return targets
+            const result = targets.slice()
+            result.push(optional)
+            return result
+        }
+
+        private placeTargetRun(
+            targets: RuleTargetLayout[],
+            firstCenterX: number,
+        ): number {
+            let x = firstCenterX
+            for (let i = 0; i < targets.length; i++) {
+                const target = targets[i]
+                if (i) {
+                    const previous = targets[i - 1]
+                    x += previous.bounds.width >> 1
+                    x += target.bounds.width >> 1
+                    x += 1
+                }
+                target.centerX = x
+            }
+            const last = targets[targets.length - 1]
+            return last.centerX + (last.bounds.width >> 1)
+        }
+
+        private targetRunBounds(targets: RuleTargetLayout[]): ui.Rect {
+            const result = this.targetBounds(targets[0])
+            for (let i = 1; i < targets.length; i++)
+                result.union(this.targetBounds(targets[i]))
+            return result
+        }
+
+        private addTargetRunBounds(
+            target: ui.Rect,
+            targets: RuleTargetLayout[],
+        ): void {
+            for (let i = 0; i < targets.length; i++)
+                target.union(this.targetBounds(targets[i]))
+        }
+
+        private targetBounds(target: RuleTargetLayout): ui.Rect {
+            return new ui.Rect(
+                target.centerX + target.bounds.x,
+                target.bounds.y,
+                target.bounds.width,
+                target.bounds.height,
+            )
+        }
+
+        private drawTargetRun(
+            surface: ui.DrawSurface,
+            viewport: ui.Rect,
+            targets: RuleTargetLayout[],
+        ): void {
+            for (let i = 0; i < targets.length; i++) {
+                if (!this.isTargetVisibleX(viewport, targets[i])) continue
+                this.drawTarget(surface, viewport, targets[i])
+            }
+        }
+
+        private fillRect(
+            surface: ui.DrawSurface,
+            viewport: ui.Rect,
+            rect: ui.Rect,
+            color: number,
+        ): void {
+            surface.fillRect(this.absoluteRect(viewport, rect), color)
+        }
+
+        private outlineTray(
+            surface: ui.DrawSurface,
+            viewport: ui.Rect,
+        ): void {
+            const absolute = this.absoluteRect(viewport, this.tray_)
+            const left = absolute.x
+            const top = absolute.y
+            const right = absolute.x + absolute.width - 1
+            const bottom = absolute.y + absolute.height - 1
+            surface.drawLine(
+                left - 1,
+                top,
+                left - 1,
+                bottom,
+                EDITOR_RULE_OUTLINE_COLOR,
+            )
+            surface.drawLine(
+                right + 1,
+                top,
+                right + 1,
+                bottom,
+                EDITOR_RULE_OUTLINE_COLOR,
+            )
+            surface.drawLine(
+                left,
+                top - 1,
+                right,
+                top - 1,
+                EDITOR_RULE_OUTLINE_COLOR,
+            )
+            surface.drawLine(
+                left,
+                bottom + 1,
+                right,
+                bottom + 1,
+                EDITOR_RULE_OUTLINE_COLOR,
+            )
+        }
+
+        private absoluteRect(
+            viewport: ui.Rect,
+            rect: ui.Rect,
+        ): ui.Rect {
+            return new ui.Rect(
+                viewport.x + this.x_ + rect.x,
+                viewport.y + this.y_ + rect.y,
+                rect.width,
+                rect.height,
+            )
+        }
+
+        private drawTarget(
+            surface: ui.DrawSurface,
+            viewport: ui.Rect,
+            target: RuleTargetLayout,
+        ): void {
+            const iconRect = this.targetIconRect(viewport, target)
+            if (target.framed) {
+                surface.fillRect(iconRect, 1)
+                surface.drawRect(iconRect, 1)
+            }
+            surface.drawBitmap(target.control.bitmap, iconRect.x, iconRect.y)
+        }
+
+        private targetIconRect(
+            viewport: ui.Rect,
+            target: RuleTargetLayout,
+        ): ui.Rect {
+            return new ui.Rect(
+                viewport.x + this.x_ + target.centerX + target.iconBounds.x,
+                viewport.y + this.y_ + target.iconBounds.y,
+                target.iconBounds.width,
+                target.iconBounds.height,
+            )
+        }
+
+        private isTargetVisibleX(
+            viewport: ui.Rect,
+            target: RuleTargetLayout,
+        ): boolean {
+            const x = viewport.x + this.x_ + target.centerX
+            const halfWidth = target.control.bitmap.width >> 1
+            return (
+                x + halfWidth >= viewport.x &&
+                x - halfWidth <= viewport.right
+            )
+        }
+    }
+
+    interface PageLayout {
+        control: ui.UiControl<PageControlValue>
+        viewport: ui.Rect
+        rules: RuleView[]
+    }
+
+    type RuleSection = "sensors" | "filters" | "actuators" | "modifiers"
+
+    type RuleTargetKind = "handle" | "tile" | "insert" | "arrow"
+
+    interface RuleTargetLayout {
+        control: ui.UiControl<RuleTargetControlValue>
+        framed: boolean
+        centerX: number
+        bounds: ui.Rect
+        iconBounds: ui.Rect
+    }
+
     class EditorToolbar implements ui.UiFocusableView<EditorToolbarResult> {
         public readonly layoutSpec: ui.UiLayoutSpec
         public readonly finalRect: ui.Rect
