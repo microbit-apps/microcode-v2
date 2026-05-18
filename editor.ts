@@ -17,10 +17,6 @@ namespace microcode {
     import BACK_BUTTON_ERROR_KIND = user_interface_base.BACK_BUTTON_ERROR_KIND
     import FORWARD_BUTTON_ERROR_KIND = user_interface_base.FORWARD_BUTTON_ERROR_KIND
 
-    export function diskSlots() {
-        return ["disk1", "disk2", "disk3"]
-    }
-
     const TOOLBAR_HEIGHT = 17
     const TOOLBAR_MARGIN = 2
 

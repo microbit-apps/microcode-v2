@@ -1885,16 +1885,27 @@ namespace microcode {
                 targets: this.navigationTargets(scope),
             })
             if (result.kind == "exited") return this.moveThroughLink(result)
-            if (result.kind == "stayed" && result.reason == "boundary") {
-                const linked = this.moveThroughLink({
-                    kind: "exited",
-                    scopeId: request.scopeId,
-                    targetId: request.currentTargetId,
-                    direction: request.direction,
-                })
-                if (linked.kind == "moved") return linked
-            }
+            if (result.kind == "stayed" && result.reason == "boundary")
+                return this.moveThroughBoundary(request)
             return result
+        }
+
+        private moveThroughBoundary(
+            request: ui.UiFocusNavigationRequest,
+        ): ui.UiFocusMoveResult {
+            const result = this.moveThroughLink({
+                kind: "exited",
+                scopeId: request.scopeId,
+                targetId: request.currentTargetId,
+                direction: request.direction,
+            })
+            if (result.kind == "moved") return result
+            return {
+                kind: "stayed",
+                scopeId: request.scopeId,
+                targetId: request.currentTargetId,
+                reason: "boundary",
+            }
         }
 
         private moveThroughLink(
