@@ -8,13 +8,14 @@
         "microphone": "*",
         "datalogger": "*",
         "settings": "*",
-        "microgui": "github:microbit-apps/microgui#v0.0.41"
+        "user-interface-base": "github:microbit-apps/user-interface-base#v0.0.34"
     },
     "files": [
         "config.ts",
         "main.ts",
         "README.md",
         "assets.ts",
+        "field-editor-model.ts",
         "language.ts",
         "tiles.ts",
         "app.ts",
@@ -23,22 +24,20 @@
         "storage.ts",
         "hosted/home.ts",
         "hosted/gallery.ts",
+        "hosted/settings.ts",
         "hosted/editor.ts",
         "version.ts",
         "jacs.ts",
-        "fieldeditors.ts",
         "options.ts",
         "samples.ts",
         "utils.ts",
         "protocol.ts",
-        "navigator.ts",
         "tooltips.ts",
         "host.ts",
         "interpreter.ts",
         "sensors.ts",
         "mcparser.ts",
-        "exprparser.ts",
-        "settings.ts"
+        "exprparser.ts"
     ],
     "testFiles": [],
     "targetVersions": {

@@ -1,7 +1,4 @@
 namespace microcode {
-    import ButtonStyles = user_interface_base.ButtonStyles
-    import ButtonStyle = user_interface_base.ButtonStyle
-
     // DO NOT CHANGE THESE NUMBERS
     export enum Tid {
         // we need markers to indicate the end of a program, page
@@ -460,12 +457,6 @@ namespace microcode {
     export function filterModifierWithDelete(tile: Tile): boolean {
         const tid = getTid(tile)
         return !(isMathOperator(tid) || isComparisonOperator(tid))
-    }
-
-    export function buttonStyle(tile: Tile): ButtonStyle {
-        return getFieldEditor(tile)
-            ? ButtonStyles.Transparent
-            : ButtonStyles.FlatWhite
     }
 
     export function priority(tile: Tile): number {

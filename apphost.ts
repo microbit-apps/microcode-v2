@@ -1,6 +1,5 @@
 namespace microcode {
-    import Scene = user_interface_base.Scene
-
+    const HOST_INPUT_PRIORITY = 10
     const HOST_FRAME_PRIORITY = 30
     export const UI_SCREEN_WIDTH = ui.STANDARD_DISPLAY_WIDTH
     export const UI_SCREEN_HEIGHT = ui.STANDARD_DISPLAY_HEIGHT
@@ -86,7 +85,9 @@ namespace microcode {
      */
     export class UiHost implements AppNavigation {
         private app_: App
-        private scene_: UiHostScene
+        private runtime_: ui.UiRuntime
+        private frameCallback_: context.FrameCallback
+        private inputCallback_: context.FrameCallback
 
         constructor(app: App) {
             this.app_ = app
@@ -96,33 +97,45 @@ namespace microcode {
          * Opens the screen runtime with a root screen.
          */
         public open(root: ui.UiScreen): void {
-            if (this.scene_) return
-            this.scene_ = new UiHostScene(this.app_, this, root)
-            this.app_.pushScene(this.scene_)
+            if (this.runtime_) return
+            this.runtime_ = this.createRuntime()
+            this.runtime_.push(root)
+            this.bindFramePump()
         }
 
         public push(screen: ui.UiScreen): void {
-            if (this.scene_) this.scene_.pushScreen(screen)
+            if (!this.runtime_) {
+                this.open(screen)
+                return
+            }
+            this.runtime_.push(screen)
+            this.bindFramePump()
         }
 
         public replace(screen: ui.UiScreen): void {
-            if (this.scene_) this.scene_.replaceScreen(screen)
+            if (!this.runtime_) {
+                this.open(screen)
+                return
+            }
+            this.runtime_.replace(screen)
+            this.bindFramePump()
         }
 
         public pop(): void {
-            if (this.scene_) this.scene_.popScreen()
+            if (!this.runtime_ || this.runtime_.depth() <= 1) return
+            this.runtime_.pop()
         }
 
         public launchHome(): void {
             const screen = new HomeScreen(this)
-            if (this.scene_) this.scene_.replaceScreen(screen)
+            if (this.runtime_) this.replace(screen)
             else this.open(screen)
         }
 
         public launchEditor(): void {
             stopProgramIfRunning()
             const screen = new EditorScreen(this, this.app_)
-            if (this.scene_) this.scene_.replaceScreen(screen)
+            if (this.runtime_) this.replace(screen)
             else this.open(screen)
         }
 
@@ -131,76 +144,13 @@ namespace microcode {
         }
 
         public launchSettings(): void {
-            this.app_.pushScene(new MicroCodeSettings(this.app_))
+            this.push(new SettingsScreen(this))
         }
 
         public close(): void {
-            if (!this.scene_) return
-            const scene = this.scene_
-            this.scene_ = undefined
-            this.app_.popUiHostScene(scene)
-        }
-
-        public didClose(scene: UiHostScene): void {
-            if (this.scene_ == scene) this.scene_ = undefined
-        }
-
-        public currentEditorProgram(): ProgramDefn {
-            return this.scene_ ? this.scene_.currentEditorProgram() : undefined
-        }
-    }
-
-    class UiHostScene extends Scene {
-        private owner_: UiHost
-        private runtime_: ui.UiRuntime
-        private root_: ui.UiScreen
-        private frameCallback_: context.FrameCallback
-
-        constructor(app: App, owner: UiHost, root: ui.UiScreen) {
-            super(app, "ui-host")
-            this.owner_ = owner
-            this.root_ = root
-            this.backgroundColor = 0
-        }
-
-        public startup(): void {
-            this.runtime_ = new ui.UiRuntime({
-                display: new ui.DisplayShieldFrameAdapter({
-                    scaleMode: "cover",
-                    displayProfile: UI_DISPLAY_PROFILE,
-                }),
-                assets: new AppAssetResolver(),
-                accessibility: new AppAccessibilitySink(),
-                profiler: new AppProfiler(),
-                clearColor: this.backgroundColor,
-            })
-            this.runtime_.push(this.root_)
-        }
-
-        public __init(): void {
-            this.bindFramePump()
-        }
-
-        public shutdown(): void {
-            this.drainScreens()
+            if (!this.runtime_) return
+            while (this.runtime_.depth()) this.runtime_.pop()
             this.runtime_ = undefined
-            this.owner_.didClose(this)
-        }
-
-        public update(): void {}
-
-        public draw(): void {}
-
-        public pushScreen(screen: ui.UiScreen): void {
-            if (!this.runtime_) return
-            this.runtime_.push(screen)
-            this.bindFramePump()
-        }
-
-        public replaceScreen(screen: ui.UiScreen): void {
-            if (!this.runtime_) return
-            this.runtime_.replace(screen)
-            this.bindFramePump()
         }
 
         public currentEditorProgram(): ProgramDefn {
@@ -208,11 +158,6 @@ namespace microcode {
             return screen instanceof EditorScreen
                 ? screen.currentProgram()
                 : undefined
-        }
-
-        public popScreen(): void {
-            if (!this.runtime_ || this.runtime_.depth() <= 1) return
-            this.runtime_.pop()
         }
 
         public dispatchPointerMove(x: number, y: number): void {
@@ -233,15 +178,40 @@ namespace microcode {
             })
         }
 
+        private createRuntime(): ui.UiRuntime {
+            return new ui.UiRuntime({
+                display: new ui.DisplayShieldFrameAdapter({
+                    scaleMode: "cover",
+                    displayProfile: UI_DISPLAY_PROFILE,
+                }),
+                assets: new AppAssetResolver(),
+                accessibility: new AppAccessibilitySink(),
+                profiler: new AppProfiler(),
+                clearColor: 0,
+            })
+        }
+
         private bindFramePump(): void {
             const ctx = context.eventContext()
             if (!ctx) return
+            this.inputCallback_ = ctx.registerFrameHandler(
+                HOST_INPUT_PRIORITY,
+                () => this.updateControllerButtons(),
+            )
             this.frameCallback_ = ctx.registerFrameHandler(
                 HOST_FRAME_PRIORITY,
                 () => {
                     if (this.runtime_) this.runtime_.runFrame()
                 },
             )
+        }
+
+        private updateControllerButtons(): void {
+            const dtms = (context.eventContext().deltaTime * 1000) | 0
+            controller.left.__update(dtms)
+            controller.right.__update(dtms)
+            controller.up.__update(dtms)
+            controller.down.__update(dtms)
         }
 
         private dispatchPointerInput(
@@ -256,11 +226,6 @@ namespace microcode {
                 x,
                 y,
             })
-        }
-
-        private drainScreens(): void {
-            if (!this.runtime_) return
-            while (this.runtime_.depth()) this.runtime_.pop()
         }
     }
 }

@@ -1,4 +1,4 @@
-import font = user_interface_base.font
+import font = ui.font
 
 namespace microcode {
     let extraImage: Bitmap = null
@@ -243,7 +243,7 @@ namespace microcode {
             if (extraImage) return extraImage
             if (nullIfMissing) return null
             if (typeof name === "string")
-                return user_interface_base.icons.get(name, nullIfMissing)
+                return ui.icons.get(name, nullIfMissing)
             return icondb.MISSING
         }
     }

@@ -99,7 +99,7 @@ namespace microcode {
                 focusColor: APP_FOCUS_COLOR,
                 focusLabelBackgroundColor: APP_FOCUS_LABEL_BACKGROUND,
                 focusLabelColor: APP_FOCUS_LABEL_COLOR,
-                focusLabelFont: user_interface_base.font,
+                focusLabelFont: ui.font,
             }
             if (gap !== undefined) style.focusLabelGap = gap
             return style

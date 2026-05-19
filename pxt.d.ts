@@ -10,3 +10,7 @@ interface Array<T> {
 interface Screen {
     (): Bitmap
 }
+
+interface String {
+    replaceAll(searchValue: string, replaceValue: string): string
+}

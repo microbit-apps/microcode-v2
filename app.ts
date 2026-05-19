@@ -1,8 +1,4 @@
 namespace microcode {
-    import AppInterface = user_interface_base.AppInterface
-    import Scene = user_interface_base.Scene
-    import SceneManager = user_interface_base.SceneManager
-
     // Auto-save slot
     export const SAVESLOT_AUTO = "sa"
 
@@ -11,8 +7,7 @@ namespace microcode {
         version?: string
     }
 
-    export class App implements AppInterface {
-        private sceneManager: SceneManager
+    export class App {
         private uiHost: UiHost
 
         constructor() {
@@ -20,8 +15,8 @@ namespace microcode {
             basic.pause(500)
 
             // Application configuration
-            user_interface_base.getIcon = id => icons.get(id)
-            user_interface_base.resolveTooltip = (ariaId: string) =>
+            ui.getIcon = id => icons.get(id)
+            ui.resolveTooltip = (ariaId: string) =>
                 resolveTooltip(ariaId)
 
             const buf = this.load(SAVESLOT_AUTO)
@@ -31,9 +26,7 @@ namespace microcode {
             }
 
             controller.setRepeatDefault(250, 30)
-            // keymap.setupKeys()
 
-            this.sceneManager = new SceneManager()
             this.uiHost = new UiHost(this)
 
             this.openHome()
@@ -53,21 +46,6 @@ namespace microcode {
                 console.log(e)
             }
             return undefined
-        }
-
-        public pushScene(scene: Scene) {
-            this.sceneManager.pushScene(scene)
-        }
-
-        public popScene() {
-            this.sceneManager.popScene()
-        }
-
-        public popUiHostScene(scene: Scene) {
-            const topIndex = this.sceneManager.scenes.length - 1
-            if (this.sceneManager.scenes[topIndex] == scene) {
-                this.sceneManager.popScene()
-            }
         }
 
         public openHome() {

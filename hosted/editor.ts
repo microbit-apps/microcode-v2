@@ -125,7 +125,7 @@ namespace microcode {
         foregroundColor: 15,
         contentAlignment: "center",
         textPlacement: "content",
-        font: user_interface_base.font,
+        font: ui.font,
         padding: 0,
     }
     const EDITOR_RULE_SUBTLE_LABEL_STYLE = ui.buttonStyle(
@@ -2831,7 +2831,7 @@ namespace microcode {
             customContent?: ui.UiButtonCustomContent,
         ): number {
             if (text !== undefined) {
-                return (text.length + 1) * user_interface_base.font.charWidth
+                return (text.length + 1) * ui.font.charWidth
             }
             if (customContent) return EDITOR_RULE_GENERATED_TILE_SIZE
             return framed ? bitmap.width + 2 : bitmap.width
