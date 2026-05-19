@@ -115,11 +115,12 @@ namespace microcode {
                 controlWidth: HOME_DISK_ITEM_WIDTH,
                 controlHeight: HOME_DISK_ITEM_HEIGHT,
                 controlStyle: ui.UiButtonStyles.LightShadowedWhite,
-                contentMargin: HOME_DISK_MODAL_MARGIN,
-                titleGap: HOME_DISK_MODAL_TITLE_GAP,
-                panelColor: this.backgroundColor,
-                titleColor: 1,
-                onCancel: () => this.closeDiskModal(),
+                modalStyle: ui.modalStyle(ui.UiModalStyles.Default, {
+                    panelColor: this.backgroundColor,
+                    titleColor: 1,
+                    contentMargin: HOME_DISK_MODAL_MARGIN,
+                    titleGap: HOME_DISK_MODAL_TITLE_GAP,
+                }),
             })
         }
 

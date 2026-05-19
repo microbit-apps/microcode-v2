@@ -27,6 +27,13 @@ namespace microcode {
         tile?: Tile
     }
 
+    interface RuleTargetFocus {
+        ruleIndex: number
+        kind: RuleTargetKind
+        section?: RuleSection
+        index?: number
+    }
+
     const EDITOR_TOOLBAR_SCOPE = "editor/toolbar"
     const EDITOR_PAGE_SELECTOR_SCOPE = "editor/page-selector"
     const EDITOR_PAGE_SCOPE = "editor/page"
@@ -50,11 +57,35 @@ namespace microcode {
     const EDITOR_DISK_MODAL_SCOPE = "editor/disk-save"
     const EDITOR_PAGE_MODAL_SCOPE = "editor/page-picker"
     const EDITOR_RULE_HANDLE_MODAL_SCOPE = "editor/rule-handle"
+    const EDITOR_NUMERIC_MODAL_SCOPE = "editor/numeric-entry"
     const EDITOR_MODAL_ITEM_SIZE = 18
     const EDITOR_MODAL_COLUMN_COUNT = 3
     const EDITOR_MODAL_MARGIN = 4
     const EDITOR_MODAL_TITLE_GAP = 4
     const EDITOR_PAGE_MODAL_PANEL_COLOR = 12
+    const EDITOR_NUMERIC_MODAL_MARGIN = 5
+    const EDITOR_MODAL_STYLE = ui.modalStyle(ui.UiModalStyles.Default, {
+        panelColor: EDITOR_PAGE_MODAL_PANEL_COLOR,
+        titleColor: 1,
+        contentMargin: EDITOR_MODAL_MARGIN,
+        titleGap: EDITOR_MODAL_TITLE_GAP,
+    })
+    const EDITOR_TITLELESS_MODAL_STYLE = ui.modalStyle(
+        EDITOR_MODAL_STYLE,
+        ui.UiModalStyles.Titleless,
+    )
+    const EDITOR_NUMERIC_MODAL_STYLE = ui.modalStyle(
+        EDITOR_TITLELESS_MODAL_STYLE,
+        {
+            contentMargin: EDITOR_NUMERIC_MODAL_MARGIN,
+        },
+    )
+    const EDITOR_NUMERIC_KEY_STYLE = ui.UiButtonStyles.LightShadowedWhite
+    const EDITOR_NUMERIC_DISPLAY_PALETTE: ui.UiControlPalette = {
+        backgroundColor: 1,
+        foregroundColor: 15,
+        focusColor: 11,
+    }
     const EDITOR_RULE_TILE_STYLE = ui.buttonStyle(
         ui.UiButtonStyles.FlatWhite,
         ui.UiButtonStyles.RoundedFrame,
@@ -90,7 +121,6 @@ namespace microcode {
             focusLabelGap: 5,
         },
     )
-
     function ruleControlId(ruleIndex: number): string {
         return "rule-" + ruleIndex
     }
@@ -119,6 +149,37 @@ namespace microcode {
             section,
             index,
         )
+    }
+
+    function isNumericEntryTile(tile: Tile): boolean {
+        const tid = getTid(tile)
+        return (
+            tid == Tid.TID_DECIMAL_EDITOR ||
+            tid == Tid.TID_POS_INT_EDITOR ||
+            isConstant(tid)
+        )
+    }
+
+    function numericLiteralTile(text: string): Tile {
+        const value = parseFloat(text)
+        if (value != Math.idiv(value, 1)) return undefined
+        if (text != "" + value) return undefined
+        if (value < 1 || value > 5) return undefined
+        return Tid.TID_FILTER_COIN_1 + value - 1
+    }
+
+    function numericEntryMode(tile: Tile): ui.UiNumericEntryMode {
+        return getTid(tile) == Tid.TID_POS_INT_EDITOR
+            ? "positiveInteger"
+            : "decimal"
+    }
+
+    function numericEntryText(tile: Tile): string {
+        if (getFieldEditor(tile)) {
+            const editor = tile as DigitEditor
+            return editor.getField().num
+        }
+        return "" + getParam(tile)
     }
 
     /**
@@ -251,11 +312,7 @@ namespace microcode {
                 controlWidth: EDITOR_MODAL_ITEM_SIZE,
                 controlHeight: EDITOR_MODAL_ITEM_SIZE,
                 controlStyle: ui.UiButtonStyles.LightShadowedWhite,
-                contentMargin: EDITOR_MODAL_MARGIN,
-                titleGap: EDITOR_MODAL_TITLE_GAP,
-                panelColor: EDITOR_PAGE_MODAL_PANEL_COLOR,
-                titleColor: 1,
-                onCancel: () => this.closeModal(),
+                modalStyle: EDITOR_MODAL_STYLE,
             })
         }
 
@@ -288,10 +345,7 @@ namespace microcode {
                 controlWidth: EDITOR_MODAL_ITEM_SIZE,
                 controlHeight: EDITOR_MODAL_ITEM_SIZE,
                 controlStyle: ui.UiButtonStyles.LightShadowedWhite,
-                contentMargin: EDITOR_MODAL_MARGIN,
-                panelColor: EDITOR_PAGE_MODAL_PANEL_COLOR,
-                showTitleBar: false,
-                onCancel: () => this.closeModal(),
+                modalStyle: EDITOR_TITLELESS_MODAL_STYLE,
             })
         }
 
@@ -320,6 +374,8 @@ namespace microcode {
             value: RuleTargetControlValue,
         ): void {
             if (value.kind == "handle") this.openRuleHandleModal(value)
+            else if (value.kind == "tile" && isNumericEntryTile(value.tile))
+                this.openNumericEntryModal(value)
         }
 
         private openRuleHandleModal(value: RuleTargetControlValue): void {
@@ -338,10 +394,7 @@ namespace microcode {
                 controlWidth: EDITOR_MODAL_ITEM_SIZE,
                 controlHeight: EDITOR_MODAL_ITEM_SIZE,
                 controlStyle: EDITOR_RULE_HANDLE_MODAL_STYLE,
-                contentMargin: EDITOR_MODAL_MARGIN,
-                panelColor: EDITOR_PAGE_MODAL_PANEL_COLOR,
-                showTitleBar: false,
-                onCancel: () => this.closeModal(),
+                modalStyle: EDITOR_TITLELESS_MODAL_STYLE,
             })
         }
 
@@ -495,6 +548,89 @@ namespace microcode {
             return lastRule + 1
         }
 
+        private openNumericEntryModal(value: RuleTargetControlValue): void {
+            if (this.hasModal) return
+            const modal = this.createNumericEntryModal(value)
+            if (modal) this.openModal(modal)
+        }
+
+        private createNumericEntryModal(
+            value: RuleTargetControlValue,
+        ): ui.UiNumericEntryModal {
+            if (!value.tile || !isNumericEntryTile(value.tile))
+                return undefined
+            const wasRunning = isProgramRunning()
+            return new ui.UiNumericEntryModal({
+                modalScopeId: EDITOR_NUMERIC_MODAL_SCOPE,
+                mode: numericEntryMode(value.tile),
+                initialText: numericEntryText(value.tile),
+                maxLength: 8,
+                modalStyle: EDITOR_NUMERIC_MODAL_STYLE,
+                keyStyle: EDITOR_NUMERIC_KEY_STYLE,
+                displayPalette: EDITOR_NUMERIC_DISPLAY_PALETTE,
+                onResult: result =>
+                    this.applyNumericEntryResult(value, result, wasRunning),
+            })
+        }
+
+        private applyNumericEntryResult(
+            value: RuleTargetControlValue,
+            result: ui.UiNumericEntryResult,
+            wasRunning: boolean,
+        ): void {
+            if (!result) return
+            if (result.kind == "completed")
+                this.completeNumericEntry(value, result, wasRunning)
+        }
+
+        private completeNumericEntry(
+            value: RuleTargetControlValue,
+            result: ui.UiNumericEntryResult,
+            wasRunning: boolean,
+        ): void {
+            if (!value.tile || !isNumericEntryTile(value.tile)) {
+                this.closeModal()
+                return
+            }
+            const changed = this.writeNumericEntryResult(value, (<any>result).text)
+            if (changed) {
+                if (wasRunning) stopProgram()
+                this.app_.save(SAVESLOT_AUTO, this.progdef_.toBuffer())
+                this.pageView_.pageChanged()
+                if (wasRunning) runProgram(this.progdef_)
+            }
+            this.closeModal()
+            this.pageView_.focusRuleTarget(
+                this.focus,
+                value.ruleIndex,
+                value.kind,
+                value.section,
+                value.index,
+            )
+        }
+
+        private writeNumericEntryResult(
+            value: RuleTargetControlValue,
+            text: string,
+        ): boolean {
+            if (getFieldEditor(value.tile)) {
+                const editor = value.tile as DigitEditor
+                if (editor.getField().num == text) return false
+                editor.getField().num = text
+                return true
+            }
+            if (!value.section || value.index === undefined) return false
+            const literal = numericLiteralTile(text)
+            if (literal !== undefined && getTid(value.tile) == literal)
+                return false
+            value.rule.updateAt(
+                value.section,
+                value.index,
+                literal !== undefined ? literal : new DigitEditor({ num: text }),
+            )
+            return true
+        }
+
         private moveEditorFocus(direction: ui.UiFocusDirection): void {
             const activeScopeId = this.focus.getActiveScopeId()
             if (activeScopeId == EDITOR_PAGE_SCOPE) {
@@ -630,6 +766,29 @@ namespace microcode {
             if (!this.handleFocusScrollResult(result))
                 this.scrollTargetIntoView(targetId)
             return true
+        }
+
+        public previousRuleTarget(
+            value: RuleTargetControlValue,
+        ): RuleTargetFocus {
+            const targetId = ruleFocusTargetId(
+                value.ruleIndex,
+                value.kind,
+                value.section,
+                value.index,
+            )
+            const rows = this.navigationRows()
+            for (let row = 0; row < rows.length; row++) {
+                for (let column = 0; column < rows[row].length; column++) {
+                    if (rows[row][column].navigation.id != targetId) continue
+                    if (column > 0)
+                        return this.focusTargetFromValue(
+                            rows[row][column - 1].control.value,
+                        )
+                    return { ruleIndex: value.ruleIndex, kind: "handle" }
+                }
+            }
+            return { ruleIndex: value.ruleIndex, kind: "handle" }
         }
 
         public handleFocusInput(result: ui.UiFocusInputResult): PageViewResult {
@@ -996,6 +1155,17 @@ namespace microcode {
 
         private isDefaultRuleTarget(value: RuleTargetControlValue): boolean {
             return value.section == "sensors" || value.section == "filters"
+        }
+
+        private focusTargetFromValue(
+            value: RuleTargetControlValue,
+        ): RuleTargetFocus {
+            return {
+                ruleIndex: value.ruleIndex,
+                kind: value.kind,
+                section: value.section,
+                index: value.index,
+            }
         }
 
         private activationResult(
