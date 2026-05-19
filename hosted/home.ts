@@ -9,11 +9,6 @@ namespace microcode {
     const HOME_ACTION_WIDTH = 32
     const HOME_ACTION_HEIGHT = 33
     const HOME_ACTION_GAP = 8
-    const HOME_DISK_ITEM_WIDTH = 18
-    const HOME_DISK_ITEM_HEIGHT = 18
-    const HOME_DISK_COLUMN_COUNT = 3
-    const HOME_DISK_MODAL_MARGIN = 4
-    const HOME_DISK_MODAL_TITLE_GAP = 4
     const HOME_MARGIN = 2
 
     export class HomeScreen extends ui.UiScreen {
@@ -30,7 +25,7 @@ namespace microcode {
                 controlWidth: HOME_ACTION_WIDTH,
                 controlHeight: HOME_ACTION_HEIGHT,
                 gap: HOME_ACTION_GAP,
-                controlStyle: appIconButtonStyle(),
+                controlStyle: AppStyles.iconButton(),
                 labelBounds: new ui.Rect(0, 0, UI_SCREEN_WIDTH, UI_SCREEN_HEIGHT),
             })
 
@@ -111,16 +106,11 @@ namespace microcode {
                 modalScopeId: HOME_DISK_MODAL_SCOPE,
                 controls: this.createDiskControls(),
                 titleId: "load",
-                columnCount: HOME_DISK_COLUMN_COUNT,
-                controlWidth: HOME_DISK_ITEM_WIDTH,
-                controlHeight: HOME_DISK_ITEM_HEIGHT,
-                controlStyle: ui.UiButtonStyles.LightShadowedWhite,
-                modalStyle: ui.modalStyle(ui.UiModalStyles.Default, {
-                    panelColor: this.backgroundColor,
-                    titleColor: 1,
-                    contentMargin: HOME_DISK_MODAL_MARGIN,
-                    titleGap: HOME_DISK_MODAL_TITLE_GAP,
-                }),
+                columnCount: AppStyles.ModalColumnCount,
+                controlWidth: AppStyles.ModalItemSize,
+                controlHeight: AppStyles.ModalItemSize,
+                controlStyle: AppStyles.ModalButton,
+                modalStyle: AppStyles.modal(this.backgroundColor),
             })
         }
 

@@ -5,29 +5,6 @@ namespace microcode {
     export const UI_SCREEN_WIDTH = ui.STANDARD_DISPLAY_WIDTH
     export const UI_SCREEN_HEIGHT = ui.STANDARD_DISPLAY_HEIGHT
     export const UI_DISPLAY_PROFILE = ui.UiDisplayProfileId.Standard
-    const APP_FOCUS_COLOR = 9
-    const APP_FOCUS_THICKNESS = 3
-    const APP_FOCUS_LABEL_BACKGROUND = 15
-    const APP_FOCUS_LABEL_COLOR = 1
-
-    /**
-     * Creates the shared icon-button style used by screen controls.
-     */
-    export function appIconButtonStyle(): ui.UiButtonStyle {
-        return ui.buttonStyle(
-            ui.UiButtonStyles.Transparent,
-            ui.UiButtonStyles.FocusLabel,
-            {
-                focusColor: APP_FOCUS_COLOR,
-                focusThickness: APP_FOCUS_THICKNESS,
-                focusLabelBackgroundColor: APP_FOCUS_LABEL_BACKGROUND,
-                focusLabelColor: APP_FOCUS_LABEL_COLOR,
-                focusLabelFont: user_interface_base.font,
-                focusLabelGap: 2,
-                focusLabelPadding: 1,
-            },
-        )
-    }
 
     class AppAssetResolver implements ui.UiAssetResolver {
         public getBitmap(

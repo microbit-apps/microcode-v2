@@ -58,68 +58,26 @@ namespace microcode {
     const EDITOR_PAGE_MODAL_SCOPE = "editor/page-picker"
     const EDITOR_RULE_HANDLE_MODAL_SCOPE = "editor/rule-handle"
     const EDITOR_NUMERIC_MODAL_SCOPE = "editor/numeric-entry"
-    const EDITOR_MODAL_ITEM_SIZE = 18
-    const EDITOR_MODAL_COLUMN_COUNT = 3
-    const EDITOR_MODAL_MARGIN = 4
-    const EDITOR_MODAL_TITLE_GAP = 4
-    const EDITOR_PAGE_MODAL_PANEL_COLOR = 12
-    const EDITOR_NUMERIC_MODAL_MARGIN = 5
-    const EDITOR_MODAL_STYLE = ui.modalStyle(ui.UiModalStyles.Default, {
-        panelColor: EDITOR_PAGE_MODAL_PANEL_COLOR,
-        titleColor: 1,
-        contentMargin: EDITOR_MODAL_MARGIN,
-        titleGap: EDITOR_MODAL_TITLE_GAP,
-    })
-    const EDITOR_TITLELESS_MODAL_STYLE = ui.modalStyle(
-        EDITOR_MODAL_STYLE,
-        ui.UiModalStyles.Titleless,
-    )
-    const EDITOR_NUMERIC_MODAL_STYLE = ui.modalStyle(
-        EDITOR_TITLELESS_MODAL_STYLE,
-        {
-            contentMargin: EDITOR_NUMERIC_MODAL_MARGIN,
-        },
-    )
-    const EDITOR_NUMERIC_KEY_STYLE = ui.UiButtonStyles.LightShadowedWhite
-    const EDITOR_NUMERIC_DISPLAY_PALETTE: ui.UiControlPalette = {
-        backgroundColor: 1,
-        foregroundColor: 15,
-        focusColor: 11,
-    }
     const EDITOR_RULE_TILE_STYLE = ui.buttonStyle(
         ui.UiButtonStyles.FlatWhite,
         ui.UiButtonStyles.RoundedFrame,
         ui.UiButtonStyles.FocusLabel,
-        {
-            focusLabelFont: user_interface_base.font,
-            focusLabelGap: 4,
-            focusPadding: 1,
-        },
+        AppStyles.focusLabel(4, 1),
     )
     const EDITOR_RULE_UNFRAMED_TILE_STYLE = ui.buttonStyle(
         ui.UiButtonStyles.Transparent,
         ui.UiButtonStyles.FocusLabel,
-        {
-            focusLabelFont: user_interface_base.font,
-            focusLabelGap: 3,
-            focusPadding: 0,
-        },
+        AppStyles.focusLabel(3, 0),
     )
     const EDITOR_RULE_HANDLE_STYLE = ui.buttonStyle(
         ui.UiButtonStyles.Transparent,
         ui.UiButtonStyles.FocusLabel,
-        {
-            focusLabelFont: user_interface_base.font,
-            focusLabelGap: 2,
-        },
+        AppStyles.focusLabel(2),
     )
     const EDITOR_RULE_HANDLE_MODAL_STYLE = ui.buttonStyle(
-        ui.UiButtonStyles.LightShadowedWhite,
+        AppStyles.ModalButton,
         ui.UiButtonStyles.FocusLabel,
-        {
-            focusLabelFont: user_interface_base.font,
-            focusLabelGap: 5,
-        },
+        AppStyles.focusLabel(5),
     )
     function ruleControlId(ruleIndex: number): string {
         return "rule-" + ruleIndex
@@ -308,11 +266,11 @@ namespace microcode {
                 modalScopeId: EDITOR_DISK_MODAL_SCOPE,
                 controls: this.createDiskControls(),
                 titleId: "disk",
-                columnCount: EDITOR_MODAL_COLUMN_COUNT,
-                controlWidth: EDITOR_MODAL_ITEM_SIZE,
-                controlHeight: EDITOR_MODAL_ITEM_SIZE,
-                controlStyle: ui.UiButtonStyles.LightShadowedWhite,
-                modalStyle: EDITOR_MODAL_STYLE,
+                columnCount: AppStyles.ModalColumnCount,
+                controlWidth: AppStyles.ModalItemSize,
+                controlHeight: AppStyles.ModalItemSize,
+                controlStyle: AppStyles.ModalButton,
+                modalStyle: AppStyles.Modal,
             })
         }
 
@@ -342,10 +300,10 @@ namespace microcode {
                 controls: this.createPageControls(),
                 defaultControlId: "page-" + this.currPage_,
                 columnCount: PAGE_IDS().length,
-                controlWidth: EDITOR_MODAL_ITEM_SIZE,
-                controlHeight: EDITOR_MODAL_ITEM_SIZE,
-                controlStyle: ui.UiButtonStyles.LightShadowedWhite,
-                modalStyle: EDITOR_TITLELESS_MODAL_STYLE,
+                controlWidth: AppStyles.ModalItemSize,
+                controlHeight: AppStyles.ModalItemSize,
+                controlStyle: AppStyles.ModalButton,
+                modalStyle: AppStyles.TitlelessModal,
             })
         }
 
@@ -391,10 +349,10 @@ namespace microcode {
                 modalScopeId: EDITOR_RULE_HANDLE_MODAL_SCOPE,
                 controls,
                 columnCount: controls.length,
-                controlWidth: EDITOR_MODAL_ITEM_SIZE,
-                controlHeight: EDITOR_MODAL_ITEM_SIZE,
+                controlWidth: AppStyles.ModalItemSize,
+                controlHeight: AppStyles.ModalItemSize,
                 controlStyle: EDITOR_RULE_HANDLE_MODAL_STYLE,
-                modalStyle: EDITOR_TITLELESS_MODAL_STYLE,
+                modalStyle: AppStyles.TitlelessModal,
             })
         }
 
@@ -565,9 +523,9 @@ namespace microcode {
                 mode: numericEntryMode(value.tile),
                 initialText: numericEntryText(value.tile),
                 maxLength: 8,
-                modalStyle: EDITOR_NUMERIC_MODAL_STYLE,
-                keyStyle: EDITOR_NUMERIC_KEY_STYLE,
-                displayPalette: EDITOR_NUMERIC_DISPLAY_PALETTE,
+                modalStyle: AppStyles.NumericModal,
+                keyStyle: AppStyles.ModalButton,
+                displayPalette: AppStyles.NumericDisplayPalette,
                 onResult: result =>
                     this.applyNumericEntryResult(value, result, wasRunning),
             })

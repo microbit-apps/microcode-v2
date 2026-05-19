@@ -19,6 +19,7 @@
         "tiles.ts",
         "app.ts",
         "apphost.ts",
+        "styles.ts",
         "storage.ts",
         "hosted/home.ts",
         "hosted/gallery.ts",

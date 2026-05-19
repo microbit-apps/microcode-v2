@@ -37,7 +37,7 @@ namespace microcode {
                 controlHeight: GALLERY_CONTROL_SIZE,
                 rowGap: GALLERY_CONTROL_GAP,
                 columnGap: GALLERY_CONTROL_GAP,
-                controlStyle: appIconButtonStyle(),
+                controlStyle: AppStyles.iconButton(),
             })
 
             this.add(galleryGrid, {
