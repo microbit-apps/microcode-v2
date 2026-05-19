@@ -5,6 +5,36 @@ namespace microcode {
     type EditorDiskSlot = string
     type EditorPagePickerValue = number
     type RuleHandleAction = "add" | "delete" | "moveUp" | "moveDown"
+    type FieldEditorModalAction = "cell" | "commit" | "delete" | "spacer"
+
+    interface FieldEditorModalValue {
+        kind: FieldEditorModalAction
+        row?: number
+        col?: number
+    }
+
+    type FieldEditorModalActionResult =
+        | { kind: "keepOpen"; value?: FieldEditorModalValue }
+        | { kind: "closed" }
+        | { kind: "deleted" }
+
+    interface FieldEditorModalActivation {
+        (
+            control: ui.UiControl<FieldEditorModalValue>,
+        ): FieldEditorModalActionResult
+    }
+
+    type FieldEditorModalResult =
+        | {
+              kind: "keepOpen"
+              controlId: string
+              value: FieldEditorModalValue
+              control: ui.UiControl<FieldEditorModalValue>
+              updatedValue?: FieldEditorModalValue
+          }
+        | { kind: "closed"; modalScopeId: ui.UiFocusScopeId }
+        | { kind: "cancelled"; modalScopeId: ui.UiFocusScopeId }
+        | { kind: "deleted"; modalScopeId: ui.UiFocusScopeId }
 
     interface PageControlValue {
         kind: "page"
@@ -58,6 +88,10 @@ namespace microcode {
     const EDITOR_PAGE_MODAL_SCOPE = "editor/page-picker"
     const EDITOR_RULE_HANDLE_MODAL_SCOPE = "editor/rule-handle"
     const EDITOR_NUMERIC_MODAL_SCOPE = "editor/numeric-entry"
+    const EDITOR_FIELD_MODAL_SCOPE = "editor/field-editor"
+    const EDITOR_FIELD_MODAL_CELL_SIZE = 16
+    const EDITOR_FIELD_MODAL_MARGIN = 3
+    const EDITOR_FIELD_MODAL_GRID_GAP = 1
     const EDITOR_RULE_TILE_STYLE = ui.buttonStyle(
         ui.UiButtonStyles.FlatWhite,
         ui.UiButtonStyles.RoundedFrame,
@@ -79,6 +113,17 @@ namespace microcode {
         ui.UiButtonStyles.FocusLabel,
         AppStyles.focusLabel(5),
     )
+    const EDITOR_FIELD_DELETE_STYLE = ui.buttonStyle(
+        ui.UiButtonStyles.RedBorderedWhite,
+        ui.UiButtonStyles.RoundedFrame,
+    )
+    const EDITOR_FIELD_OK_STYLE = ui.buttonStyle(AppStyles.ModalButton, {
+        focusPadding: 0,
+    })
+    const EDITOR_ICON_FIELD_MODAL_STYLE = ui.modalStyle(AppStyles.Modal, {
+        panelColor: 0,
+    })
+
     function ruleControlId(ruleIndex: number): string {
         return "rule-" + ruleIndex
     }
@@ -118,6 +163,18 @@ namespace microcode {
         )
     }
 
+    function isIconFieldEditorTile(tile: Tile): boolean {
+        return tile instanceof IconEditor
+    }
+
+    function isMelodyFieldEditorTile(tile: Tile): boolean {
+        return tile instanceof MelodyEditor
+    }
+
+    function isIconOrMelodyFieldEditorTile(tile: Tile): boolean {
+        return isIconFieldEditorTile(tile) || isMelodyFieldEditorTile(tile)
+    }
+
     function numericLiteralTile(text: string): Tile {
         const value = parseFloat(text)
         if (value != Math.idiv(value, 1)) return undefined
@@ -138,6 +195,32 @@ namespace microcode {
             return editor.getField().num
         }
         return "" + getParam(tile)
+    }
+
+    function cloneIconField(tile: IconEditor): Bitmap {
+        return (tile.getField() as Bitmap).clone()
+    }
+
+    function iconFieldsEqual(left: Bitmap, right: Bitmap): boolean {
+        for (let row = 0; row < 5; row++) {
+            for (let col = 0; col < 5; col++) {
+                if (left.getPixel(col, row) != right.getPixel(col, row))
+                    return false
+            }
+        }
+        return true
+    }
+
+    function cloneMelodyField(tile: MelodyEditor): Melody {
+        const field = tile.getField() as Melody
+        return {
+            notes: field.notes.slice(0),
+            tempo: field.tempo,
+        }
+    }
+
+    function melodyFieldsEqual(left: Melody, right: Melody): boolean {
+        return left.notes == right.notes && left.tempo == right.tempo
     }
 
     /**
@@ -195,13 +278,6 @@ namespace microcode {
             // Background drawing happens before registered roots so controls
             // and their focus affordances appear above the editor backdrop.
             super.render(surface)
-        }
-
-        public enter(runtime: ui.UiRuntime): void {
-            super.enter(runtime)
-            // The focus state belongs to `UiScreen`; `PageView` chooses the
-            // editor's initial target inside its registered page scope.
-            this.pageView_.focusDefault(this.focus)
         }
 
         public handleScreenInput(event: ui.UiInputEvent): boolean | undefined {
@@ -334,6 +410,11 @@ namespace microcode {
             if (value.kind == "handle") this.openRuleHandleModal(value)
             else if (value.kind == "tile" && isNumericEntryTile(value.tile))
                 this.openNumericEntryModal(value)
+            else if (
+                value.kind == "tile" &&
+                isIconOrMelodyFieldEditorTile(value.tile)
+            )
+                this.openFieldEditorModal(value)
         }
 
         private openRuleHandleModal(value: RuleTargetControlValue): void {
@@ -589,6 +670,368 @@ namespace microcode {
             return true
         }
 
+        private openFieldEditorModal(value: RuleTargetControlValue): void {
+            if (this.hasModal) return
+            const modal = this.createFieldEditorModal(value)
+            if (modal) this.openModal(modal)
+        }
+
+        private createFieldEditorModal(
+            value: RuleTargetControlValue,
+        ): FieldEditorToggleModal {
+            if (!value.tile || !isIconOrMelodyFieldEditorTile(value.tile))
+                return undefined
+            if (isIconFieldEditorTile(value.tile))
+                return this.createIconFieldEditorModal(
+                    value,
+                    value.tile as IconEditor,
+                )
+            return this.createMelodyFieldEditorModal(
+                value,
+                value.tile as MelodyEditor,
+            )
+        }
+
+        private createIconFieldEditorModal(
+            value: RuleTargetControlValue,
+            tile: IconEditor,
+        ): FieldEditorToggleModal {
+            const field = cloneIconField(tile)
+            const controls = this.createIconFieldControls(field)
+            const wasRunning = isProgramRunning()
+            return new FieldEditorToggleModal({
+                title: "image",
+                modalStyle: EDITOR_ICON_FIELD_MODAL_STYLE,
+                controls,
+                columnCount: 5,
+                defaultControlId: "cell-2-2",
+                controlSize: EDITOR_FIELD_MODAL_CELL_SIZE,
+                onActivate: control => {
+                    const controlValue = control.value
+                    if (controlValue.kind == "commit")
+                        return { kind: "closed" }
+                    if (controlValue.kind == "delete")
+                        return { kind: "deleted" }
+                    this.toggleIconFieldCell(field, control)
+                    return { kind: "keepOpen", value: controlValue }
+                },
+                onResult: result =>
+                    this.applyIconFieldEditorResult(
+                        value,
+                        field,
+                        result,
+                        wasRunning,
+                    ),
+            })
+        }
+
+        private createIconFieldControls(
+            field: Bitmap,
+        ): ui.UiControl<FieldEditorModalValue>[] {
+            const controls: ui.UiControl<FieldEditorModalValue>[] = []
+            for (let row = 0; row < 5; row++) {
+                for (let col = 0; col < 5; col++) {
+                    controls.push(
+                        this.fieldCellControl(
+                            row,
+                            col,
+                            this.iconFieldBitmap(field, row, col),
+                        ),
+                    )
+                }
+            }
+            return controls
+        }
+
+        private createMelodyFieldEditorModal(
+            value: RuleTargetControlValue,
+            tile: MelodyEditor,
+        ): FieldEditorToggleModal {
+            const field = cloneMelodyField(tile)
+            const controls = this.createMelodyFieldControls(field)
+            const wasRunning = isProgramRunning()
+            return new FieldEditorToggleModal({
+                title: "melody",
+                controls,
+                columnCount: MELODY_LENGTH,
+                defaultControlId: "cell-2-2",
+                controlSize: EDITOR_FIELD_MODAL_CELL_SIZE,
+                onActivate: control => {
+                    const controlValue = control.value
+                    if (controlValue.kind == "commit")
+                        return { kind: "closed" }
+                    if (controlValue.kind == "delete")
+                        return { kind: "deleted" }
+                    this.toggleMelodyFieldCell(field, controls, control)
+                    return { kind: "keepOpen", value: controlValue }
+                },
+                onResult: result =>
+                    this.applyMelodyFieldEditorResult(
+                        value,
+                        field,
+                        result,
+                        wasRunning,
+                    ),
+            })
+        }
+
+        private createMelodyFieldControls(
+            field: Melody,
+        ): ui.UiControl<FieldEditorModalValue>[] {
+            const controls: ui.UiControl<FieldEditorModalValue>[] = []
+            for (let row = 0; row < NUM_NOTES; row++) {
+                for (let col = 0; col < MELODY_LENGTH; col++) {
+                    controls.push(
+                        this.fieldCellControl(
+                            row,
+                            col,
+                            this.melodyFieldBitmapId(field, row, col),
+                        ),
+                    )
+                }
+            }
+            return controls
+        }
+
+        private fieldCellControl(
+            row: number,
+            col: number,
+            bitmap: string | Bitmap,
+        ): ui.UiControl<FieldEditorModalValue> {
+            const control: ui.UiControl<FieldEditorModalValue> = {
+                id: "cell-" + row + "-" + col,
+                value: {
+                    kind: "cell",
+                    row,
+                    col,
+                },
+                style: ui.UiButtonStyles.Transparent,
+            }
+            if (typeof bitmap == "string") {
+                control.bitmapId = bitmap
+                control.toggled = bitmap == "solid_red" || bitmap == "note_on"
+            } else {
+                control.bitmap = bitmap
+                control.toggled = false
+            }
+            return control
+        }
+
+        private iconFieldBitmap(
+            field: Bitmap,
+            row: number,
+            col: number,
+        ): string | Bitmap {
+            return field.getPixel(col, row)
+                ? "solid_red"
+                : "led_off"
+        }
+
+        private melodyFieldBitmapId(
+            field: Melody,
+            row: number,
+            col: number,
+        ): string {
+            const note = field.notes.charAt(col)
+            return note != "." &&
+                parseInt(note) == NUM_NOTES - 1 - row
+                ? "note_on"
+                : "note_off"
+        }
+
+        private toggleIconFieldCell(
+            field: Bitmap,
+            control: ui.UiControl<FieldEditorModalValue>,
+        ): void {
+            const value = control.value
+            const on = field.getPixel(value.col, value.row) ? 0 : 1
+            field.setPixel(value.col, value.row, on)
+            const bitmap = this.iconFieldBitmap(field, value.row, value.col)
+            if (typeof bitmap == "string") {
+                control.bitmapId = bitmap
+                control.bitmap = undefined
+            } else {
+                control.bitmap = bitmap
+                control.bitmapId = undefined
+            }
+            control.toggled = on != 0
+        }
+
+        private toggleMelodyFieldCell(
+            field: Melody,
+            controls: ui.UiControl<FieldEditorModalValue>[],
+            control: ui.UiControl<FieldEditorModalValue>,
+        ): void {
+            const value = control.value
+            const note = (NUM_NOTES - 1 - value.row).toString()
+            const active = field.notes.charAt(value.col) == note
+            const next = active ? "." : note
+            field.notes =
+                field.notes.slice(0, value.col) +
+                next +
+                field.notes.slice(value.col + 1)
+            for (let i = 0; i < controls.length; i++) {
+                const other = controls[i]
+                if (other.value.kind != "cell") continue
+                if (other.value.col != value.col) continue
+                other.bitmapId = this.melodyFieldBitmapId(
+                    field,
+                    other.value.row,
+                    other.value.col,
+                )
+                other.toggled = other.bitmapId == "note_on"
+            }
+        }
+
+        private applyIconFieldEditorResult(
+            value: RuleTargetControlValue,
+            field: Bitmap,
+            result: FieldEditorModalResult,
+            wasRunning: boolean,
+        ): void {
+            if (!result) return
+            if (result.kind == "closed")
+                this.commitIconFieldEditor(value, field, wasRunning)
+            else if (result.kind == "deleted")
+                this.deleteFieldEditorTile(value, wasRunning)
+        }
+
+        private applyMelodyFieldEditorResult(
+            value: RuleTargetControlValue,
+            field: Melody,
+            result: FieldEditorModalResult,
+            wasRunning: boolean,
+        ): void {
+            if (!result) return
+            if (result.kind == "closed")
+                this.commitMelodyFieldEditor(value, field, wasRunning)
+            else if (result.kind == "deleted")
+                this.deleteFieldEditorTile(value, wasRunning)
+        }
+
+        private commitIconFieldEditor(
+            value: RuleTargetControlValue,
+            field: Bitmap,
+            wasRunning: boolean,
+        ): void {
+            if (!value.tile || !isIconFieldEditorTile(value.tile)) {
+                this.closeModal()
+                return
+            }
+            const tile = value.tile as IconEditor
+            const changed = !iconFieldsEqual(tile.getField(), field)
+            if (changed) {
+                this.applyHostedEdit(wasRunning, () => {
+                    tile.field = field.clone()
+                })
+            }
+            this.closeModal()
+            this.focusEditedRuleTarget(value)
+        }
+
+        private commitMelodyFieldEditor(
+            value: RuleTargetControlValue,
+            field: Melody,
+            wasRunning: boolean,
+        ): void {
+            if (!value.tile || !isMelodyFieldEditorTile(value.tile)) {
+                this.closeModal()
+                return
+            }
+            const tile = value.tile as MelodyEditor
+            const changed = !melodyFieldsEqual(tile.getField(), field)
+            if (changed) {
+                this.applyHostedEdit(wasRunning, () => {
+                    tile.field = {
+                        notes: field.notes.slice(0),
+                        tempo: field.tempo,
+                    }
+                })
+            }
+            this.closeModal()
+            this.focusEditedRuleTarget(value)
+        }
+
+        private deleteFieldEditorTile(
+            value: RuleTargetControlValue,
+            wasRunning: boolean,
+        ): void {
+            if (!value.section || value.index === undefined) {
+                this.closeModal()
+                this.pageView_.focusRuleTarget(
+                    this.focus,
+                    value.ruleIndex,
+                    "handle",
+                )
+                return
+            }
+            const fallback = this.deleteFocusTarget(value)
+            this.applyHostedEdit(wasRunning, () => {
+                value.rule.deleteAt(value.section, value.index)
+                Language.ensureValid(value.rule)
+            })
+            this.closeModal()
+            if (
+                !this.pageView_.focusRuleTarget(
+                    this.focus,
+                    fallback.ruleIndex,
+                    fallback.kind,
+                    fallback.section,
+                    fallback.index,
+                )
+            )
+                this.pageView_.focusRuleTarget(
+                    this.focus,
+                    value.ruleIndex,
+                    "handle",
+                )
+        }
+
+        private deleteFocusTarget(
+            value: RuleTargetControlValue,
+        ): RuleTargetFocus {
+            if (!value.section || value.index === undefined)
+                return { ruleIndex: value.ruleIndex, kind: "handle" }
+            const tiles = value.rule.getRuleRep()[value.section]
+            if (value.index < tiles.length - 1) {
+                return {
+                    ruleIndex: value.ruleIndex,
+                    kind: "tile",
+                    section: value.section,
+                    index: value.index,
+                }
+            }
+            return this.pageView_.previousRuleTarget(value)
+        }
+
+        private focusEditedRuleTarget(value: RuleTargetControlValue): void {
+            if (
+                !this.pageView_.focusRuleTarget(
+                    this.focus,
+                    value.ruleIndex,
+                    value.kind,
+                    value.section,
+                    value.index,
+                )
+            )
+                this.pageView_.focusRuleTarget(
+                    this.focus,
+                    value.ruleIndex,
+                    "handle",
+                )
+        }
+
+        private applyHostedEdit(
+            wasRunning: boolean,
+            mutate: () => void,
+        ): void {
+            if (wasRunning) stopProgram()
+            mutate()
+            this.app_.save(SAVESLOT_AUTO, this.progdef_.toBuffer())
+            this.pageView_.pageChanged()
+            if (wasRunning) runProgram(this.progdef_)
+        }
+
         private moveEditorFocus(direction: ui.UiFocusDirection): void {
             const activeScopeId = this.focus.getActiveScopeId()
             if (activeScopeId == EDITOR_PAGE_SCOPE) {
@@ -598,6 +1041,272 @@ namespace microcode {
             const result = this.toolbar_.moveFocus(this.focus, direction)
             if (result && result.kind == "focused" && result.scrollRequest)
                 this.pageView_.handleScrollRequest(result.scrollRequest)
+        }
+    }
+
+    interface FieldEditorToggleModalOptions {
+        title: string
+        modalStyle?: ui.UiModalStyle
+        controls: ui.UiControl<FieldEditorModalValue>[]
+        columnCount: number
+        defaultControlId: string
+        controlSize: number
+        onActivate: FieldEditorModalActivation
+        onResult: (result: FieldEditorModalResult) => void
+    }
+
+    class FieldEditorToggleModal
+        implements ui.UiModal<FieldEditorModalResult> {
+        public readonly layoutSpec: ui.UiLayoutSpec
+        public readonly finalRect: ui.Rect
+        public layoutDirty: boolean
+        private title_: string
+        private grid_: ui.UiGrid<FieldEditorModalValue>
+        private controls_: ui.UiControl<FieldEditorModalValue>[]
+        private style_: ui.UiModalStyle
+        private contentMargin_: number
+        private controlSize_: number
+        private gridRect_: ui.Rect
+        private onActivate_: FieldEditorModalActivation
+        private onResult_: (result: FieldEditorModalResult) => void
+
+        constructor(options: FieldEditorToggleModalOptions) {
+            this.title_ = options.title
+            this.style_ = options.modalStyle || AppStyles.Modal
+            this.contentMargin_ = EDITOR_FIELD_MODAL_MARGIN
+            this.controlSize_ = options.controlSize
+            this.controls_ = this.withTitleBarControls(
+                options.controls,
+                options.columnCount,
+            )
+            this.grid_ = new ui.UiGrid<FieldEditorModalValue>({
+                scopeId: EDITOR_FIELD_MODAL_SCOPE,
+                controls: this.controls_,
+                rows: this.rows(options.controls.length, options.columnCount),
+                defaultControlId: options.defaultControlId,
+                controlWidth: options.controlSize,
+                controlHeight: options.controlSize,
+                rowGap: EDITOR_FIELD_MODAL_GRID_GAP,
+                columnGap: EDITOR_FIELD_MODAL_GRID_GAP,
+            })
+            this.layoutSpec = {
+                width: { mode: "content" },
+                height: { mode: "content" },
+            }
+            this.finalRect = new ui.Rect()
+            this.layoutDirty = true
+            this.gridRect_ = new ui.Rect()
+            this.onActivate_ = options.onActivate
+            this.onResult_ = options.onResult
+        }
+
+        public get modalScopeId(): ui.UiFocusScopeId {
+            return EDITOR_FIELD_MODAL_SCOPE
+        }
+
+        public measure(
+            constraints: ui.UiLayoutConstraints,
+            output: ui.UiMeasuredSize,
+        ): void {
+            this.grid_.measure(constraints, output)
+            output.set(
+                output.minWidth + this.contentMargin_ * 2,
+                output.minHeight + this.contentMargin_ * 2,
+                output.preferredWidth + this.contentMargin_ * 2,
+                output.preferredHeight + this.contentMargin_ * 2,
+            )
+            this.clearLayoutInvalidation()
+        }
+
+        public arrange(rect: ui.Rect): void {
+            this.finalRect.copyFrom(rect)
+            this.gridRect_.set(
+                rect.x + this.contentMargin_,
+                rect.y + this.contentMargin_,
+                Math.max(0, rect.width - this.contentMargin_ * 2),
+                Math.max(0, rect.height - this.contentMargin_ * 2),
+            )
+            this.grid_.arrange(this.gridRect_)
+            this.clearLayoutInvalidation()
+        }
+
+        public invalidateLayout(): void {
+            this.layoutDirty = true
+            this.grid_.invalidateLayout()
+        }
+
+        public clearLayoutInvalidation(): void {
+            this.layoutDirty = false
+            this.grid_.clearLayoutInvalidation()
+        }
+
+        public open(
+            focus: ui.UiFocusState,
+            controller?: ui.UiFocusInputController,
+        ): ui.UiFocusSetResult {
+            this.grid_.registerFocusTargets(focus, {
+                id: EDITOR_FIELD_MODAL_SCOPE,
+                parentScopeId: focus.getActiveScopeId(),
+                preferredTargetId: this.grid_.resolvePreferredTargetId(),
+                handlesCancel: true,
+                modal: true,
+            })
+            if (controller) this.grid_.registerNavigation(controller)
+            return focus.setActiveScope(EDITOR_FIELD_MODAL_SCOPE)
+        }
+
+        public close(focus: ui.UiFocusState): ui.UiFocusSetResult {
+            return focus.closeModalScope(EDITOR_FIELD_MODAL_SCOPE)
+        }
+
+        public handleFocusInput(
+            result: ui.UiFocusInputResult,
+        ): FieldEditorModalResult {
+            let modalResult: FieldEditorModalResult = undefined
+            if (
+                result.kind == "activated" &&
+                result.detail &&
+                result.detail.activationResult
+            ) {
+                modalResult = this.createResultForActivation(
+                    result.detail.activationResult,
+                )
+            } else if (result.kind == "cancelled") {
+                modalResult = {
+                    kind: "cancelled",
+                    modalScopeId: EDITOR_FIELD_MODAL_SCOPE,
+                }
+            }
+
+            if (modalResult && this.onResult_)
+                this.onResult_(modalResult)
+            return modalResult
+        }
+
+        public render(
+            surface: ui.DrawSurface,
+            assets: ui.UiAssetResolver,
+            focus?: ui.UiFocusState,
+        ): void {
+            ui.drawModalPanel(surface, this.finalRect, this.style_)
+            const titleFont = user_interface_base.font
+            surface.drawText(
+                this.title_,
+                this.gridRect_.x,
+                this.gridRect_.y +
+                    Math.max(
+                        0,
+                        Math.idiv(this.controlSize_ - titleFont.charHeight, 2),
+                    ),
+                {
+                    color: AppStyles.ModalTitleColor,
+                    font: titleFont,
+                    transparent: true,
+                    allowDownscale: true,
+                },
+            )
+            this.grid_.render(surface, assets, focus)
+        }
+
+        private createResultForActivation(
+            result: ui.UiFocusActivationResult,
+        ): FieldEditorModalResult {
+            const gridResult = this.grid_.createResultForActivation(result)
+            if (!gridResult || gridResult.kind != "activated") return undefined
+            if (gridResult.value.kind == "spacer") return undefined
+            const policyResult: FieldEditorModalActionResult = this.onActivate_
+                ? this.onActivate_(gridResult.control)
+                : { kind: "keepOpen" }
+            if (policyResult.kind == "closed")
+                return {
+                    kind: "closed",
+                    modalScopeId: EDITOR_FIELD_MODAL_SCOPE,
+                }
+            if (policyResult.kind == "deleted")
+                return {
+                    kind: "deleted",
+                    modalScopeId: EDITOR_FIELD_MODAL_SCOPE,
+                }
+            return {
+                kind: "keepOpen",
+                controlId: gridResult.controlId,
+                value: gridResult.value,
+                control: gridResult.control,
+                updatedValue: policyResult.value,
+            }
+        }
+
+        private withTitleBarControls(
+            cells: ui.UiControl<FieldEditorModalValue>[],
+            columnCount: number,
+        ): ui.UiControl<FieldEditorModalValue>[] {
+            const controls: ui.UiControl<FieldEditorModalValue>[] = []
+            for (let i = 0; i < Math.max(0, columnCount - 2); i++)
+                controls.push(this.spacerControl("title-spacer-" + i))
+            controls.push(this.commandControl("ok"))
+            controls.push(this.commandControl("delete"))
+            for (let i = 0; i < cells.length; i++)
+                controls.push(cells[i])
+            return controls
+        }
+
+        private rows(cellCount: number, columnCount: number): number[] {
+            const rows = [columnCount]
+            const cellRows = Math.idiv(cellCount + columnCount - 1, columnCount)
+            for (let i = 0; i < cellRows; i++)
+                rows.push(columnCount)
+            return rows
+        }
+
+        private commandControl(
+            action: "ok" | "delete",
+        ): ui.UiControl<FieldEditorModalValue> {
+            if (action == "ok")
+                return {
+                    id: "ok",
+                    value: { kind: "commit" },
+                    bitmap: this.okBitmap(),
+                    style: EDITOR_FIELD_OK_STYLE,
+                }
+            return {
+                id: "delete",
+                value: { kind: "delete" },
+                bitmapId: "delete",
+                style: EDITOR_FIELD_DELETE_STYLE,
+            }
+        }
+
+        private spacerControl(
+            id: string,
+        ): ui.UiControl<FieldEditorModalValue> {
+            return {
+                id,
+                value: { kind: "spacer" },
+                disabled: true,
+                draw: () => {},
+            }
+        }
+
+        private okBitmap(): Bitmap {
+            const font = bitmaps.font5
+            const text = "OK"
+            const bitmap = bitmaps.create(this.controlSize_, this.controlSize_)
+            const x = Math.max(
+                0,
+                Math.idiv(this.controlSize_ - font.charWidth * text.length, 2),
+            )
+            const y = Math.max(
+                0,
+                Math.idiv(this.controlSize_ - font.charHeight, 2),
+            )
+            bitmap.print(
+                text,
+                x,
+                y,
+                15,
+                font,
+            )
+            return bitmap
         }
     }
 
@@ -720,7 +1429,14 @@ namespace microcode {
             this.refreshFocusTargets()
             const targetId = ruleFocusTargetId(ruleIndex, kind, section, index)
             const result = focus.setActiveTarget(EDITOR_PAGE_SCOPE, targetId)
-            if (result.kind != "focused") return false
+            if (
+                result.kind != "focused" &&
+                !(
+                    result.kind == "unchanged" &&
+                    result.targetId == targetId
+                )
+            )
+                return false
             if (!this.handleFocusScrollResult(result))
                 this.scrollTargetIntoView(targetId)
             return true
@@ -876,11 +1592,39 @@ namespace microcode {
             )
         }
 
+        public firstRuleHandleTarget(): ui.UiFocusNavigationTarget {
+            const targetId = ruleFocusTargetId(0, "handle")
+            const targets = this.allNavigationTargets()
+            for (let i = 0; i < targets.length; i++) {
+                const target = targets[i]
+                if (target.navigation.id == targetId) return target.navigation
+            }
+            return this.defaultNavigationTarget()
+        }
+
+        public lastPageTarget(): ui.UiFocusNavigationTarget {
+            const rows = this.navigationRows()
+            for (let row = rows.length - 1; row >= 0; row--) {
+                const targets = rows[row]
+                if (targets.length)
+                    return targets[targets.length - 1].navigation
+            }
+            return this.defaultNavigationTarget()
+        }
+
         public handleScrollRequest(request: ui.UiFocusScrollRequest): void {
             if (request.scrollOwnerId != EDITOR_PAGE_SCROLL_OWNER) return
+            if (!this.scrollRequestNeedsScroll(request)) return
+            const previousOffsetX = this.scrollLayout_.contentOffsetX
+            const previousOffsetY = this.scrollLayout_.contentOffsetY
             this.scrollLayout_.scrollContentRectIntoView(request.targetRect)
+            if (
+                previousOffsetX == this.scrollLayout_.contentOffsetX &&
+                previousOffsetY == this.scrollLayout_.contentOffsetY
+            )
+                return
             this.scrollLayout_.arrange(this.finalRect)
-            this.rebuildLayout(true)
+            this.refreshScrollLayout()
             this.refreshFocusTargets()
         }
 
@@ -1022,6 +1766,7 @@ namespace microcode {
             for (let i = 0; i < page.rules.length; i++) {
                 const rule = page.rules[i]
                 if (!rule.isVisible(page)) continue
+                rule.arrangeForPage(page)
                 rule.draw(surface, assets, page)
             }
             for (let i = 0; i < page.rules.length; i++) {
@@ -1035,6 +1780,35 @@ namespace microcode {
             if (!force && !this.layoutDirty && this.layout_) return
             this.layout_ = this.pageLayout()
             this.rebuildNavigationCache()
+        }
+
+        private refreshScrollLayout(): void {
+            if (!this.layout_) {
+                this.rebuildLayout(true)
+                return
+            }
+            this.scrollLayout_.getViewportRect(this.layout_.viewport)
+            this.scrollLayout_.getContentRect(this.layout_.content)
+            this.rebuildNavigationCache()
+        }
+
+        private scrollRequestNeedsScroll(
+            request: ui.UiFocusScrollRequest,
+        ): boolean {
+            this.rebuildLayout()
+            const page = this.layout_
+            if (!page) return false
+            const rect = request.targetRect
+            const left = page.content.x + rect.x
+            const top = page.content.y + rect.y
+            const right = left + rect.width
+            const bottom = top + rect.height
+            return (
+                left < page.viewport.x ||
+                top < page.viewport.y ||
+                right > page.viewport.right ||
+                bottom > page.viewport.bottom
+            )
         }
 
         private refreshFocusTargets(): void {
@@ -1058,8 +1832,8 @@ namespace microcode {
                     disabled: false,
                     hidden: false,
                     activatable: true,
-                    scrollOwnerId: EDITOR_PAGE_SCROLL_OWNER,
-                    scrollRect: target.contentRect,
+                    scrollOwnerId: target.navigation.scrollOwnerId,
+                    scrollRect: target.navigation.scrollRect,
                     hitTestOrder: 1,
                 })
             }
@@ -1353,7 +2127,6 @@ namespace microcode {
                 EDITOR_WHEN_SECTION_COLOR,
             )
             this.outlineTray(surface, page)
-            this.arrangeStrip(page.content)
             this.strip_.render(surface, assets)
         }
 
@@ -1363,8 +2136,11 @@ namespace microcode {
             focus: ui.UiFocusState,
             page: PageLayout,
         ): void {
-            this.arrangeStrip(page.content)
             this.strip_.renderFocusOverlay(surface, assets, focus)
+        }
+
+        public arrangeForPage(page: PageLayout): void {
+            this.arrangeStrip(page.content)
         }
 
         public navigationTargets(page: PageLayout): PageNavigationTarget[] {
@@ -1377,6 +2153,9 @@ namespace microcode {
                 if (!control || control.value.kind == "static") continue
                 const contentRect = this.targetContentRect(target.rect)
                 const viewportRect = this.targetViewportRect(page, contentRect)
+                const scrollNeeded =
+                    viewportRect.width < contentRect.width ||
+                    viewportRect.height < contentRect.height
                 result.push({
                     control,
                     contentRect,
@@ -1384,8 +2163,10 @@ namespace microcode {
                     navigation: {
                         id: target.id,
                         rect: viewportRect,
-                        scrollOwnerId: EDITOR_PAGE_SCROLL_OWNER,
-                        scrollRect: contentRect,
+                        scrollOwnerId: scrollNeeded
+                            ? EDITOR_PAGE_SCROLL_OWNER
+                            : undefined,
+                        scrollRect: scrollNeeded ? contentRect : undefined,
                         hidden:
                             viewportRect.width == 0 || viewportRect.height == 0,
                     },
@@ -2225,6 +3006,11 @@ namespace microcode {
                         toScopeId: EDITOR_PAGE_SELECTOR_SCOPE,
                     },
                     {
+                        fromScopeId: EDITOR_TOOLBAR_SCOPE,
+                        direction: "left",
+                        toScopeId: EDITOR_PAGE_SCOPE,
+                    },
+                    {
                         fromScopeId: EDITOR_PAGE_SELECTOR_SCOPE,
                         direction: "left",
                         toScopeId: EDITOR_TOOLBAR_SCOPE,
@@ -2239,11 +3025,29 @@ namespace microcode {
                         direction: "down",
                         toScopeId: EDITOR_PAGE_SCOPE,
                     },
+                    {
+                        fromScopeId: EDITOR_PAGE_SELECTOR_SCOPE,
+                        direction: "right",
+                        toScopeId: EDITOR_PAGE_SCOPE,
+                    },
                 ],
                 (
                     scopeId: ui.UiFocusScopeId,
                     source: ui.UiFocusNavigationTarget,
+                    link: FocusScopeLink,
                 ) => {
+                    if (
+                        scopeId == EDITOR_PAGE_SCOPE &&
+                        link.fromScopeId == EDITOR_PAGE_SELECTOR_SCOPE &&
+                        link.direction == "right"
+                    )
+                        return pageView.firstRuleHandleTarget()
+                    if (
+                        scopeId == EDITOR_PAGE_SCOPE &&
+                        link.fromScopeId == EDITOR_TOOLBAR_SCOPE &&
+                        link.direction == "left"
+                    )
+                        return pageView.lastPageTarget()
                     if (scopeId == EDITOR_PAGE_SCOPE)
                         return pageView.nearestNavigationTarget(source)
                     return undefined
@@ -2371,6 +3175,7 @@ namespace microcode {
         (
             scopeId: ui.UiFocusScopeId,
             source: ui.UiFocusNavigationTarget,
+            link: FocusScopeLink,
         ): ui.UiFocusNavigationTarget
     }
 
@@ -2554,7 +3359,7 @@ namespace microcode {
         ): ui.UiFocusNavigationTarget {
             if (!this.externalTarget_) return undefined
             const source = this.sourceTargetForLink(link, exit)
-            return this.externalTarget_(link.toScopeId, source)
+            return this.externalTarget_(link.toScopeId, source, link)
         }
 
         private sourceTargetForLink(

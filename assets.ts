@@ -87,7 +87,7 @@ namespace microcode {
 
             // basic colors led editor
             if (name == "solid_red") return icondb.solid_red
-            if (name == "solid_black") return icondb.solid_black
+            if (name == "led_off") return icondb.led_off
             if (name == "note_on") return icondb.note_on
             if (name == "note_off") return icondb.note_off
 
@@ -550,21 +550,21 @@ namespace icondb {
     . . . . . . . . . . . . . . . .
 `
 
-    export const solid_black = bmp`
+    export const led_off = bmp`
     . . . . . . . . . . . . . . . .
     . . . c c c c c c c c c c . . .
-    . . c c f f f f f f f f c c . .
-    . . c f f f f f f f f f f c . .
-    . . c f f f f f f f f f f c . .
-    . . c f f f f f f f f f f c . .
-    . . c f f f f f f f f f f c . .
-    . . c f f f f f f f f f f c . .
-    . . c f f f f f f f f f f c . .
-    . . c f f f f f f f f f f c . .
-    . . c f f f f f f f f f f c . .
-    . . c f f f f f f f f f f c . .
-    . . c f f f f f f f f f f c . .
-    . . c c f f f f f f f f c c . .
+    . . c c c c c c c c c c c c . .
+    . . c c c c c c c c c c c c . .
+    . . c c c c c c c c c c c c . .
+    . . c c c c c c c c c c c c . .
+    . . c c c c c c c c c c c c . .
+    . . c c c c c c c c c c c c . .
+    . . c c c c c c c c c c c c . .
+    . . c c c c c c c c c c c c . .
+    . . c c c c c c c c c c c c . .
+    . . c c c c c c c c c c c c . .
+    . . c c c c c c c c c c c c . .
+    . . c c c c c c c c c c c c . .
     . . . c c c c c c c c c c . . .
     . . . . . . . . . . . . . . . .
 `
@@ -630,13 +630,13 @@ namespace icondb {
 
     export const btn_delete = bmp`
         . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
         . . . . . . c f f . . . . . . .
         . . . . . c . . . f . . . . . .
         . . . . c c c f f f f . . . . .
         . . . c 1 1 d d d b b f . . . .
         . . c c c c c f f f f f f . . .
         . . . c b c b c b c c f . . . .
-        . . . c 1 c d c d c b f d . . .
         . . . c 1 c d c d c b f d . . .
         . . . c 1 c d c d c b f d . . .
         . . . c 1 c d c d c b f d . . .
