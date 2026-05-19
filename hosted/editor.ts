@@ -5,7 +5,21 @@ namespace microcode {
     type EditorDiskSlot = string
     type EditorPagePickerValue = number
     type RuleHandleAction = "add" | "delete" | "moveUp" | "moveDown"
-    type FieldEditorModalAction = "cell" | "commit" | "delete" | "spacer"
+    type TileSuggestionAction = "suggestion" | "delete"
+    type FieldEditorModalAction = "cell" | "commit" | "delete"
+
+    interface TileSuggestionValue {
+        kind: TileSuggestionAction
+        tile?: Tile
+    }
+
+    interface TileEditTarget {
+        value: RuleTargetControlValue
+        tile: Tile
+        pending: boolean
+    }
+
+    type TileSuggestionModalResult = ui.UiPickerResult<TileSuggestionValue>
 
     interface FieldEditorModalValue {
         kind: FieldEditorModalAction
@@ -87,43 +101,54 @@ namespace microcode {
     const EDITOR_DISK_MODAL_SCOPE = "editor/disk-save"
     const EDITOR_PAGE_MODAL_SCOPE = "editor/page-picker"
     const EDITOR_RULE_HANDLE_MODAL_SCOPE = "editor/rule-handle"
+    const EDITOR_TILE_SUGGESTION_MODAL_SCOPE = "editor/tile-suggestion"
     const EDITOR_NUMERIC_MODAL_SCOPE = "editor/numeric-entry"
     const EDITOR_FIELD_MODAL_SCOPE = "editor/field-editor"
     const EDITOR_FIELD_MODAL_CELL_SIZE = 16
     const EDITOR_FIELD_MODAL_MARGIN = 3
     const EDITOR_FIELD_MODAL_GRID_GAP = 1
-    const EDITOR_RULE_TILE_STYLE = ui.buttonStyle(
-        ui.UiButtonStyles.FlatWhite,
-        ui.UiButtonStyles.RoundedFrame,
+    const EDITOR_MELODY_FIELD_MODAL_ROW_GAP = 0
+    const EDITOR_RULE_WHEN_TILE_STYLE = ui.buttonStyle(
+        ui.UiButtonStyles.LightShadowedWhite,
         ui.UiButtonStyles.FocusLabel,
-        AppStyles.focusLabel(4, 1),
+    )
+    const EDITOR_RULE_DO_TILE_STYLE = ui.buttonStyle(
+        ui.UiButtonStyles.ShadowedWhite,
+        ui.UiButtonStyles.FocusLabel,
     )
     const EDITOR_RULE_UNFRAMED_TILE_STYLE = ui.buttonStyle(
         ui.UiButtonStyles.Transparent,
         ui.UiButtonStyles.FocusLabel,
-        AppStyles.focusLabel(3, 0),
     )
+    const EDITOR_RULE_GENERATED_TILE_SIZE = 18
+    const EDITOR_RULE_GENERATED_TILE_CONTENT_STYLE: ui.UiButtonStyle = {
+        foregroundColor: 15,
+        contentAlignment: "center",
+        textPlacement: "content",
+        font: user_interface_base.font,
+        padding: 0,
+    }
     const EDITOR_RULE_SUBTLE_LABEL_STYLE = ui.buttonStyle(
         ui.UiButtonStyles.Transparent,
         ui.UiButtonStyles.FocusLabel,
-        AppStyles.focusLabel(3, 0),
-        {
-            focusLabelBackgroundColor: 12,
-        },
     )
     const EDITOR_RULE_HANDLE_STYLE = EDITOR_RULE_SUBTLE_LABEL_STYLE
     const EDITOR_RULE_HANDLE_MODAL_STYLE = ui.buttonStyle(
         AppStyles.ModalButton,
         ui.UiButtonStyles.FocusLabel,
-        AppStyles.focusLabel(5),
     )
+    const EDITOR_TILE_SUGGESTION_MODAL_STYLE = EDITOR_RULE_HANDLE_MODAL_STYLE
+    const EDITOR_TILE_SUGGESTION_MAX_COLUMNS = 5
+    const EDITOR_TILE_SUGGESTION_TITLE_GAP =
+        EDITOR_FIELD_MODAL_GRID_GAP + 1
     const EDITOR_FIELD_DELETE_STYLE = ui.buttonStyle(
         ui.UiButtonStyles.RedBorderedWhite,
         ui.UiButtonStyles.RoundedFrame,
     )
-    const EDITOR_FIELD_OK_STYLE = ui.buttonStyle(AppStyles.ModalButton, {
-        focusPadding: 0,
-    })
+    const EDITOR_FIELD_OK_STYLE = ui.buttonStyle(
+        ui.UiButtonStyles.GreenBorderedWhite,
+        ui.UiButtonStyles.RoundedFrame,
+    )
     const EDITOR_ICON_FIELD_MODAL_STYLE = ui.modalStyle(AppStyles.Modal, {
         panelColor: 0,
     })
@@ -177,6 +202,18 @@ namespace microcode {
 
     function isIconOrMelodyFieldEditorTile(tile: Tile): boolean {
         return isIconFieldEditorTile(tile) || isMelodyFieldEditorTile(tile)
+    }
+
+    function isFieldEditorTile(tile: Tile): boolean {
+        return !!getFieldEditor(tile)
+    }
+
+    function isGeneratedRuleTile(tile: Tile): boolean {
+        return (
+            isNumericEntryTile(tile) ||
+            isIconFieldEditorTile(tile) ||
+            isMelodyFieldEditorTile(tile)
+        )
     }
 
     function numericLiteralTile(text: string): Tile {
@@ -412,13 +449,26 @@ namespace microcode {
             value: RuleTargetControlValue,
         ): void {
             if (value.kind == "handle") this.openRuleHandleModal(value)
-            else if (value.kind == "tile" && isNumericEntryTile(value.tile))
-                this.openNumericEntryModal(value)
+            else if (
+                value.kind == "tile" &&
+                isNumericEntryTile(value.tile)
+            )
+                this.openNumericEntryModal({
+                    value,
+                    tile: value.tile,
+                    pending: false,
+                })
             else if (
                 value.kind == "tile" &&
                 isIconOrMelodyFieldEditorTile(value.tile)
             )
-                this.openFieldEditorModal(value)
+                this.openFieldEditorModal({
+                    value,
+                    tile: value.tile,
+                    pending: false,
+                })
+            else if (value.kind == "tile" || value.kind == "insert")
+                this.openTileSuggestionModal(value)
         }
 
         private openRuleHandleModal(value: RuleTargetControlValue): void {
@@ -591,57 +641,442 @@ namespace microcode {
             return lastRule + 1
         }
 
-        private openNumericEntryModal(value: RuleTargetControlValue): void {
+        private openTileSuggestionModal(value: RuleTargetControlValue): void {
             if (this.hasModal) return
-            const modal = this.createNumericEntryModal(value)
+            const modal = this.createTileSuggestionModal(value)
+            if (modal) this.openModal(modal)
+        }
+
+        private createTileSuggestionModal(
+            value: RuleTargetControlValue,
+        ): ui.UiModal<TileSuggestionModalResult> {
+            if (!this.isTileSuggestionTarget(value)) return undefined
+            const suggestions = Language.getTileSuggestions(
+                value.rule,
+                value.section,
+                value.index,
+            )
+            if (!suggestions.length) return undefined
+            if (this.isSingleFieldEditorSuggestion(suggestions)) {
+                this.openPendingFieldEditor(value, suggestions[0])
+                return undefined
+            }
+            const controls = this.createTileSuggestionControls(value, suggestions)
+            const selected = this.selectedTileSuggestionId(value, suggestions)
+            const columnCount = Math.min(
+                EDITOR_TILE_SUGGESTION_MAX_COLUMNS,
+                controls.length,
+            )
+            const titleId = this.tileSuggestionTitleId(value)
+            return new ui.UiPicker<TileSuggestionValue>({
+                modalScopeId: EDITOR_TILE_SUGGESTION_MODAL_SCOPE,
+                controls,
+                titleControls: this.canDeleteFromSuggestionPicker(value)
+                    ? [this.tileSuggestionDeleteControl(value)]
+                    : undefined,
+                titleId,
+                defaultControlId: selected,
+                horizontalWrap: true,
+                columnCount,
+                controlWidth: AppStyles.ModalItemSize,
+                controlHeight: AppStyles.ModalItemSize,
+                rowGap: EDITOR_FIELD_MODAL_GRID_GAP,
+                columnGap: EDITOR_FIELD_MODAL_GRID_GAP,
+                controlStyle: EDITOR_TILE_SUGGESTION_MODAL_STYLE,
+                titleControlWidth: AppStyles.ModalItemSize,
+                titleControlHeight: AppStyles.ModalItemSize,
+                titleControlStyle: EDITOR_TILE_SUGGESTION_MODAL_STYLE,
+                titleGap: EDITOR_TILE_SUGGESTION_TITLE_GAP,
+                modalStyle: titleId ? AppStyles.Modal : AppStyles.TitlelessModal,
+            })
+        }
+
+        private isTileSuggestionTarget(value: RuleTargetControlValue): boolean {
+            if (!value.section || value.index === undefined) return false
+            if (value.kind == "insert") return true
+            return value.kind == "tile" && value.tile && !isFieldEditorTile(value.tile)
+        }
+
+        private createTileSuggestionControls(
+            value: RuleTargetControlValue,
+            suggestions: Tile[],
+        ): ui.UiControl<TileSuggestionValue>[] {
+            const controls: ui.UiControl<TileSuggestionValue>[] = []
+            for (let i = 0; i < suggestions.length; i++) {
+                const tile = suggestions[i]
+                controls.push(this.tileSuggestionControl(value, tile, i))
+            }
+            return controls
+        }
+
+        private tileSuggestionControl(
+            value: RuleTargetControlValue,
+            tile: Tile,
+            index: number,
+        ): ui.UiControl<TileSuggestionValue> {
+            const selectedTid = this.selectedTileSuggestionTid(value)
+            const control: ui.UiControl<TileSuggestionValue> = {
+                id: "suggestion-" + index,
+                value: {
+                    kind: "suggestion",
+                    tile,
+                },
+                textId: tidToString(getTid(tile)),
+                selected: selectedTid !== undefined && selectedTid == getTid(tile),
+                onActivate: () => this.applyTileSuggestion(value, tile),
+            }
+            const icon = getIcon(tile)
+            if (typeof icon == "string" || typeof icon == "number")
+                control.bitmapId = icon
+            else control.bitmap = icon
+            return control
+        }
+
+        private tileSuggestionDeleteControl(
+            value: RuleTargetControlValue,
+        ): ui.UiControl<TileSuggestionValue> {
+            return {
+                id: "delete",
+                value: { kind: "delete" },
+                bitmapId: "delete",
+                textId: "delete",
+                style: EDITOR_FIELD_DELETE_STYLE,
+                onActivate: () => this.deleteSuggestedTile(value),
+            }
+        }
+
+        private selectedTileSuggestionId(
+            value: RuleTargetControlValue,
+            suggestions: Tile[],
+        ): string {
+            const tid = this.selectedTileSuggestionTid(value)
+            if (tid === undefined) return undefined
+            for (let i = 0; i < suggestions.length; i++) {
+                if (getTid(suggestions[i]) == tid) return "suggestion-" + i
+            }
+            return undefined
+        }
+
+        private selectedTileSuggestionTid(
+            value: RuleTargetControlValue,
+        ): number {
+            if (!value.tile) return undefined
+            if (!isFieldEditorTile(value.tile) && isNumericEntryTile(value.tile))
+                return Tid.TID_DECIMAL_EDITOR
+            return getTid(value.tile)
+        }
+
+        private canDeleteFromSuggestionPicker(
+            value: RuleTargetControlValue,
+        ): boolean {
+            return (
+                value.kind == "tile" &&
+                value.tile &&
+                !isFieldEditorTile(value.tile) &&
+                filterModifierWithDelete(value.tile)
+            )
+        }
+
+        private tileSuggestionTitleId(value: RuleTargetControlValue): string {
+            if (value.section == "sensors" || value.section == "actuators")
+                return value.section
+            return undefined
+        }
+
+        private isSingleFieldEditorSuggestion(suggestions: Tile[]): boolean {
+            return (
+                suggestions.length == 1 &&
+                suggestions[0] instanceof ModifierEditor
+            )
+        }
+
+        private applyTileSuggestion(
+            value: RuleTargetControlValue,
+            tile: Tile,
+        ): void {
+            if (tile instanceof ModifierEditor) {
+                this.closeModal()
+                this.openPendingFieldEditor(value, tile)
+                return
+            }
+            const wasRunning = isProgramRunning()
+            this.commitTileSuggestion(value, tile, wasRunning)
+        }
+
+        private openPendingFieldEditor(
+            value: RuleTargetControlValue,
+            tile: Tile,
+        ): void {
+            const candidate = this.fieldEditorCandidate(value, tile)
+            if (!candidate) return
+            const target: TileEditTarget = {
+                value,
+                tile: candidate,
+                pending: true,
+            }
+            if (isNumericEntryTile(candidate)) this.openNumericEntryModal(target)
+            else if (isIconOrMelodyFieldEditorTile(candidate))
+                this.openFieldEditorModal(target)
+        }
+
+        private fieldEditorCandidate(
+            value: RuleTargetControlValue,
+            tile: Tile,
+        ): ModifierEditor {
+            if (
+                value.kind == "tile" &&
+                value.tile &&
+                !isFieldEditorTile(value.tile) &&
+                isNumericEntryTile(value.tile) &&
+                tile instanceof DigitEditor
+            ) {
+                return new DigitEditor(
+                    { num: numericEntryText(value.tile) },
+                    getTid(tile) == Tid.TID_POS_INT_EDITOR,
+                )
+            }
+            const source = this.previousFieldEditor(value) || tile
+            if (!(source instanceof ModifierEditor)) return undefined
+            return source.getNewInstance()
+        }
+
+        private previousFieldEditor(
+            value: RuleTargetControlValue,
+        ): ModifierEditor {
+            if (!value.section || value.index === undefined || value.index <= 0)
+                return undefined
+            const tiles = value.rule.getRuleRep()[value.section]
+            const previous = tiles[value.index - 1]
+            return previous instanceof ModifierEditor
+                ? (previous as ModifierEditor)
+                : undefined
+        }
+
+        private commitTileSuggestion(
+            value: RuleTargetControlValue,
+            tile: Tile,
+            wasRunning: boolean,
+            focusInsertedTile?: boolean,
+        ): void {
+            if (!this.isTileSuggestionTarget(value)) {
+                this.closeModal()
+                return
+            }
+            let added = 0
+            const inserting = value.kind == "insert"
+            this.applyHostedEdit(wasRunning, () => {
+                const rule = this.committedTileSuggestionRule(value)
+                if (!rule) return
+                if (inserting) added = rule.push(tile, value.section)
+                else rule.updateAt(value.section, value.index, tile)
+                Language.ensureValid(rule)
+            })
+            this.closeModal()
+            if (inserting && !focusInsertedTile)
+                this.focusAfterInsertion(value, added)
+            else
+                this.focusRuleTargetOrHandle(
+                    value.ruleIndex,
+                    "tile",
+                    value.section,
+                    value.index,
+                )
+        }
+
+        private committedTileSuggestionRule(
+            value: RuleTargetControlValue,
+        ): RuleDefn {
+            if (!this.isVirtualRule(value)) return value.rule
+            const page = this.currentPage()
+            if (!page) return undefined
+            return page.insertRuleAt(value.ruleIndex, value.rule)
+        }
+
+        private deleteSuggestedTile(value: RuleTargetControlValue): void {
+            if (!this.canDeleteFromSuggestionPicker(value)) {
+                this.closeModal()
+                return
+            }
+            const wasRunning = isProgramRunning()
+            const fallback = this.deleteFocusTarget(value)
+            this.applyHostedEdit(wasRunning, () => {
+                value.rule.deleteAt(value.section, value.index)
+                Language.ensureValid(value.rule)
+            })
+            this.closeModal()
+            this.focusRuleTargetOrHandle(
+                fallback.ruleIndex,
+                fallback.kind,
+                fallback.section,
+                fallback.index,
+            )
+        }
+
+        private focusAfterInsertion(
+            value: RuleTargetControlValue,
+            added: number,
+        ): void {
+            if (
+                this.focusFollowingInsertion(
+                    value.ruleIndex,
+                    value.rule,
+                    value.section,
+                    value.index,
+                    added,
+                )
+            )
+                return
+            this.focusRuleTargetOrHandle(
+                value.ruleIndex,
+                "tile",
+                value.section,
+                value.index,
+            )
+        }
+
+        private focusFollowingInsertion(
+            ruleIndex: number,
+            rule: RuleDefn,
+            section: RuleSection,
+            index: number,
+            added: number,
+        ): boolean {
+            if (section == "sensors")
+                return this.focusInsertionTarget(ruleIndex, rule, "filters")
+            if (section == "actuators")
+                return this.focusInsertionTarget(ruleIndex, rule, "modifiers")
+            const nextIndex = index + Math.max(added, 1)
+            if (
+                this.focusRuleTargetIfSuggestions(
+                    ruleIndex,
+                    rule,
+                    section,
+                    nextIndex,
+                )
+            )
+                return true
+            if (section == "filters" && !rule.actuators.length)
+                return this.focusInsertionTarget(ruleIndex, rule, "actuators")
+            return false
+        }
+
+        private focusInsertionTarget(
+            ruleIndex: number,
+            rule: RuleDefn,
+            section: RuleSection,
+        ): boolean {
+            const index = rule.getRuleRep()[section].length
+            return this.focusRuleTargetIfSuggestions(
+                ruleIndex,
+                rule,
+                section,
+                index,
+            )
+        }
+
+        private focusRuleTargetIfSuggestions(
+            ruleIndex: number,
+            rule: RuleDefn,
+            section: RuleSection,
+            index: number,
+        ): boolean {
+            if (!Language.getTileSuggestions(rule, section, index).length)
+                return false
+            return this.pageView_.focusRuleTarget(
+                this.focus,
+                ruleIndex,
+                "insert",
+                section,
+                index,
+            )
+        }
+
+        private focusRuleTargetOrHandle(
+            ruleIndex: number,
+            kind: RuleTargetKind,
+            section?: RuleSection,
+            index?: number,
+        ): void {
+            if (
+                !this.pageView_.focusRuleTarget(
+                    this.focus,
+                    ruleIndex,
+                    kind,
+                    section,
+                    index,
+                )
+            )
+                this.pageView_.focusRuleTarget(this.focus, ruleIndex, "handle")
+        }
+
+        private openNumericEntryModal(target: TileEditTarget): void {
+            if (this.hasModal) return
+            const modal = this.createNumericEntryModal(target)
             if (modal) this.openModal(modal)
         }
 
         private createNumericEntryModal(
-            value: RuleTargetControlValue,
+            target: TileEditTarget,
         ): ui.UiNumericEntryModal {
-            if (!value.tile || !isNumericEntryTile(value.tile))
+            if (!target.tile || !isNumericEntryTile(target.tile))
                 return undefined
             const wasRunning = isProgramRunning()
             return new ui.UiNumericEntryModal({
                 modalScopeId: EDITOR_NUMERIC_MODAL_SCOPE,
-                mode: numericEntryMode(value.tile),
-                initialText: numericEntryText(value.tile),
+                mode: numericEntryMode(target.tile),
+                initialText: numericEntryText(target.tile),
                 maxLength: 8,
+                deleteEnabled: !target.pending,
+                deleteIcon: "delete",
                 modalStyle: AppStyles.NumericModal,
                 keyStyle: AppStyles.ModalButton,
                 displayPalette: AppStyles.NumericDisplayPalette,
                 onResult: result =>
-                    this.applyNumericEntryResult(value, result, wasRunning),
+                    this.applyNumericEntryResult(target, result, wasRunning),
             })
         }
 
         private applyNumericEntryResult(
-            value: RuleTargetControlValue,
+            target: TileEditTarget,
             result: ui.UiNumericEntryResult,
             wasRunning: boolean,
         ): void {
             if (!result) return
             if (result.kind == "completed")
-                this.completeNumericEntry(value, result, wasRunning)
+                this.completeNumericEntry(target, result, wasRunning)
+            else if (result.kind == "deleted")
+                this.deleteEditedTile(target.value, wasRunning)
         }
 
         private completeNumericEntry(
-            value: RuleTargetControlValue,
+            target: TileEditTarget,
             result: ui.UiNumericEntryResult,
             wasRunning: boolean,
         ): void {
-            if (!value.tile || !isNumericEntryTile(value.tile)) {
+            if (!target.tile || !isNumericEntryTile(target.tile)) {
                 this.closeModal()
                 return
             }
-            const changed = this.writeNumericEntryResult(value, (<any>result).text)
-            if (changed) {
-                if (wasRunning) stopProgram()
-                this.app_.save(SAVESLOT_AUTO, this.progdef_.toBuffer())
-                this.pageView_.pageChanged()
-                if (wasRunning) runProgram(this.progdef_)
+            if (target.pending) {
+                const tile = this.completedNumericTile(
+                    target.tile,
+                    (<any>result).text,
+                )
+                this.commitTileSuggestion(
+                    target.value,
+                    tile,
+                    wasRunning,
+                    true,
+                )
+                return
             }
+            const value = target.value
+            const text = (<any>result).text
+            if (this.numericEntryResultChanged(value, text))
+                this.applyHostedEdit(wasRunning, () => {
+                    this.writeNumericEntryResult(value, text)
+                    Language.ensureValid(value.rule)
+                })
             this.closeModal()
             this.pageView_.focusRuleTarget(
                 this.focus,
@@ -650,6 +1085,32 @@ namespace microcode {
                 value.section,
                 value.index,
             )
+        }
+
+        private writeNumericTextToTile(tile: Tile, text: string): void {
+            if (!getFieldEditor(tile)) return
+            const editor = tile as DigitEditor
+            editor.getField().num = text
+        }
+
+        private completedNumericTile(tile: Tile, text: string): Tile {
+            const literal = numericLiteralTile(text)
+            if (literal !== undefined) return literal
+            this.writeNumericTextToTile(tile, text)
+            return tile
+        }
+
+        private numericEntryResultChanged(
+            value: RuleTargetControlValue,
+            text: string,
+        ): boolean {
+            if (getFieldEditor(value.tile)) {
+                const editor = value.tile as DigitEditor
+                return editor.getField().num != text
+            }
+            if (!value.section || value.index === undefined) return false
+            const literal = numericLiteralTile(text)
+            return literal === undefined || getTid(value.tile) != literal
         }
 
         private writeNumericEntryResult(
@@ -674,42 +1135,43 @@ namespace microcode {
             return true
         }
 
-        private openFieldEditorModal(value: RuleTargetControlValue): void {
+        private openFieldEditorModal(target: TileEditTarget): void {
             if (this.hasModal) return
-            const modal = this.createFieldEditorModal(value)
+            const modal = this.createFieldEditorModal(target)
             if (modal) this.openModal(modal)
         }
 
         private createFieldEditorModal(
-            value: RuleTargetControlValue,
+            target: TileEditTarget,
         ): FieldEditorToggleModal {
-            if (!value.tile || !isIconOrMelodyFieldEditorTile(value.tile))
+            if (!target.tile || !isIconOrMelodyFieldEditorTile(target.tile))
                 return undefined
-            if (isIconFieldEditorTile(value.tile))
+            if (isIconFieldEditorTile(target.tile))
                 return this.createIconFieldEditorModal(
-                    value,
-                    value.tile as IconEditor,
+                    target,
+                    target.tile as IconEditor,
                 )
             return this.createMelodyFieldEditorModal(
-                value,
-                value.tile as MelodyEditor,
+                target,
+                target.tile as MelodyEditor,
             )
         }
 
         private createIconFieldEditorModal(
-            value: RuleTargetControlValue,
+            target: TileEditTarget,
             tile: IconEditor,
         ): FieldEditorToggleModal {
             const field = cloneIconField(tile)
             const controls = this.createIconFieldControls(field)
             const wasRunning = isProgramRunning()
             return new FieldEditorToggleModal({
-                title: "image",
+                titleBitmap: icons.get(Tid.TID_ACTUATOR_PAINT),
                 modalStyle: EDITOR_ICON_FIELD_MODAL_STYLE,
                 controls,
                 columnCount: 5,
                 defaultControlId: "cell-2-2",
                 controlSize: EDITOR_FIELD_MODAL_CELL_SIZE,
+                deleteEnabled: !target.pending,
                 onActivate: control => {
                     const controlValue = control.value
                     if (controlValue.kind == "commit")
@@ -721,7 +1183,7 @@ namespace microcode {
                 },
                 onResult: result =>
                     this.applyIconFieldEditorResult(
-                        value,
+                        target,
                         field,
                         result,
                         wasRunning,
@@ -748,18 +1210,20 @@ namespace microcode {
         }
 
         private createMelodyFieldEditorModal(
-            value: RuleTargetControlValue,
+            target: TileEditTarget,
             tile: MelodyEditor,
         ): FieldEditorToggleModal {
             const field = cloneMelodyField(tile)
             const controls = this.createMelodyFieldControls(field)
             const wasRunning = isProgramRunning()
             return new FieldEditorToggleModal({
-                title: "melody",
+                titleBitmap: icons.get(Tid.TID_ACTUATOR_MUSIC),
                 controls,
                 columnCount: MELODY_LENGTH,
                 defaultControlId: "cell-2-2",
                 controlSize: EDITOR_FIELD_MODAL_CELL_SIZE,
+                rowGap: EDITOR_MELODY_FIELD_MODAL_ROW_GAP,
+                deleteEnabled: !target.pending,
                 onActivate: control => {
                     const controlValue = control.value
                     if (controlValue.kind == "commit")
@@ -771,7 +1235,7 @@ namespace microcode {
                 },
                 onResult: result =>
                     this.applyMelodyFieldEditorResult(
-                        value,
+                        target,
                         field,
                         result,
                         wasRunning,
@@ -888,75 +1352,94 @@ namespace microcode {
         }
 
         private applyIconFieldEditorResult(
-            value: RuleTargetControlValue,
+            target: TileEditTarget,
             field: Bitmap,
             result: FieldEditorModalResult,
             wasRunning: boolean,
         ): void {
             if (!result) return
             if (result.kind == "closed")
-                this.commitIconFieldEditor(value, field, wasRunning)
+                this.commitIconFieldEditor(target, field, wasRunning)
             else if (result.kind == "deleted")
-                this.deleteFieldEditorTile(value, wasRunning)
+                this.deleteEditedTile(target.value, wasRunning)
         }
 
         private applyMelodyFieldEditorResult(
-            value: RuleTargetControlValue,
+            target: TileEditTarget,
             field: Melody,
             result: FieldEditorModalResult,
             wasRunning: boolean,
         ): void {
             if (!result) return
             if (result.kind == "closed")
-                this.commitMelodyFieldEditor(value, field, wasRunning)
+                this.commitMelodyFieldEditor(target, field, wasRunning)
             else if (result.kind == "deleted")
-                this.deleteFieldEditorTile(value, wasRunning)
+                this.deleteEditedTile(target.value, wasRunning)
         }
 
         private commitIconFieldEditor(
-            value: RuleTargetControlValue,
+            target: TileEditTarget,
             field: Bitmap,
             wasRunning: boolean,
         ): void {
-            if (!value.tile || !isIconFieldEditorTile(value.tile)) {
+            if (!target.tile || !isIconFieldEditorTile(target.tile)) {
                 this.closeModal()
                 return
             }
-            const tile = value.tile as IconEditor
+            const tile = target.tile as IconEditor
             const changed = !iconFieldsEqual(tile.getField(), field)
-            if (changed) {
+            if (target.pending) {
+                tile.field = field.clone()
+                this.commitTileSuggestion(
+                    target.value,
+                    tile,
+                    wasRunning,
+                    true,
+                )
+                return
+            }
+            if (changed)
                 this.applyHostedEdit(wasRunning, () => {
                     tile.field = field.clone()
                 })
-            }
             this.closeModal()
-            this.focusEditedRuleTarget(value)
+            this.focusEditedRuleTarget(target.value)
         }
 
         private commitMelodyFieldEditor(
-            value: RuleTargetControlValue,
+            target: TileEditTarget,
             field: Melody,
             wasRunning: boolean,
         ): void {
-            if (!value.tile || !isMelodyFieldEditorTile(value.tile)) {
+            if (!target.tile || !isMelodyFieldEditorTile(target.tile)) {
                 this.closeModal()
                 return
             }
-            const tile = value.tile as MelodyEditor
+            const tile = target.tile as MelodyEditor
             const changed = !melodyFieldsEqual(tile.getField(), field)
-            if (changed) {
-                this.applyHostedEdit(wasRunning, () => {
-                    tile.field = {
-                        notes: field.notes.slice(0),
-                        tempo: field.tempo,
-                    }
-                })
+            const nextField = {
+                notes: field.notes.slice(0),
+                tempo: field.tempo,
             }
+            if (target.pending) {
+                tile.field = nextField
+                this.commitTileSuggestion(
+                    target.value,
+                    tile,
+                    wasRunning,
+                    true,
+                )
+                return
+            }
+            if (changed)
+                this.applyHostedEdit(wasRunning, () => {
+                    tile.field = nextField
+                })
             this.closeModal()
-            this.focusEditedRuleTarget(value)
+            this.focusEditedRuleTarget(target.value)
         }
 
-        private deleteFieldEditorTile(
+        private deleteEditedTile(
             value: RuleTargetControlValue,
             wasRunning: boolean,
         ): void {
@@ -1049,12 +1532,15 @@ namespace microcode {
     }
 
     interface FieldEditorToggleModalOptions {
-        title: string
+        title?: string
+        titleBitmap?: Bitmap | string
         modalStyle?: ui.UiModalStyle
         controls: ui.UiControl<FieldEditorModalValue>[]
         columnCount: number
         defaultControlId: string
         controlSize: number
+        rowGap?: number
+        deleteEnabled?: boolean
         onActivate: FieldEditorModalActivation
         onResult: (result: FieldEditorModalResult) => void
     }
@@ -1064,42 +1550,38 @@ namespace microcode {
         public readonly layoutSpec: ui.UiLayoutSpec
         public readonly finalRect: ui.Rect
         public layoutDirty: boolean
-        private title_: string
-        private grid_: ui.UiGrid<FieldEditorModalValue>
-        private controls_: ui.UiControl<FieldEditorModalValue>[]
-        private style_: ui.UiModalStyle
-        private contentMargin_: number
+        private modal_: ui.UiPicker<FieldEditorModalValue>
         private controlSize_: number
-        private gridRect_: ui.Rect
         private onActivate_: FieldEditorModalActivation
         private onResult_: (result: FieldEditorModalResult) => void
 
         constructor(options: FieldEditorToggleModalOptions) {
-            this.title_ = options.title
-            this.style_ = options.modalStyle || AppStyles.Modal
-            this.contentMargin_ = EDITOR_FIELD_MODAL_MARGIN
             this.controlSize_ = options.controlSize
-            this.controls_ = this.withTitleBarControls(
-                options.controls,
-                options.columnCount,
-            )
-            this.grid_ = new ui.UiGrid<FieldEditorModalValue>({
-                scopeId: EDITOR_FIELD_MODAL_SCOPE,
-                controls: this.controls_,
-                rows: this.rows(options.controls.length, options.columnCount),
+            this.modal_ = new ui.UiPicker<FieldEditorModalValue>({
+                modalScopeId: EDITOR_FIELD_MODAL_SCOPE,
+                controls: options.controls,
+                titleControls: this.titleControls(options.deleteEnabled !== false),
+                title: options.title,
+                titleBitmap: options.titleBitmap,
                 defaultControlId: options.defaultControlId,
+                closeOnActivate: false,
+                columnCount: options.columnCount,
+                horizontalWrap: true,
                 controlWidth: options.controlSize,
                 controlHeight: options.controlSize,
-                rowGap: EDITOR_FIELD_MODAL_GRID_GAP,
+                rowGap:
+                    options.rowGap !== undefined
+                        ? options.rowGap
+                        : EDITOR_FIELD_MODAL_GRID_GAP,
                 columnGap: EDITOR_FIELD_MODAL_GRID_GAP,
+                titleControlWidth: options.controlSize,
+                titleControlHeight: options.controlSize,
+                titleGap: EDITOR_FIELD_MODAL_GRID_GAP,
+                modalStyle: options.modalStyle || AppStyles.Modal,
             })
-            this.layoutSpec = {
-                width: { mode: "content" },
-                height: { mode: "content" },
-            }
-            this.finalRect = new ui.Rect()
+            this.layoutSpec = this.modal_.layoutSpec
+            this.finalRect = this.modal_.finalRect
             this.layoutDirty = true
-            this.gridRect_ = new ui.Rect()
             this.onActivate_ = options.onActivate
             this.onResult_ = options.onResult
         }
@@ -1112,70 +1594,44 @@ namespace microcode {
             constraints: ui.UiLayoutConstraints,
             output: ui.UiMeasuredSize,
         ): void {
-            this.grid_.measure(constraints, output)
-            output.set(
-                output.minWidth + this.contentMargin_ * 2,
-                output.minHeight + this.contentMargin_ * 2,
-                output.preferredWidth + this.contentMargin_ * 2,
-                output.preferredHeight + this.contentMargin_ * 2,
-            )
+            this.modal_.measure(constraints, output)
             this.clearLayoutInvalidation()
         }
 
         public arrange(rect: ui.Rect): void {
-            this.finalRect.copyFrom(rect)
-            this.gridRect_.set(
-                rect.x + this.contentMargin_,
-                rect.y + this.contentMargin_,
-                Math.max(0, rect.width - this.contentMargin_ * 2),
-                Math.max(0, rect.height - this.contentMargin_ * 2),
-            )
-            this.grid_.arrange(this.gridRect_)
+            this.modal_.arrange(rect)
             this.clearLayoutInvalidation()
         }
 
         public invalidateLayout(): void {
             this.layoutDirty = true
-            this.grid_.invalidateLayout()
+            this.modal_.invalidateLayout()
         }
 
         public clearLayoutInvalidation(): void {
             this.layoutDirty = false
-            this.grid_.clearLayoutInvalidation()
+            this.modal_.clearLayoutInvalidation()
         }
 
         public open(
             focus: ui.UiFocusState,
             controller?: ui.UiFocusInputController,
         ): ui.UiFocusSetResult {
-            this.grid_.registerFocusTargets(focus, {
-                id: EDITOR_FIELD_MODAL_SCOPE,
-                parentScopeId: focus.getActiveScopeId(),
-                preferredTargetId: this.grid_.resolvePreferredTargetId(),
-                handlesCancel: true,
-                modal: true,
-            })
-            if (controller) this.grid_.registerNavigation(controller)
-            return focus.setActiveScope(EDITOR_FIELD_MODAL_SCOPE)
+            return this.modal_.open(focus, controller)
         }
 
         public close(focus: ui.UiFocusState): ui.UiFocusSetResult {
-            return focus.closeModalScope(EDITOR_FIELD_MODAL_SCOPE)
+            return this.modal_.close(focus)
         }
 
         public handleFocusInput(
             result: ui.UiFocusInputResult,
         ): FieldEditorModalResult {
+            const pickerResult = this.modal_.handleFocusInput(result)
             let modalResult: FieldEditorModalResult = undefined
-            if (
-                result.kind == "activated" &&
-                result.detail &&
-                result.detail.activationResult
-            ) {
-                modalResult = this.createResultForActivation(
-                    result.detail.activationResult,
-                )
-            } else if (result.kind == "cancelled") {
+            if (pickerResult && pickerResult.kind == "keepOpen")
+                modalResult = this.createResultForActivation(pickerResult)
+            else if (pickerResult && pickerResult.kind == "cancelled") {
                 modalResult = {
                     kind: "cancelled",
                     modalScopeId: EDITOR_FIELD_MODAL_SCOPE,
@@ -1192,34 +1648,20 @@ namespace microcode {
             assets: ui.UiAssetResolver,
             focus?: ui.UiFocusState,
         ): void {
-            ui.drawModalPanel(surface, this.finalRect, this.style_)
-            const titleFont = user_interface_base.font
-            surface.drawText(
-                this.title_,
-                this.gridRect_.x,
-                this.gridRect_.y +
-                    Math.max(
-                        0,
-                        Math.idiv(this.controlSize_ - titleFont.charHeight, 2),
-                    ),
-                {
-                    color: AppStyles.ModalTitleColor,
-                    font: titleFont,
-                    transparent: true,
-                    allowDownscale: true,
-                },
-            )
-            this.grid_.render(surface, assets, focus)
+            this.modal_.render(surface, assets, focus)
         }
 
         private createResultForActivation(
-            result: ui.UiFocusActivationResult,
+            result: {
+                kind: "keepOpen"
+                controlId: string
+                value: FieldEditorModalValue
+                control: ui.UiControl<FieldEditorModalValue>
+                updatedValue?: FieldEditorModalValue
+            },
         ): FieldEditorModalResult {
-            const gridResult = this.grid_.createResultForActivation(result)
-            if (!gridResult || gridResult.kind != "activated") return undefined
-            if (gridResult.value.kind == "spacer") return undefined
             const policyResult: FieldEditorModalActionResult = this.onActivate_
-                ? this.onActivate_(gridResult.control)
+                ? this.onActivate_(result.control)
                 : { kind: "keepOpen" }
             if (policyResult.kind == "closed")
                 return {
@@ -1233,33 +1675,20 @@ namespace microcode {
                 }
             return {
                 kind: "keepOpen",
-                controlId: gridResult.controlId,
-                value: gridResult.value,
-                control: gridResult.control,
+                controlId: result.controlId,
+                value: result.value,
+                control: result.control,
                 updatedValue: policyResult.value,
             }
         }
 
-        private withTitleBarControls(
-            cells: ui.UiControl<FieldEditorModalValue>[],
-            columnCount: number,
+        private titleControls(
+            deleteEnabled: boolean,
         ): ui.UiControl<FieldEditorModalValue>[] {
             const controls: ui.UiControl<FieldEditorModalValue>[] = []
-            for (let i = 0; i < Math.max(0, columnCount - 2); i++)
-                controls.push(this.spacerControl("title-spacer-" + i))
+            if (deleteEnabled) controls.push(this.commandControl("delete"))
             controls.push(this.commandControl("ok"))
-            controls.push(this.commandControl("delete"))
-            for (let i = 0; i < cells.length; i++)
-                controls.push(cells[i])
             return controls
-        }
-
-        private rows(cellCount: number, columnCount: number): number[] {
-            const rows = [columnCount]
-            const cellRows = Math.idiv(cellCount + columnCount - 1, columnCount)
-            for (let i = 0; i < cellRows; i++)
-                rows.push(columnCount)
-            return rows
         }
 
         private commandControl(
@@ -1277,17 +1706,6 @@ namespace microcode {
                 value: { kind: "delete" },
                 bitmapId: "delete",
                 style: EDITOR_FIELD_DELETE_STYLE,
-            }
-        }
-
-        private spacerControl(
-            id: string,
-        ): ui.UiControl<FieldEditorModalValue> {
-            return {
-                id,
-                value: { kind: "spacer" },
-                disabled: true,
-                draw: () => {},
             }
         }
 
@@ -2254,7 +2672,7 @@ namespace microcode {
                 const tile = tiles[i]
                 const control = this.targetControl(
                     "tile",
-                    this.bitmap(getIcon(tile)),
+                    this.targetBitmap(tile),
                     section,
                     i,
                     tile,
@@ -2307,13 +2725,21 @@ namespace microcode {
 
         private targetControl(
             kind: RuleTargetKind,
-            bitmap: Bitmap,
+            bitmap?: Bitmap,
             section?: RuleSection,
             index?: number,
             tile?: Tile,
             gapBefore?: number,
         ): ui.UiControl<RuleTargetControlValue> {
-            const framed = kind == "tile" && tile && !getFieldEditor(tile)
+            const generated = kind == "tile" && tile && isGeneratedRuleTile(tile)
+            const generatedText = this.targetText(kind, tile)
+            const customContent = this.targetCustomContent(kind, tile)
+            const framed =
+                kind == "tile" &&
+                tile &&
+                !generated &&
+                !getFieldEditor(tile) &&
+                !isConstant(getTid(tile))
             return {
                 id: this.targetId(kind, section, index),
                 value: {
@@ -2325,12 +2751,99 @@ namespace microcode {
                     tile,
                 },
                 bitmap,
-                width: framed ? bitmap.width + 2 : bitmap.width,
-                height: framed ? bitmap.height + 2 : bitmap.height,
+                customContent,
+                width: this.targetWidth(bitmap, framed, generatedText, customContent),
+                height: this.targetHeight(bitmap, framed, generated),
                 gapBefore,
+                text: generatedText,
                 textId: this.targetTextId(kind, section, tile),
-                style: this.targetStyle(kind, framed),
+                focusLabel: this.targetFocusLabel(kind, tile),
+                focusLabelId: this.targetFocusLabelId(kind, tile),
+                style: this.targetStyle(kind, framed, generated, section, tile),
             }
+        }
+
+        private targetBitmap(tile: Tile): Bitmap {
+            if (isGeneratedRuleTile(tile)) return undefined
+            return this.bitmap(getIcon(tile))
+        }
+
+        private targetText(kind: RuleTargetKind, tile?: Tile): string {
+            if (kind == "tile" && tile && isNumericEntryTile(tile))
+                return numericEntryText(tile)
+            return undefined
+        }
+
+        private targetFocusLabel(kind: RuleTargetKind, tile?: Tile): string {
+            if (kind == "tile" && tile && isNumericEntryTile(tile))
+                return numericEntryText(tile)
+            return undefined
+        }
+
+        private targetFocusLabelId(
+            kind: RuleTargetKind,
+            tile?: Tile,
+        ): string {
+            if (
+                kind == "tile" &&
+                tile &&
+                isGeneratedRuleTile(tile) &&
+                !isNumericEntryTile(tile)
+            )
+                return tidToString(getTid(tile))
+            return undefined
+        }
+
+        private targetCustomContent(
+            kind: RuleTargetKind,
+            tile?: Tile,
+        ): ui.UiButtonCustomContent {
+            if (kind != "tile" || !tile) return undefined
+            if (isIconFieldEditorTile(tile))
+                return this.bitmapContent(
+                    icondb.renderMicrobitLEDs(
+                        (tile as IconEditor).getField(),
+                    ),
+                )
+            if (isMelodyFieldEditorTile(tile))
+                return this.bitmapContent(
+                    icondb.melodyToImage(
+                        (tile as MelodyEditor).getField(),
+                    ),
+                )
+            return undefined
+        }
+
+        private bitmapContent(bitmap: Bitmap): ui.UiButtonCustomContent {
+            return {
+                width: bitmap.width,
+                height: bitmap.height,
+                draw: (surface: ui.DrawSurface, rect: ui.Rect) => {
+                    surface.drawBitmap(bitmap, rect.x, rect.y)
+                },
+            }
+        }
+
+        private targetWidth(
+            bitmap: Bitmap,
+            framed: boolean,
+            text?: string,
+            customContent?: ui.UiButtonCustomContent,
+        ): number {
+            if (text !== undefined) {
+                return (text.length + 1) * user_interface_base.font.charWidth
+            }
+            if (customContent) return EDITOR_RULE_GENERATED_TILE_SIZE
+            return framed ? bitmap.width + 2 : bitmap.width
+        }
+
+        private targetHeight(
+            bitmap: Bitmap,
+            framed: boolean,
+            generated: boolean,
+        ): number {
+            if (generated) return EDITOR_RULE_GENERATED_TILE_SIZE
+            return framed ? bitmap.height + 2 : bitmap.height
         }
 
         private targetTextId(
@@ -2341,6 +2854,8 @@ namespace microcode {
             if (kind == "handle") return "rule"
             if (kind == "insert" && this.virtualRule_)
                 return this.insertionTextId(section)
+            if (kind == "tile" && tile && isGeneratedRuleTile(tile))
+                return undefined
             if (kind == "tile" && tile) return tidToString(getTid(tile))
             return undefined
         }
@@ -2354,14 +2869,43 @@ namespace microcode {
         private targetStyle(
             kind: RuleTargetKind,
             framed: boolean,
+            generated: boolean,
+            section?: RuleSection,
+            tile?: Tile,
         ): ui.UiButtonStyle {
             if (kind == "handle") return EDITOR_RULE_HANDLE_STYLE
             if (kind == "insert") return EDITOR_RULE_SUBTLE_LABEL_STYLE
+            if (kind == "tile" && generated)
+                return ui.buttonStyle(
+                    this.framedTileStyle(section),
+                    this.generatedTileFrameStyle(tile),
+                    EDITOR_RULE_GENERATED_TILE_CONTENT_STYLE,
+                )
             if (kind == "tile")
                 return framed
-                    ? EDITOR_RULE_TILE_STYLE
+                    ? this.framedTileStyle(section)
                     : EDITOR_RULE_UNFRAMED_TILE_STYLE
             return ui.UiButtonStyles.Transparent
+        }
+
+        private generatedTileFrameStyle(tile?: Tile): ui.UiButtonStyle {
+            if (tile && isIconFieldEditorTile(tile))
+                return {
+                    edgeColor: 15,
+                    shadowColor: 15,
+                }
+            if (tile && isMelodyFieldEditorTile(tile))
+                return {
+                    edgeColor: 1,
+                    shadowColor: 1,
+                }
+            return undefined
+        }
+
+        private framedTileStyle(section?: RuleSection): ui.UiButtonStyle {
+            if (section == "actuators" || section == "modifiers")
+                return EDITOR_RULE_DO_TILE_STYLE
+            return EDITOR_RULE_WHEN_TILE_STYLE
         }
 
         private targetId(
@@ -2995,9 +3539,6 @@ namespace microcode {
                 EDITOR_RULE_SUBTLE_LABEL_STYLE,
                 ui.UiButtonStyles.BorderedPurple,
                 ui.UiButtonStyles.RoundedFrame,
-                {
-                    focusPadding: 1,
-                },
             )
             this.toolbarRow_ = new ui.UiRow<EditorToolbarAction>({
                 scopeId: EDITOR_TOOLBAR_SCOPE,

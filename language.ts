@@ -306,7 +306,7 @@ namespace microcode {
         }
 
         public insertRuleAt(index: number, newRule: RuleDefn) {
-            if (index >= 0 && index < this.rules.length) {
+            if (index >= 0 && index <= this.rules.length) {
                 const insertRule = newRule ? newRule : new RuleDefn()
                 this.rules.insertAt(index, insertRule)
                 return insertRule

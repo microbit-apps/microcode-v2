@@ -604,6 +604,7 @@ namespace microcode {
     ]
 
     const filterMath: (string | number)[] = [
+        "constant",
         "variable",
         "comparison",
         "maths",
@@ -620,7 +621,8 @@ namespace microcode {
             return {
                 allow: getFilterMath(),
                 disallow: [
-                    (tid: number) => getKindTid(tid) == TileKind.EventCode,
+                    (tile: Tile) =>
+                        getKindTid(getTid(tile)) == TileKind.EventCode,
                 ],
             }
         }
@@ -699,7 +701,7 @@ namespace microcode {
                 return {
                     only: microcodeClassic
                         ? ["variable", "constant"]
-                        : ["variable", "maths", "decimal_editor"],
+                        : ["constant", "variable", "maths", "decimal_editor"],
                 }
             case Tid.TID_ACTUATOR_RGB_LED:
                 return { only: ["rgb_led", "loop"] }
@@ -734,6 +736,7 @@ namespace microcode {
         if (isEmoji(tid)) return "sound_emoji"
         if (isComparisonOperator(tid)) return "comparison"
         if (isMathOperator(tid)) return "maths"
+        if (isConstant(tid)) return "constant"
         if (isVariable(tid)) return "variable"
         if (isPage(tid)) return "page"
         if (isCarModifier(tid)) return "car"

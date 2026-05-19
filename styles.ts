@@ -1,6 +1,5 @@
 namespace microcode {
     const APP_FOCUS_COLOR = 9
-    const APP_FOCUS_THICKNESS = 3
     const APP_FOCUS_LABEL_BACKGROUND = 15
     const APP_FOCUS_LABEL_COLOR = 1
 
@@ -95,20 +94,14 @@ namespace microcode {
         /**
          * Creates the shared focus-label style fragment.
          */
-        export function focusLabel(
-            gap: number,
-            focusPadding?: number,
-        ): ui.UiButtonStyle {
+        export function focusLabel(gap?: number): ui.UiButtonStyle {
             const style: ui.UiButtonStyle = {
                 focusColor: APP_FOCUS_COLOR,
-                focusThickness: APP_FOCUS_THICKNESS,
                 focusLabelBackgroundColor: APP_FOCUS_LABEL_BACKGROUND,
                 focusLabelColor: APP_FOCUS_LABEL_COLOR,
                 focusLabelFont: user_interface_base.font,
-                focusLabelGap: gap,
             }
-            if (focusPadding !== undefined)
-                style.focusPadding = focusPadding
+            if (gap !== undefined) style.focusLabelGap = gap
             return style
         }
 
@@ -119,7 +112,7 @@ namespace microcode {
             return ui.buttonStyle(
                 ui.UiButtonStyles.Transparent,
                 ui.UiButtonStyles.FocusLabel,
-                focusLabel(2),
+                focusLabel(),
                 {
                     focusLabelPadding: 1,
                 },

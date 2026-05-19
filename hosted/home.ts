@@ -9,6 +9,7 @@ namespace microcode {
     const HOME_ACTION_WIDTH = 32
     const HOME_ACTION_HEIGHT = 33
     const HOME_ACTION_GAP = 8
+    const HOME_ACTION_LABEL_GAP = 1
     const HOME_MARGIN = 2
 
     export class HomeScreen extends ui.UiScreen {
@@ -25,7 +26,10 @@ namespace microcode {
                 controlWidth: HOME_ACTION_WIDTH,
                 controlHeight: HOME_ACTION_HEIGHT,
                 gap: HOME_ACTION_GAP,
-                controlStyle: AppStyles.iconButton(),
+                controlStyle: ui.buttonStyle(
+                    AppStyles.iconButton(),
+                    AppStyles.focusLabel(HOME_ACTION_LABEL_GAP),
+                ),
                 labelBounds: new ui.Rect(0, 0, UI_SCREEN_WIDTH, UI_SCREEN_HEIGHT),
             })
 

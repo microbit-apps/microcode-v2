@@ -705,7 +705,7 @@ namespace icondb {
     4 4 4 1 1 4 4 4 4 4 4 4 4 4 4 4 
     4 4 4 4 1 4 4 4 4 4 4 4 4 4 4 4 
     4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 
-    4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 
+    . . . . . . . . . . . . . . . .
         `
 
     export const btn_when_insertion_point = bmp`
@@ -1482,7 +1482,6 @@ namespace icondb {
     export const music = bmp`
     . . . . . . . . . . . . . . . . 
     . . . . . . . . . . . . . . . . 
-    . . . . . . . . . . . . . . . . 
     . . . . . . . . . . . f c . . . 
     . . . . . . . . . c c c c b . . 
     . . . . . . . c c c b b c b . . 
@@ -1495,6 +1494,7 @@ namespace icondb {
     . . f c c c b . . f c c b b . . 
     . . f c c b b . . . b b b . . . 
     . . . b b b . . . . . . . . . . 
+    . . . . . . . . . . . . . . . . 
     . . . . . . . . . . . . . . . . 
 `
     export const note_on = bmp`
@@ -1867,7 +1867,6 @@ f f f f f f f f f f f f f f f .
 . . . . . . . . . . . . . . . .
 . . . . . . . . . . . . . . . .
 . . . . . . . . . . . . . . . .
-. . . . . . . . . . . . . . . .
 . . . . c c c c c c c . . . . .
 . . . c f f f f f f f c . . . .
 . . c f f f 4 5 4 f f f c . . .
@@ -1880,9 +1879,9 @@ f f f f f f f f f f f f f f f .
 . . c d 1 d f d f d d b c . . .
 . . . d 1 d f d f d d b . . . .
 . . . . 1 d d d d d d . . . . .
+. . . . . . . . . . . . . . . .
 `
     export const cupYread = bmp`
-. . . . . . . . . . . . . . . .
 . . . . . . . . . . . . . . . .
 . . . . . . . . . . . . . . . .
 . . . . . . . . . . . . . . . .
@@ -1898,9 +1897,9 @@ f f f f f f f f f f f f f f f .
 . . c d 1 d d f d d d b c . . .
 . . . d 1 d d f d d d b . . . .
 . . . . 1 d d d d d d . . . . .
+. . . . . . . . . . . . . . . .
 `
     export const cupZread = bmp`
-. . . . . . . . . . . . . . . .
 . . . . . . . . . . . . . . . .
 . . . . . . . . . . . . . . . .
 . . . . . . . . . . . . . . . .
@@ -1916,6 +1915,7 @@ f f f f f f f f f f f f f f f .
 . . c d 1 d f d d d d b c . . .
 . . . d 1 d f f f d d b . . . .
 . . . . 1 d d d d d d . . . . .
+. . . . . . . . . . . . . . . .
 `
     export const cupXassign = bmp`
 . . . . . . . . . 4 4 4 4 4 4 4
@@ -2705,10 +2705,6 @@ bffffffffffffffffffffffffffffffb
         const img = bitmaps.create(width, 18)
         if (!transparent) {
             img.fill(1)
-            img.setPixel(0, 0, 0)
-            img.setPixel(width - 1, 0, 0)
-            img.setPixel(0, 17, 0)
-            img.setPixel(width - 1, 17, 0)
         }
         img.print(str, font.charWidth >> 1, 5, 15)
         return img
@@ -2720,7 +2716,7 @@ bffffffffffffffffffffffffffffffb
             if (index == i - 1 && index >= 0 && index < 5)
                 return num2image[index]
         }
-        return numberToDecimalImage(i)
+        return numberToDecimalImage(i, false)
     }
 
     export const kita_slider = bmp`
