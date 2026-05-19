@@ -13,6 +13,7 @@
     "disk": "save",
     "load": "load",
     "settings": "settings",
+    "page": "page",
     "run": "run program",
     "stop": "stop program",
 

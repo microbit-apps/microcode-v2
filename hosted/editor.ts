@@ -103,11 +103,15 @@ namespace microcode {
         ui.UiButtonStyles.FocusLabel,
         AppStyles.focusLabel(3, 0),
     )
-    const EDITOR_RULE_HANDLE_STYLE = ui.buttonStyle(
+    const EDITOR_RULE_SUBTLE_LABEL_STYLE = ui.buttonStyle(
         ui.UiButtonStyles.Transparent,
         ui.UiButtonStyles.FocusLabel,
-        AppStyles.focusLabel(2),
+        AppStyles.focusLabel(3, 0),
+        {
+            focusLabelBackgroundColor: 12,
+        },
     )
+    const EDITOR_RULE_HANDLE_STYLE = EDITOR_RULE_SUBTLE_LABEL_STYLE
     const EDITOR_RULE_HANDLE_MODAL_STYLE = ui.buttonStyle(
         AppStyles.ModalButton,
         ui.UiButtonStyles.FocusLabel,
@@ -1705,8 +1709,8 @@ namespace microcode {
             let lastRule = page.rules.length - 1
             while (lastRule >= 0 && page.rules[lastRule].isEmpty()) lastRule--
             for (let i = 0; i <= lastRule; i++)
-                rules.push(new RuleView(page.rules[i], rules.length))
-            rules.push(new RuleView(new RuleDefn(), rules.length))
+                rules.push(new RuleView(page.rules[i], rules.length, false))
+            rules.push(new RuleView(new RuleDefn(), rules.length, true))
             return rules
         }
 
@@ -2027,6 +2031,7 @@ namespace microcode {
         public readonly control: ui.UiControl<RuleControlValue>
         public readonly rule: RuleDefn
         public readonly ruleIndex: number
+        private readonly virtualRule_: boolean
         private x_: number
         private y_: number
         private width_: number
@@ -2044,9 +2049,14 @@ namespace microcode {
         private controlRectScratch_: ui.Rect
         private navigationScratch_: ui.UiFocusNavigationTarget[]
 
-        constructor(ruledef: RuleDefn, ruleIndex: number) {
+        constructor(
+            ruledef: RuleDefn,
+            ruleIndex: number,
+            virtualRule: boolean,
+        ) {
             this.rule = ruledef
             this.ruleIndex = ruleIndex
+            this.virtualRule_ = virtualRule
             this.control = this.ruleControl(ruledef, ruleIndex)
             this.x_ = 0
             this.y_ = 0
@@ -2318,17 +2328,26 @@ namespace microcode {
                 width: framed ? bitmap.width + 2 : bitmap.width,
                 height: framed ? bitmap.height + 2 : bitmap.height,
                 gapBefore,
-                textId: this.targetTextId(kind, tile),
+                textId: this.targetTextId(kind, section, tile),
                 style: this.targetStyle(kind, framed),
             }
         }
 
         private targetTextId(
             kind: RuleTargetKind,
+            section?: RuleSection,
             tile?: Tile,
         ): string {
             if (kind == "handle") return "rule"
+            if (kind == "insert" && this.virtualRule_)
+                return this.insertionTextId(section)
             if (kind == "tile" && tile) return tidToString(getTid(tile))
+            return undefined
+        }
+
+        private insertionTextId(section?: RuleSection): string {
+            if (section == "sensors" || section == "filters") return "when"
+            if (section == "actuators" || section == "modifiers") return "do"
             return undefined
         }
 
@@ -2337,6 +2356,7 @@ namespace microcode {
             framed: boolean,
         ): ui.UiButtonStyle {
             if (kind == "handle") return EDITOR_RULE_HANDLE_STYLE
+            if (kind == "insert") return EDITOR_RULE_SUBTLE_LABEL_STYLE
             if (kind == "tile")
                 return framed
                     ? EDITOR_RULE_TILE_STYLE
@@ -2956,6 +2976,7 @@ namespace microcode {
             this.pageControl_ = {
                 id: "page",
                 value: "page",
+                textId: "page",
                 onActivate: openPage,
             }
             const toolbarControls: ui.UiControl<EditorToolbarAction>[] = [
@@ -2971,13 +2992,11 @@ namespace microcode {
             ]
             const pageControls = [this.pageControl_]
             const controlStyle = ui.buttonStyle(
+                EDITOR_RULE_SUBTLE_LABEL_STYLE,
                 ui.UiButtonStyles.BorderedPurple,
                 ui.UiButtonStyles.RoundedFrame,
-                ui.UiButtonStyles.FocusLabel,
                 {
                     focusPadding: 1,
-                    focusLabelGap: 3,
-                    focusLabelFont: user_interface_base.font,
                 },
             )
             this.toolbarRow_ = new ui.UiRow<EditorToolbarAction>({
