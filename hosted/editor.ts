@@ -1713,7 +1713,11 @@ namespace microcode {
         }
     }
 
-    class PageView implements ui.UiFocusableView<PageViewResult> {
+    class PageView
+        implements
+            ui.UiFocusableView<PageViewResult>,
+            ui.UiFocusNavigationProvider
+    {
         public readonly layoutSpec: ui.UiLayoutSpec
         public readonly finalRect: ui.Rect
         public layoutDirty: boolean
@@ -1722,12 +1726,12 @@ namespace microcode {
         private onActivateTarget_: (value: RuleTargetControlValue) => void
         private contentLayout_: PageContentLayout
         private scrollLayout_: ui.UiScrollViewportLayout
-        private focusNavigator_: PageFocusNavigator
         private toolbar_: EditorToolbar
         private focus_: ui.UiFocusState
         private layout_: PageLayout
         private navigationRows_: PageNavigationTarget[][]
         private navigationTargets_: PageNavigationTarget[]
+        private rowNavigationScratch_: ui.UiFocusNavigationTarget[]
         private measuredContentWidth_: number
         private measuredContentHeight_: number
 
@@ -1757,12 +1761,12 @@ namespace microcode {
                 scrollX: true,
                 scrollY: true,
             })
-            this.focusNavigator_ = new PageFocusNavigator(this)
             this.toolbar_ = undefined
             this.focus_ = undefined
             this.layout_ = undefined
             this.navigationRows_ = []
             this.navigationTargets_ = []
+            this.rowNavigationScratch_ = []
         }
 
         public measure(
@@ -1799,7 +1803,7 @@ namespace microcode {
         }
 
         public registerNavigation(controller: ui.UiFocusInputController): void {
-            controller.setNavigation(EDITOR_PAGE_SCOPE, this.focusNavigator_)
+            controller.setNavigation(EDITOR_PAGE_SCOPE, this)
         }
 
         public setToolbar(toolbar: EditorToolbar): void {
@@ -1922,7 +1926,7 @@ namespace microcode {
             focus: ui.UiFocusState,
             direction: ui.UiFocusDirection,
         ): boolean {
-            const result = this.focusNavigator_.move({
+            const result = this.move({
                 scopeId: EDITOR_PAGE_SCOPE,
                 currentTargetId: focus.getActiveTargetId(EDITOR_PAGE_SCOPE),
                 direction,
@@ -2065,6 +2069,33 @@ namespace microcode {
                     1,
                 )
             return new ui.Rect(x, 0, width, 1)
+        }
+
+        public move(
+            request: ui.UiFocusNavigationRequest,
+        ): ui.UiFocusMoveResult | undefined {
+            const rows = this.navigationRows()
+            if (!rows.length) return undefined
+            const position = this.positionForTargetId(request.currentTargetId)
+            if (!position)
+                return this.moveToTarget(
+                    undefined,
+                    undefined,
+                    rows[0][0].navigation,
+                )
+
+            switch (request.direction) {
+                case "left":
+                    return this.moveLeft(rows, position)
+                case "right":
+                    return this.moveRight(rows, position)
+                case "up":
+                    return this.moveUp(rows, position)
+                case "down":
+                    return this.moveDown(rows, position)
+            }
+
+            return undefined
         }
 
         private pageLayout(): PageLayout {
@@ -2404,6 +2435,207 @@ namespace microcode {
                 targetRect: target.contentRect,
                 reason: "focus",
             })
+        }
+
+        private moveLeft(
+            rows: PageNavigationTarget[][],
+            position: PageTargetPosition,
+        ): ui.UiFocusMoveResult {
+            const rowResult = ui.moveFocusInRow({
+                scopeId: EDITOR_PAGE_SCOPE,
+                currentTargetId: rows[position.row][position.column].navigation.id,
+                direction: "left",
+                targets: this.copyRowNavigationTargets(rows[position.row]),
+            })
+            if (rowResult.kind == "moved") return rowResult
+
+            if (position.column == 0 && !this.atHorizontalOrigin())
+                return this.horizontalOriginScrollMove(rows, position)
+
+            let row = position.row
+            let column = position.column - 1
+            if (column < 0) {
+                row--
+                if (row < 0) row = rows.length - 1
+                column = rows[row].length - 1
+            }
+            return this.moveToPosition(rows, position, row, column)
+        }
+
+        private moveRight(
+            rows: PageNavigationTarget[][],
+            position: PageTargetPosition,
+        ): ui.UiFocusMoveResult {
+            const rowResult = ui.moveFocusInRow({
+                scopeId: EDITOR_PAGE_SCOPE,
+                currentTargetId: rows[position.row][position.column].navigation.id,
+                direction: "right",
+                targets: this.copyRowNavigationTargets(rows[position.row]),
+            })
+            if (rowResult.kind == "moved") return rowResult
+            if (
+                position.row == rows.length - 1 &&
+                position.column == rows[position.row].length - 1
+            )
+                return this.moveToPosition(rows, position, 0, 0)
+
+            let row = position.row
+            let column = position.column + 1
+            if (column >= rows[row].length) {
+                row++
+                if (row >= rows.length) row = 0
+                column = 0
+            }
+            return this.moveToPosition(rows, position, row, column)
+        }
+
+        private moveUp(
+            rows: PageNavigationTarget[][],
+            position: PageTargetPosition,
+        ): ui.UiFocusMoveResult {
+            if (position.row == 0) {
+                if (!this.atVerticalBoundary("up"))
+                    return this.boundaryScrollMove(rows, position, "up")
+                const target = this.nearestToolbarTarget(
+                    rows[position.row][position.column],
+                )
+                if (target)
+                    return {
+                        kind: "moved",
+                        fromScopeId: EDITOR_PAGE_SCOPE,
+                        fromTargetId:
+                            rows[position.row][position.column].navigation.id,
+                        toScopeId: target.scopeId,
+                        toTargetId: target.targetId,
+                    }
+                return {
+                    kind: "moved",
+                    fromScopeId: EDITOR_PAGE_SCOPE,
+                    fromTargetId: rows[position.row][position.column].navigation.id,
+                    toScopeId: EDITOR_TOOLBAR_SCOPE,
+                    toTargetId: EDITOR_TOOLBAR_SCOPE + "/run",
+                }
+            }
+            return this.moveToPosition(
+                rows,
+                position,
+                position.row - 1,
+                Math.min(position.column, rows[position.row - 1].length - 1),
+            )
+        }
+
+        private moveDown(
+            rows: PageNavigationTarget[][],
+            position: PageTargetPosition,
+        ): ui.UiFocusMoveResult {
+            if (position.row == rows.length - 1) {
+                if (!this.atVerticalBoundary("down"))
+                    return this.boundaryScrollMove(rows, position, "down")
+                return {
+                    kind: "stayed",
+                    scopeId: EDITOR_PAGE_SCOPE,
+                    targetId: rows[position.row][position.column].navigation.id,
+                    reason: "boundary",
+                }
+            }
+            return this.moveToPosition(
+                rows,
+                position,
+                position.row + 1,
+                Math.min(position.column, rows[position.row + 1].length - 1),
+            )
+        }
+
+        private moveToPosition(
+            rows: PageNavigationTarget[][],
+            from: PageTargetPosition,
+            row: number,
+            column: number,
+        ): ui.UiFocusMoveResult {
+            return this.moveToTarget(
+                rows[from.row][from.column].navigation.id,
+                EDITOR_PAGE_SCOPE,
+                rows[row][column].navigation,
+            )
+        }
+
+        private horizontalOriginScrollMove(
+            rows: PageNavigationTarget[][],
+            position: PageTargetPosition,
+        ): ui.UiFocusMoveResult {
+            const target = rows[position.row][position.column].navigation
+            return {
+                kind: "moved",
+                fromScopeId: EDITOR_PAGE_SCOPE,
+                fromTargetId: target.id,
+                toScopeId: EDITOR_PAGE_SCOPE,
+                toTargetId: target.id,
+                scrollRequest: {
+                    scopeId: EDITOR_PAGE_SCOPE,
+                    targetId: target.id,
+                    scrollOwnerId: EDITOR_PAGE_SCROLL_OWNER,
+                    targetRect: this.horizontalOriginScrollRect(
+                        rows[position.row][position.column],
+                    ),
+                    reason: "focus",
+                },
+            }
+        }
+
+        private boundaryScrollMove(
+            rows: PageNavigationTarget[][],
+            position: PageTargetPosition,
+            direction: ui.UiFocusDirection,
+        ): ui.UiFocusMoveResult {
+            const target = rows[position.row][position.column].navigation
+            return {
+                kind: "moved",
+                fromScopeId: EDITOR_PAGE_SCOPE,
+                fromTargetId: target.id,
+                toScopeId: EDITOR_PAGE_SCOPE,
+                toTargetId: target.id,
+                scrollRequest: {
+                    scopeId: EDITOR_PAGE_SCOPE,
+                    targetId: target.id,
+                    scrollOwnerId: EDITOR_PAGE_SCROLL_OWNER,
+                    targetRect: this.verticalBoundaryScrollRect(direction),
+                    reason: "focus",
+                },
+            }
+        }
+
+        private moveToTarget(
+            fromTargetId: ui.UiFocusId,
+            fromScopeId: ui.UiFocusScopeId,
+            target: ui.UiFocusNavigationTarget,
+        ): ui.UiFocusMoveResult {
+            const result: ui.UiFocusMoveResult = {
+                kind: "moved",
+                fromScopeId: fromScopeId || EDITOR_PAGE_SCOPE,
+                fromTargetId,
+                toScopeId: EDITOR_PAGE_SCOPE,
+                toTargetId: target.id,
+            }
+            if (target.scrollOwnerId !== undefined) {
+                result.scrollRequest = {
+                    scopeId: EDITOR_PAGE_SCOPE,
+                    targetId: target.id,
+                    scrollOwnerId: target.scrollOwnerId,
+                    targetRect: (target.scrollRect || target.rect).clone(),
+                    reason: "focus",
+                }
+            }
+            return result
+        }
+
+        private copyRowNavigationTargets(
+            row: PageNavigationTarget[],
+        ): ui.UiFocusNavigationTarget[] {
+            while (this.rowNavigationScratch_.length)
+                this.rowNavigationScratch_.pop()
+            for (let i = 0; i < row.length; i++)
+                this.rowNavigationScratch_.push(row[i].navigation)
+            return this.rowNavigationScratch_
         }
     }
 
@@ -3172,269 +3404,6 @@ namespace microcode {
         }
     }
 
-    class PageFocusNavigator implements ui.UiFocusNavigationProvider {
-        private owner_: PageView
-        private rowNavigationScratch_: ui.UiFocusNavigationTarget[]
-
-        constructor(owner: PageView) {
-            this.owner_ = owner
-            this.rowNavigationScratch_ = []
-        }
-
-        public move(
-            request: ui.UiFocusNavigationRequest,
-        ): ui.UiFocusMoveResult | undefined {
-            const rows = this.owner_.navigationRows()
-            if (!rows.length) return undefined
-            const position = this.positionForTarget(rows, request.currentTargetId)
-            if (!position)
-                return this.moveToTarget(
-                    undefined,
-                    undefined,
-                    rows[0][0].navigation,
-                )
-
-            switch (request.direction) {
-                case "left":
-                    return this.moveLeft(rows, position)
-                case "right":
-                    return this.moveRight(rows, position)
-                case "up":
-                    return this.moveUp(rows, position)
-                case "down":
-                    return this.moveDown(rows, position)
-            }
-
-            return undefined
-        }
-
-        private moveLeft(
-            rows: PageNavigationTarget[][],
-            position: PageTargetPosition,
-        ): ui.UiFocusMoveResult {
-            // First let the framework apply normal row movement inside the
-            // current rule. Boundary results are handled below so page-level
-            // wrapping can cross rule rows.
-            const rowResult = ui.moveFocusInRow({
-                scopeId: EDITOR_PAGE_SCOPE,
-                currentTargetId: rows[position.row][position.column].navigation.id,
-                direction: "left",
-                targets: this.copyRowNavigationTargets(rows[position.row]),
-            })
-            if (rowResult.kind == "moved") return rowResult
-
-            if (position.column == 0 && !this.owner_.atHorizontalOrigin())
-                return this.horizontalOriginScrollMove(rows, position)
-
-            let row = position.row
-            let column = position.column - 1
-            if (column < 0) {
-                row--
-                if (row < 0) row = rows.length - 1
-                column = rows[row].length - 1
-            }
-            return this.moveToPosition(rows, position, row, column)
-        }
-
-        private moveRight(
-            rows: PageNavigationTarget[][],
-            position: PageTargetPosition,
-        ): ui.UiFocusMoveResult {
-            // Right movement inside a rule is ordinary row navigation. At the
-            // end of a row, the page navigator advances to the next rule row,
-            // and the final row wraps back to the first rule handle.
-            const rowResult = ui.moveFocusInRow({
-                scopeId: EDITOR_PAGE_SCOPE,
-                currentTargetId: rows[position.row][position.column].navigation.id,
-                direction: "right",
-                targets: this.copyRowNavigationTargets(rows[position.row]),
-            })
-            if (rowResult.kind == "moved") return rowResult
-            if (
-                position.row == rows.length - 1 &&
-                position.column == rows[position.row].length - 1
-            )
-                return this.moveToPosition(rows, position, 0, 0)
-
-            let row = position.row
-            let column = position.column + 1
-            if (column >= rows[row].length) {
-                row++
-                if (row >= rows.length) row = 0
-                column = 0
-            }
-            return this.moveToPosition(rows, position, row, column)
-        }
-
-        private moveUp(
-            rows: PageNavigationTarget[][],
-            position: PageTargetPosition,
-        ): ui.UiFocusMoveResult {
-            if (position.row == 0) {
-                // When the first visible row is not at the top of the scroll
-                // content, an up action scrolls the page before leaving the
-                // page scope. At the top boundary, focus exits to the nearest
-                // toolbar target.
-                if (!this.owner_.atVerticalBoundary("up"))
-                    return this.boundaryScrollMove(rows, position, "up")
-                const target = this.owner_.nearestToolbarTarget(
-                    rows[position.row][position.column],
-                )
-                if (target)
-                    return {
-                        kind: "moved",
-                        fromScopeId: EDITOR_PAGE_SCOPE,
-                        fromTargetId:
-                            rows[position.row][position.column].navigation.id,
-                        toScopeId: target.scopeId,
-                        toTargetId: target.targetId,
-                    }
-                return {
-                    kind: "moved",
-                    fromScopeId: EDITOR_PAGE_SCOPE,
-                    fromTargetId: rows[position.row][position.column].navigation.id,
-                    toScopeId: EDITOR_TOOLBAR_SCOPE,
-                    toTargetId: EDITOR_TOOLBAR_SCOPE + "/run",
-                }
-            }
-            return this.moveToPosition(
-                rows,
-                position,
-                position.row - 1,
-                Math.min(position.column, rows[position.row - 1].length - 1),
-            )
-        }
-
-        private moveDown(
-            rows: PageNavigationTarget[][],
-            position: PageTargetPosition,
-        ): ui.UiFocusMoveResult {
-            if (position.row == rows.length - 1) {
-                // Down from the last rule mirrors the top boundary: scroll if
-                // hidden content remains below, otherwise stay on the last
-                // target. It does not wrap vertically to the first row.
-                if (!this.owner_.atVerticalBoundary("down"))
-                    return this.boundaryScrollMove(rows, position, "down")
-                return {
-                    kind: "stayed",
-                    scopeId: EDITOR_PAGE_SCOPE,
-                    targetId: rows[position.row][position.column].navigation.id,
-                    reason: "boundary",
-                }
-            }
-            return this.moveToPosition(
-                rows,
-                position,
-                position.row + 1,
-                Math.min(position.column, rows[position.row + 1].length - 1),
-            )
-        }
-
-        private moveToPosition(
-            rows: PageNavigationTarget[][],
-            from: PageTargetPosition,
-            row: number,
-            column: number,
-        ): ui.UiFocusMoveResult {
-            return this.moveToTarget(
-                rows[from.row][from.column].navigation.id,
-                EDITOR_PAGE_SCOPE,
-                rows[row][column].navigation,
-            )
-        }
-
-        private horizontalOriginScrollMove(
-            rows: PageNavigationTarget[][],
-            position: PageTargetPosition,
-        ): ui.UiFocusMoveResult {
-            const target = rows[position.row][position.column].navigation
-            return {
-                kind: "moved",
-                fromScopeId: EDITOR_PAGE_SCOPE,
-                fromTargetId: target.id,
-                toScopeId: EDITOR_PAGE_SCOPE,
-                toTargetId: target.id,
-                scrollRequest: {
-                    scopeId: EDITOR_PAGE_SCOPE,
-                    targetId: target.id,
-                    scrollOwnerId: EDITOR_PAGE_SCROLL_OWNER,
-                    targetRect: this.owner_.horizontalOriginScrollRect(
-                        rows[position.row][position.column],
-                    ),
-                    reason: "focus",
-                },
-            }
-        }
-
-        private boundaryScrollMove(
-            rows: PageNavigationTarget[][],
-            position: PageTargetPosition,
-            direction: ui.UiFocusDirection,
-        ): ui.UiFocusMoveResult {
-            const target = rows[position.row][position.column].navigation
-            return {
-                kind: "moved",
-                fromScopeId: EDITOR_PAGE_SCOPE,
-                fromTargetId: target.id,
-                toScopeId: EDITOR_PAGE_SCOPE,
-                toTargetId: target.id,
-                scrollRequest: {
-                    scopeId: EDITOR_PAGE_SCOPE,
-                    targetId: target.id,
-                    scrollOwnerId: EDITOR_PAGE_SCROLL_OWNER,
-                    targetRect: this.owner_.verticalBoundaryScrollRect(direction),
-                    reason: "focus",
-                },
-            }
-        }
-
-        private moveToTarget(
-            fromTargetId: ui.UiFocusId,
-            fromScopeId: ui.UiFocusScopeId,
-            target: ui.UiFocusNavigationTarget,
-        ): ui.UiFocusMoveResult {
-            const result: ui.UiFocusMoveResult = {
-                kind: "moved",
-                fromScopeId: fromScopeId || EDITOR_PAGE_SCOPE,
-                fromTargetId,
-                toScopeId: EDITOR_PAGE_SCOPE,
-                toTargetId: target.id,
-            }
-            if (target.scrollOwnerId !== undefined) {
-                result.scrollRequest = {
-                    scopeId: EDITOR_PAGE_SCOPE,
-                    targetId: target.id,
-                    scrollOwnerId: target.scrollOwnerId,
-                    targetRect: (target.scrollRect || target.rect).clone(),
-                    reason: "focus",
-                }
-            }
-            return result
-        }
-
-        private copyRowNavigationTargets(
-            row: PageNavigationTarget[],
-        ): ui.UiFocusNavigationTarget[] {
-            while (this.rowNavigationScratch_.length) this.rowNavigationScratch_.pop()
-            for (let i = 0; i < row.length; i++)
-                this.rowNavigationScratch_.push(row[i].navigation)
-            return this.rowNavigationScratch_
-        }
-
-        private positionForTarget(
-            rows: PageNavigationTarget[][],
-            targetId: ui.UiFocusId,
-        ): PageTargetPosition {
-            for (let row = 0; row < rows.length; row++) {
-                for (let column = 0; column < rows[row].length; column++) {
-                    if (rows[row][column].navigation.id == targetId)
-                        return { row, column }
-                }
-            }
-            return undefined
-        }
-    }
-
     type RuleSection = "sensors" | "filters" | "actuators" | "modifiers"
 
     type RuleTargetKind = "handle" | "tile" | "insert" | "static"
@@ -3622,13 +3591,20 @@ namespace microcode {
                 targets: this.toolbarTargets(),
             })
             if (result.kind == "moved") return result
-            if (result.kind != "exited") return result
-            const target = this.pageTargetForExit(result)
+            if (
+                result.kind != "exited" &&
+                (result.kind != "stayed" || result.reason != "boundary")
+            )
+                return result
+            const target = this.pageTargetForExit(
+                request.direction,
+                request.currentTargetId,
+            )
             if (!target) return result
             return {
                 kind: "moved",
                 fromScopeId: EDITOR_TOOLBAR_SCOPE,
-                fromTargetId: result.targetId,
+                fromTargetId: request.currentTargetId,
                 toScopeId: EDITOR_PAGE_SCOPE,
                 toTargetId: target.id,
             }
@@ -3666,22 +3642,22 @@ namespace microcode {
         }
 
         private pageTargetForExit(
-            exit: ui.UiFocusMoveResult,
+            direction: ui.UiFocusDirection,
+            targetId: ui.UiFocusId,
         ): ui.UiFocusNavigationTarget {
-            if (exit.kind != "exited") return undefined
             if (
-                exit.direction == "right" &&
-                exit.targetId == this.targetId("page")
+                direction == "right" &&
+                targetId == this.targetId("page")
             )
                 return this.pageView_.firstRuleHandleTarget()
             if (
-                exit.direction == "left" &&
-                exit.targetId == this.targetId("disk")
+                direction == "left" &&
+                targetId == this.targetId("disk")
             )
                 return this.pageView_.lastPageTarget()
-            if (exit.direction == "down")
+            if (direction == "down")
                 return this.pageView_.nearestNavigationTarget(
-                    this.toolbarTargetById(exit.targetId),
+                    this.toolbarTargetById(targetId),
                 )
             return undefined
         }
