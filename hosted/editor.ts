@@ -2716,7 +2716,6 @@ namespace microcode {
         ): ui.UiControl<RuleTargetControlValue> {
             const generated = kind == "tile" && tile && isGeneratedRuleTile(tile)
             const generatedText = this.targetText(kind, tile)
-            const customContent = this.targetCustomContent(kind, tile)
             const framed =
                 kind == "tile" &&
                 tile &&
@@ -2732,8 +2731,7 @@ namespace microcode {
                     index,
                 },
                 bitmap,
-                customContent,
-                width: this.targetWidth(bitmap, framed, generatedText, customContent),
+                width: this.targetWidth(bitmap, framed, generated, generatedText),
                 height: this.targetHeight(bitmap, framed, generated),
                 gapBefore,
                 text: generatedText,
@@ -2745,7 +2743,15 @@ namespace microcode {
         }
 
         private targetBitmap(tile: Tile): Bitmap {
-            if (isGeneratedRuleTile(tile)) return undefined
+            if (isNumericEntryTile(tile)) return undefined
+            if (isIconFieldEditorTile(tile))
+                return icondb.renderMicrobitLEDs(
+                    (tile as IconEditor).getField(),
+                )
+            if (isMelodyFieldEditorTile(tile))
+                return icondb.melodyToImage(
+                    (tile as MelodyEditor).getField(),
+                )
             return this.bitmap(getIcon(tile))
         }
 
@@ -2775,46 +2781,16 @@ namespace microcode {
             return undefined
         }
 
-        private targetCustomContent(
-            kind: RuleTargetKind,
-            tile?: Tile,
-        ): ui.UiButtonCustomContent {
-            if (kind != "tile" || !tile) return undefined
-            if (isIconFieldEditorTile(tile))
-                return this.bitmapContent(
-                    icondb.renderMicrobitLEDs(
-                        (tile as IconEditor).getField(),
-                    ),
-                )
-            if (isMelodyFieldEditorTile(tile))
-                return this.bitmapContent(
-                    icondb.melodyToImage(
-                        (tile as MelodyEditor).getField(),
-                    ),
-                )
-            return undefined
-        }
-
-        private bitmapContent(bitmap: Bitmap): ui.UiButtonCustomContent {
-            return {
-                width: bitmap.width,
-                height: bitmap.height,
-                draw: (surface: ui.DrawSurface, rect: ui.Rect) => {
-                    surface.drawBitmap(bitmap, rect.x, rect.y)
-                },
-            }
-        }
-
         private targetWidth(
             bitmap: Bitmap,
             framed: boolean,
+            generated: boolean,
             text?: string,
-            customContent?: ui.UiButtonCustomContent,
         ): number {
             if (text !== undefined) {
                 return (text.length + 1) * bitmaps.font8.charWidth
             }
-            if (customContent) return EDITOR_RULE_GENERATED_TILE_SIZE
+            if (generated) return EDITOR_RULE_GENERATED_TILE_SIZE
             return framed ? bitmap.width + 2 : bitmap.width
         }
 
