@@ -1,7 +1,9 @@
 namespace microcode {
     type EditorToolbarAction = "disk" | "run" | "stop" | "page"
 
-    type EditorToolbarResult = ui.UiRowResult<EditorToolbarAction>
+    interface EditorToolbarResult {
+        kind: "activated"
+    }
     type EditorDiskSlot = string
     type EditorPagePickerValue = number
     type RuleHandleAction = "add" | "delete" | "moveUp" | "moveDown"
@@ -19,7 +21,7 @@ namespace microcode {
         pending: boolean
     }
 
-    type TileSuggestionModalResult = ui.UiPickerResult<TileSuggestionValue>
+    type TileSuggestionModalResult = HostedPickerResult<TileSuggestionValue>
 
     interface FieldEditorModalValue {
         kind: FieldEditorModalAction
@@ -113,18 +115,19 @@ namespace microcode {
     const EDITOR_TILE_SUGGESTION_MAX_COLUMNS = 5
     const EDITOR_TILE_SUGGESTION_TITLE_GAP =
         EDITOR_FIELD_MODAL_GRID_GAP + 1
-    const EDITOR_TILE_SUGGESTION_MODAL_PANEL_STYLE = ui.modalStyle(
-        AppStyles.Modal,
-        {
-            titleGap: EDITOR_TILE_SUGGESTION_TITLE_GAP,
-        },
-    )
-    const EDITOR_TILE_SUGGESTION_TITLELESS_MODAL_PANEL_STYLE = ui.modalStyle(
-        AppStyles.TitlelessModal,
-        {
-            titleGap: EDITOR_TILE_SUGGESTION_TITLE_GAP,
-        },
-    )
+    const EDITOR_TILE_SUGGESTION_MODAL_PANEL_STYLE: ui.UiModalStyle = {
+        panelColor: AppStyles.DefaultModalPanelColor,
+        titleColor: AppStyles.ModalTitleColor,
+        contentMargin: AppStyles.ModalMargin,
+        titleGap: EDITOR_TILE_SUGGESTION_TITLE_GAP,
+    }
+    const EDITOR_TILE_SUGGESTION_TITLELESS_MODAL_PANEL_STYLE: ui.UiModalStyle = {
+        panelColor: AppStyles.DefaultModalPanelColor,
+        titleColor: AppStyles.ModalTitleColor,
+        contentMargin: AppStyles.ModalMargin,
+        titleGap: EDITOR_TILE_SUGGESTION_TITLE_GAP,
+        showTitleBar: false,
+    }
     const EDITOR_FIELD_DELETE_STYLE = ui.buttonStyle(
         ui.UiButtonStyles.RedBorderedWhite,
         ui.UiButtonStyles.RoundedFrame,
@@ -133,12 +136,18 @@ namespace microcode {
         ui.UiButtonStyles.GreenBorderedWhite,
         ui.UiButtonStyles.RoundedFrame,
     )
-    const EDITOR_FIELD_MODAL_STYLE = ui.modalStyle(AppStyles.Modal, {
+    const EDITOR_FIELD_MODAL_STYLE: ui.UiModalStyle = {
+        panelColor: AppStyles.DefaultModalPanelColor,
+        titleColor: AppStyles.ModalTitleColor,
+        contentMargin: AppStyles.ModalMargin,
         titleGap: EDITOR_FIELD_MODAL_GRID_GAP,
-    })
-    const EDITOR_ICON_FIELD_MODAL_STYLE = ui.modalStyle(EDITOR_FIELD_MODAL_STYLE, {
+    }
+    const EDITOR_ICON_FIELD_MODAL_STYLE: ui.UiModalStyle = {
         panelColor: 0,
-    })
+        titleColor: AppStyles.ModalTitleColor,
+        contentMargin: AppStyles.ModalMargin,
+        titleGap: EDITOR_FIELD_MODAL_GRID_GAP,
+    }
 
     function ruleControlId(ruleIndex: number): string {
         return "rule-" + ruleIndex
@@ -364,8 +373,8 @@ namespace microcode {
             this.openModal(this.createDiskModal())
         }
 
-        private createDiskModal(): ui.UiPicker<EditorDiskSlot> {
-            return new ui.UiPicker<EditorDiskSlot>({
+        private createDiskModal(): HostedPicker<EditorDiskSlot> {
+            return new HostedPicker<EditorDiskSlot>({
                 modalScopeId: EDITOR_DISK_MODAL_SCOPE,
                 controls: this.createDiskControls(),
                 titleId: "disk",
@@ -392,8 +401,8 @@ namespace microcode {
             this.openModal(this.createPageModal())
         }
 
-        private createPageModal(): ui.UiPicker<EditorPagePickerValue> {
-            return new ui.UiPicker<EditorPagePickerValue>({
+        private createPageModal(): HostedPicker<EditorPagePickerValue> {
+            return new HostedPicker<EditorPagePickerValue>({
                 modalScopeId: EDITOR_PAGE_MODAL_SCOPE,
                 controls: this.createPageControls(),
                 defaultControlId: "page-" + this.currPage_,
@@ -454,9 +463,9 @@ namespace microcode {
 
         private createRuleHandleModal(
             value: RuleTargetControlValue,
-        ): ui.UiPicker<RuleHandleAction> {
+        ): HostedPicker<RuleHandleAction> {
             const controls = this.createRuleHandleControls(value)
-            return new ui.UiPicker<RuleHandleAction>({
+            return new HostedPicker<RuleHandleAction>({
                 modalScopeId: EDITOR_RULE_HANDLE_MODAL_SCOPE,
                 controls,
                 columnCount: controls.length,
@@ -640,7 +649,7 @@ namespace microcode {
                 controls.length,
             )
             const titleId = this.tileSuggestionTitleId(value)
-            return new ui.UiPicker<TileSuggestionValue>({
+            return new HostedPicker<TileSuggestionValue>({
                 modalScopeId: EDITOR_TILE_SUGGESTION_MODAL_SCOPE,
                 controls,
                 titleControls: this.canDeleteFromSuggestionPicker(value)
@@ -1137,7 +1146,7 @@ namespace microcode {
 
         private createFieldEditorModal(
             target: TileEditTarget,
-        ): ui.UiPicker<FieldEditorModalValue> {
+        ): HostedPicker<FieldEditorModalValue> {
             if (!target.tile || !isIconOrMelodyFieldEditorTile(target.tile))
                 return undefined
             if (isIconFieldEditorTile(target.tile))
@@ -1154,7 +1163,7 @@ namespace microcode {
         private createIconFieldEditorModal(
             target: TileEditTarget,
             tile: IconEditor,
-        ): ui.UiPicker<FieldEditorModalValue> {
+        ): HostedPicker<FieldEditorModalValue> {
             const field = cloneIconField(tile)
             const controls = this.createIconFieldControls(field)
             const wasRunning = isProgramRunning()
@@ -1184,8 +1193,8 @@ namespace microcode {
             rowGap: number,
             deleteEnabled: boolean,
             onActivate: ui.UiControlActivateHandler<FieldEditorModalValue>,
-        ): ui.UiPicker<FieldEditorModalValue> {
-            return new ui.UiPicker<FieldEditorModalValue>({
+        ): HostedPicker<FieldEditorModalValue> {
+            return new HostedPicker<FieldEditorModalValue>({
                 modalScopeId: EDITOR_FIELD_MODAL_SCOPE,
                 controls,
                 titleControls: this.fieldTitleControls(deleteEnabled),
@@ -1283,7 +1292,7 @@ namespace microcode {
         private createMelodyFieldEditorModal(
             target: TileEditTarget,
             tile: MelodyEditor,
-        ): ui.UiPicker<FieldEditorModalValue> {
+        ): HostedPicker<FieldEditorModalValue> {
             const field = cloneMelodyField(tile)
             const controls = this.createMelodyFieldControls(field)
             const wasRunning = isProgramRunning()
@@ -1569,7 +1578,7 @@ namespace microcode {
 
     class PageView
         implements
-            ui.UiFocusableView<PageViewResult>,
+            ui.UiFocusableView<void>,
             ui.UiFocusNavigationProvider
     {
         public readonly layoutSpec: ui.UiLayoutSpec
@@ -1724,16 +1733,28 @@ namespace microcode {
             return { ruleIndex: value.ruleIndex, kind: "handle" }
         }
 
-        public handleFocusInput(result: ui.UiFocusInputResult): PageViewResult {
-            if (result.kind == "activated")
-                return this.activationResult(result)
-            if (result.kind == "moved" && result.scrollRequest) {
+        public handleFocusInput(result: ui.UiFocusInputResult): void {
+            if (result.kind == "activated") {
+                const activation =
+                    result.detail && result.detail.activationResult
+                        ? result.detail.activationResult
+                        : undefined
+                if (
+                    activation &&
+                    activation.kind == "activated" &&
+                    activation.scopeId == EDITOR_PAGE_SCOPE
+                ) {
+                    const target = this.targetByFocusId(activation.targetId)
+                    if (
+                        target &&
+                        target.control.value.kind != "static" &&
+                        this.onActivateTarget_
+                    )
+                        this.onActivateTarget_(target.control.value)
+                }
+            } else if (result.kind == "moved" && result.scrollRequest) {
                 this.handleScrollRequest(result.scrollRequest)
-                return undefined
             }
-            if (result.kind == "exited" && result.detail)
-                return this.exitResult(result.detail.moveResult)
-            return undefined
         }
 
         public render(
@@ -2241,49 +2262,6 @@ namespace microcode {
             }
         }
 
-        private activationResult(
-            result: ui.UiFocusInputResult,
-        ): PageViewResult {
-            const activation =
-                result.detail && result.detail.activationResult
-                    ? result.detail.activationResult
-                    : undefined
-            if (
-                !activation ||
-                activation.kind != "activated" ||
-                activation.scopeId != EDITOR_PAGE_SCOPE
-            )
-                return undefined
-            const target = this.targetByFocusId(activation.targetId)
-            if (!target) return undefined
-            if (target.control.value.kind == "static") return undefined
-            if (this.onActivateTarget_)
-                this.onActivateTarget_(target.control.value)
-            return {
-                kind: "activated",
-                controlId: target.control.id,
-                value: target.control.value,
-                control: target.control,
-                deferred: true,
-            }
-        }
-
-        private exitResult(
-            result: ui.UiFocusMoveResult,
-        ): PageViewResult {
-            if (
-                !result ||
-                result.kind != "exited" ||
-                result.scopeId != EDITOR_PAGE_SCOPE
-            )
-                return undefined
-            return {
-                kind: "exited",
-                direction: result.direction,
-                scopeId: result.scopeId,
-            }
-        }
-
         private currentPosition(
             focus: ui.UiFocusState,
         ): PageTargetPosition {
@@ -2479,13 +2457,12 @@ namespace microcode {
         private controls_: ui.UiControl<RuleTargetControlValue>[]
         private whenControlIds_: string[]
         private doControlIds_: string[]
-        private strip_: ui.UiRow<RuleTargetControlValue>
         private stripOffsetX_: number
         private stripOffsetY_: number
-        private measureScratch_: ui.UiMeasuredSize
         private stripRect_: ui.Rect
         private controlRectScratch_: ui.Rect
-        private navigationScratch_: ui.UiFocusNavigationTarget[]
+        private controlRects_: ui.Rect[]
+        private buttonView_: ui.UiButtonView
 
         constructor(
             ruledef: RuleDefn,
@@ -2506,24 +2483,13 @@ namespace microcode {
             this.controls_ = []
             this.whenControlIds_ = []
             this.doControlIds_ = []
-            this.measureScratch_ = new ui.UiMeasuredSize()
             this.stripRect_ = new ui.Rect()
             this.controlRectScratch_ = new ui.Rect()
-            this.navigationScratch_ = []
+            this.controlRects_ = []
+            this.buttonView_ = new ui.UiButtonView({})
             this.addRuleControls(ruleRep)
             this.stripOffsetX_ = 0
             this.stripOffsetY_ = 0
-            // Rule targets are `ui-controls` records. The strip owns their
-            // horizontal layout, focus rectangles, focus rendering, and built-in
-            // control drawing; `RuleView` only draws the rule tray bands around
-            // the arranged controls.
-            this.strip_ = new ui.UiRow<RuleTargetControlValue>({
-                scopeId: EDITOR_PAGE_SCOPE,
-                controls: this.controls_,
-                controlWidth: 1,
-                controlHeight: 1,
-                gap: 1,
-            })
             this.placeControls()
         }
 
@@ -2575,7 +2541,7 @@ namespace microcode {
                 EDITOR_WHEN_SECTION_COLOR,
             )
             this.outlineTray(surface, page)
-            this.strip_.render(surface, assets)
+            this.renderControls(surface, assets)
         }
 
         public drawFocusOverlay(
@@ -2584,7 +2550,7 @@ namespace microcode {
             focus: ui.UiFocusState,
             page: PageLayout,
         ): void {
-            this.strip_.renderFocus(surface, assets, focus)
+            this.renderFocus(surface, assets, focus)
         }
 
         public arrangeForPage(page: PageLayout): void {
@@ -2593,19 +2559,22 @@ namespace microcode {
 
         public navigationTargets(page: PageLayout): PageNavigationTarget[] {
             this.arrangeStrip(page.content)
-            this.strip_.copyNavigationTargets(this.navigationScratch_)
             const result: PageNavigationTarget[] = []
-            for (let i = 0; i < this.navigationScratch_.length; i++) {
-                const target = this.navigationScratch_[i]
-                const control = this.controlForNavigationTarget(target)
-                if (!control || control.value.kind == "static") continue
-                const contentRect = this.targetContentRect(target.rect)
+            for (let i = 0; i < this.controls_.length; i++) {
+                const control = this.controls_[i]
+                if (
+                    control.value.kind == "static" ||
+                    !_uiControls.isVisible(control) ||
+                    !_uiControls.isFocusable(control)
+                )
+                    continue
+                const contentRect = this.targetContentRect(this.controlRects_[i])
                 const viewportRect = this.targetViewportRect(page, contentRect)
                 const scrollNeeded =
                     viewportRect.width < contentRect.width ||
                     viewportRect.height < contentRect.height
                 result.push({
-                    id: target.id,
+                    id: this.targetFocusId(control.id),
                     rect: viewportRect,
                     scrollOwnerId: scrollNeeded
                         ? EDITOR_PAGE_SCROLL_OWNER
@@ -2966,9 +2935,8 @@ namespace microcode {
         }
 
         private placeControls(): void {
-            this.strip_.measure({ maxWidth: 1000, maxHeight: 1000 }, this.measureScratch_)
-            this.width_ = this.measureScratch_.preferredWidth
-            this.height_ = this.measureScratch_.preferredHeight
+            this.width_ = this.stripContentWidth()
+            this.height_ = this.stripContentHeight()
             this.stripOffsetX_ = -(this.controls_[0].width >> 1)
             this.stripOffsetY_ = -(this.height_ >> 1)
             this.arrangeStrip(new ui.Rect(0, 0, this.width_, this.height_))
@@ -3057,7 +3025,21 @@ namespace microcode {
                 this.width_,
                 this.height_,
             )
-            this.strip_.arrange(this.stripRect_)
+            this.ensureControlRects()
+            let x = this.stripRect_.x
+            for (let i = 0; i < this.controls_.length; i++) {
+                const control = this.controls_[i]
+                const width = this.controlWidth(control)
+                const height = this.controlHeight(control)
+                x += this.controlGapBefore(control, i)
+                this.controlRects_[i].set(
+                    x,
+                    this.stripRect_.y + Math.idiv(this.height_ - height, 2),
+                    width,
+                    height,
+                )
+                x += width + this.controlGapAfter(control)
+            }
         }
 
         private controlIdsBounds(ids: string[]): ui.Rect {
@@ -3082,7 +3064,12 @@ namespace microcode {
         }
 
         private copyControlRect(controlId: string, output: ui.Rect): void {
-            this.strip_.getControlRect(controlId, output)
+            for (let i = 0; i < this.controls_.length; i++) {
+                if (this.controls_[i].id == controlId) {
+                    output.copyFrom(this.controlRects_[i])
+                    return
+                }
+            }
         }
 
         private targetContentRect(targetRect: ui.Rect): ui.Rect {
@@ -3116,15 +3103,106 @@ namespace microcode {
             )
         }
 
-        private controlForNavigationTarget(
-            target: ui.UiFocusNavigationTarget,
-        ): ui.UiControl<RuleTargetControlValue> {
+        private targetFocusId(controlId: string): ui.UiFocusId {
+            return EDITOR_PAGE_SCOPE + "/" + controlId
+        }
+
+        private renderControls(
+            surface: ui.DrawSurface,
+            assets: ui.UiAssetResolver,
+        ): void {
             for (let i = 0; i < this.controls_.length; i++) {
                 const control = this.controls_[i]
-                if (target.id == EDITOR_PAGE_SCOPE + "/" + control.id)
-                    return control
+                if (!_uiControls.isVisible(control)) continue
+                _uiControls.renderControl(
+                    surface,
+                    assets,
+                    control,
+                    this.controlRects_[i],
+                    this.buttonView_,
+                    undefined,
+                )
             }
-            return undefined
+        }
+
+        private renderFocus(
+            surface: ui.DrawSurface,
+            assets: ui.UiAssetResolver,
+            focus: ui.UiFocusState,
+        ): void {
+            const activeTargetId = _uiControls.activeTargetIdForScope(
+                focus,
+                EDITOR_PAGE_SCOPE,
+            )
+            const index = _uiControls.focusedControlOverlayIndex(
+                EDITOR_PAGE_SCOPE,
+                this.controls_,
+                activeTargetId,
+            )
+            if (index < 0) return
+            _uiControls.renderControl(
+                surface,
+                assets,
+                this.controls_[index],
+                this.controlRects_[index],
+                this.buttonView_,
+                undefined,
+                undefined,
+                true,
+            )
+        }
+
+        private ensureControlRects(): void {
+            while (this.controlRects_.length < this.controls_.length)
+                this.controlRects_.push(new ui.Rect())
+            while (this.controlRects_.length > this.controls_.length)
+                this.controlRects_.pop()
+        }
+
+        private stripContentWidth(): number {
+            let width = 0
+            for (let i = 0; i < this.controls_.length; i++) {
+                const control = this.controls_[i]
+                width += this.controlGapBefore(control, i)
+                width += this.controlWidth(control)
+                width += this.controlGapAfter(control)
+            }
+            return width
+        }
+
+        private stripContentHeight(): number {
+            let height = 0
+            for (let i = 0; i < this.controls_.length; i++)
+                height = Math.max(height, this.controlHeight(this.controls_[i]))
+            return height
+        }
+
+        private controlWidth(
+            control: ui.UiControl<RuleTargetControlValue>,
+        ): number {
+            return _uiControls.sanitizeDimension(control.width, 1)
+        }
+
+        private controlHeight(
+            control: ui.UiControl<RuleTargetControlValue>,
+        ): number {
+            return _uiControls.sanitizeDimension(control.height, 1)
+        }
+
+        private controlGapBefore(
+            control: ui.UiControl<RuleTargetControlValue>,
+            index: number,
+        ): number {
+            return _uiControls.sanitizeDimension(
+                control.gapBefore,
+                index ? 1 : 0,
+            )
+        }
+
+        private controlGapAfter(
+            control: ui.UiControl<RuleTargetControlValue>,
+        ): number {
+            return _uiControls.sanitizeDimension(control.gapAfter, 0)
         }
     }
 
@@ -3136,20 +3214,6 @@ namespace microcode {
         contentHeight: number
         rules: RuleView[]
     }
-
-    type PageViewResult =
-        | {
-              kind: "activated"
-              controlId: string
-              value: RuleTargetControlValue
-              control: ui.UiControl<RuleTargetControlValue>
-              deferred: boolean
-          }
-        | {
-              kind: "exited"
-              direction: ui.UiFocusDirection
-              scopeId: ui.UiFocusScopeId
-          }
 
     interface PageNavigationTarget extends ui.UiFocusNavigationTarget {
         control: ui.UiControl<RuleTargetControlValue>
@@ -3176,8 +3240,13 @@ namespace microcode {
         private runControl_: ui.UiControl<EditorToolbarAction>
         private stopControl_: ui.UiControl<EditorToolbarAction>
         private pageControl_: ui.UiControl<EditorToolbarAction>
-        private toolbarRow_: ui.UiRow<EditorToolbarAction>
+        private toolbarControls_: ui.UiControl<EditorToolbarAction>[]
+        private toolbarRects_: ui.Rect[]
+        private toolbarButtonView_: ui.UiButtonView
+        private toolbarStyle_: ui.UiButtonStyle
         private navigationScratch_: ui.UiFocusNavigationTarget[]
+        private openDisk_: () => void
+        private openPage_: () => void
 
         constructor(
             getProgram: () => ProgramDefn,
@@ -3195,6 +3264,8 @@ namespace microcode {
             this.getProgram_ = getProgram
             this.getPage_ = getPage
             this.pageView_ = pageView
+            this.openDisk_ = openDisk
+            this.openPage_ = openPage
             this.runControl_ = {
                 id: "run",
                 value: "run",
@@ -3210,7 +3281,7 @@ namespace microcode {
                 value: "page",
                 textId: "page",
             }
-            const toolbarControls: ui.UiControl<EditorToolbarAction>[] = [
+            this.toolbarControls_ = [
                 {
                     id: "disk",
                     value: "disk",
@@ -3224,27 +3295,14 @@ namespace microcode {
             this.pageControl_.gapBefore =
                 EDITOR_TOOLBAR_PAGE_X -
                 (EDITOR_TOOLBAR_LEFT_X + EDITOR_TOOLBAR_LEFT_WIDTH)
-            const controlStyle = ui.buttonStyle(
+            this.toolbarStyle_ = ui.buttonStyle(
                 EDITOR_RULE_SUBTLE_LABEL_STYLE,
                 ui.UiButtonStyles.BorderedPurple,
                 ui.UiButtonStyles.RoundedFrame,
             )
-            this.toolbarRow_ = new ui.UiRow<EditorToolbarAction>({
-                scopeId: EDITOR_TOOLBAR_SCOPE,
-                controls: toolbarControls,
-                defaultControlId: "disk",
-                controlWidth: EDITOR_TOOLBAR_BUTTON_SIZE,
-                controlHeight: EDITOR_TOOLBAR_BUTTON_SIZE,
-                gap: EDITOR_TOOLBAR_GAP,
-                controlStyle,
-                onActivate: action => {
-                    if (action == "disk") openDisk()
-                    else if (action == "run")
-                        runProgramIfStopped(this.getProgram_())
-                    else if (action == "stop")
-                        stopProgramIfRunning()
-                    else if (action == "page") openPage()
-                },
+            this.toolbarRects_ = []
+            this.toolbarButtonView_ = new ui.UiButtonView({
+                style: this.toolbarStyle_,
             })
             this.navigationScratch_ = []
         }
@@ -3264,29 +3322,24 @@ namespace microcode {
 
         public arrange(rect: ui.Rect): void {
             this.finalRect.copyFrom(rect)
-            this.toolbarRow_.arrange(
-                new ui.Rect(
-                    rect.x + EDITOR_TOOLBAR_LEFT_X,
-                    rect.y + EDITOR_TOOLBAR_BUTTON_Y,
-                    UI_SCREEN_WIDTH - EDITOR_TOOLBAR_LEFT_X,
-                    EDITOR_TOOLBAR_BUTTON_SIZE,
-                ),
-            )
+            this.arrangeToolbarControls(rect)
             this.clearLayoutInvalidation()
         }
 
         public invalidateLayout(): void {
             this.layoutDirty = true
-            this.toolbarRow_.invalidateLayout()
         }
 
         public clearLayoutInvalidation(): void {
             this.layoutDirty = false
-            this.toolbarRow_.clearLayoutInvalidation()
         }
 
         public registerFocusTargets(focus: ui.UiFocusState): void {
-            this.toolbarRow_.registerFocusTargets(focus)
+            focus.setScope({
+                id: EDITOR_TOOLBAR_SCOPE,
+                preferredTargetId: this.targetId("disk"),
+            })
+            this.registerToolbarTargets(focus)
         }
 
         public registerNavigation(controller: ui.UiFocusInputController): void {
@@ -3294,7 +3347,7 @@ namespace microcode {
         }
 
         public focusDefault(focus: ui.UiFocusState): ui.UiFocusSetResult {
-            return this.toolbarRow_.focusDefault(focus)
+            return focus.setActiveScope(EDITOR_TOOLBAR_SCOPE)
         }
 
         public focusRun(focus: ui.UiFocusState): ui.UiFocusSetResult {
@@ -3330,7 +3383,25 @@ namespace microcode {
         public handleFocusInput(
             result: ui.UiFocusInputResult,
         ): EditorToolbarResult {
-            return this.toolbarRow_.handleFocusInput(result)
+            if (
+                result.kind != "activated" ||
+                !result.detail ||
+                !result.detail.activationResult
+            )
+                return undefined
+            const activation = result.detail.activationResult
+            if (
+                activation.kind != "activated" ||
+                activation.scopeId != EDITOR_TOOLBAR_SCOPE
+            )
+                return undefined
+            const action = this.actionForTargetId(activation.targetId)
+            if (action == "disk") this.openDisk_()
+            else if (action == "run") runProgramIfStopped(this.getProgram_())
+            else if (action == "stop") stopProgramIfRunning()
+            else if (action == "page") this.openPage_()
+            else return undefined
+            return { kind: "activated" }
         }
 
         public render(
@@ -3339,7 +3410,8 @@ namespace microcode {
             focus?: ui.UiFocusState,
         ): void {
             this.updateProgramControls()
-            this.toolbarRow_.render(surface, assets, focus)
+            this.renderToolbarControls(surface, assets)
+            this.renderToolbarFocus(surface, assets, focus)
         }
 
         public move(
@@ -3445,12 +3517,118 @@ namespace microcode {
         }
 
         private toolbarTargets(): ui.UiFocusNavigationTarget[] {
-            this.toolbarRow_.copyNavigationTargets(this.navigationScratch_)
+            while (this.navigationScratch_.length) this.navigationScratch_.pop()
+            for (let i = 0; i < this.toolbarControls_.length; i++) {
+                const control = this.toolbarControls_[i]
+                if (
+                    !_uiControls.isVisible(control) ||
+                    !_uiControls.isFocusable(control)
+                )
+                    continue
+                this.navigationScratch_.push({
+                    id: this.targetId(control.id),
+                    rect: this.toolbarRects_[i],
+                    hidden: !_uiControls.isVisible(control),
+                })
+            }
             return this.navigationScratch_
         }
 
         private targetId(controlId: string): ui.UiFocusId {
             return EDITOR_TOOLBAR_SCOPE + "/" + controlId
+        }
+
+        private actionForTargetId(
+            targetId: ui.UiFocusId,
+        ): EditorToolbarAction {
+            for (let i = 0; i < this.toolbarControls_.length; i++) {
+                const control = this.toolbarControls_[i]
+                if (targetId == this.targetId(control.id)) return control.value
+            }
+            return undefined
+        }
+
+        private arrangeToolbarControls(rect: ui.Rect): void {
+            while (this.toolbarRects_.length < this.toolbarControls_.length)
+                this.toolbarRects_.push(new ui.Rect())
+            let x = rect.x + EDITOR_TOOLBAR_LEFT_X
+            const y = rect.y + EDITOR_TOOLBAR_BUTTON_Y
+            for (let i = 0; i < this.toolbarControls_.length; i++) {
+                const control = this.toolbarControls_[i]
+                x += _uiControls.sanitizeDimension(
+                    control.gapBefore,
+                    i ? EDITOR_TOOLBAR_GAP : 0,
+                )
+                this.toolbarRects_[i].set(
+                    x,
+                    y,
+                    EDITOR_TOOLBAR_BUTTON_SIZE,
+                    EDITOR_TOOLBAR_BUTTON_SIZE,
+                )
+                x += EDITOR_TOOLBAR_BUTTON_SIZE
+            }
+        }
+
+        private registerToolbarTargets(focus: ui.UiFocusState): void {
+            for (let i = 0; i < this.toolbarControls_.length; i++) {
+                const control = this.toolbarControls_[i]
+                if (
+                    !_uiControls.isVisible(control) ||
+                    !_uiControls.isFocusable(control)
+                )
+                    continue
+                focus.setTarget({
+                    id: this.targetId(control.id),
+                    scopeId: EDITOR_TOOLBAR_SCOPE,
+                    rect: this.toolbarRects_[i],
+                    activatable: true,
+                })
+            }
+        }
+
+        private renderToolbarControls(
+            surface: ui.DrawSurface,
+            assets: ui.UiAssetResolver,
+        ): void {
+            for (let i = 0; i < this.toolbarControls_.length; i++) {
+                const control = this.toolbarControls_[i]
+                if (!_uiControls.isVisible(control)) continue
+                _uiControls.renderControl(
+                    surface,
+                    assets,
+                    control,
+                    this.toolbarRects_[i],
+                    this.toolbarButtonView_,
+                    this.toolbarStyle_,
+                )
+            }
+        }
+
+        private renderToolbarFocus(
+            surface: ui.DrawSurface,
+            assets: ui.UiAssetResolver,
+            focus: ui.UiFocusState,
+        ): void {
+            const activeTargetId = _uiControls.activeTargetIdForScope(
+                focus,
+                EDITOR_TOOLBAR_SCOPE,
+            )
+            const index = _uiControls.focusedControlOverlayIndex(
+                EDITOR_TOOLBAR_SCOPE,
+                this.toolbarControls_,
+                activeTargetId,
+            )
+            if (index < 0) return
+            _uiControls.renderControl(
+                surface,
+                assets,
+                this.toolbarControls_[index],
+                this.toolbarRects_[index],
+                this.toolbarButtonView_,
+                this.toolbarStyle_,
+                undefined,
+                true,
+            )
         }
 
     }

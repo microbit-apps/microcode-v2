@@ -26,7 +26,7 @@ namespace microcode {
                 }
             })
 
-            const galleryGrid = new ui.UiGrid<Sample>({
+            const galleryGrid = new HostedGrid<Sample>({
                 scopeId: GALLERY_SCOPE,
                 controls: controls,
                 columnCount: GALLERY_COLUMN_COUNT,

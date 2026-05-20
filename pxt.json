@@ -22,6 +22,7 @@
         "apphost.ts",
         "styles.ts",
         "storage.ts",
+        "hosted/control-grid.ts",
         "hosted/home.ts",
         "hosted/gallery.ts",
         "hosted/settings.ts",

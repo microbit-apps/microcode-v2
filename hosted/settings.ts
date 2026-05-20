@@ -37,7 +37,7 @@ namespace microcode {
             this.controls_ = this.createControls()
 
             this.addCentered(
-                new ui.UiGrid<SettingsMode>({
+                new HostedGrid<SettingsMode>({
                     scopeId: SETTINGS_SCOPE,
                     controls: this.controls_,
                     columnCount: 1,

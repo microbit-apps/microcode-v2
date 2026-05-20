@@ -51,28 +51,40 @@ namespace microcode {
         /**
          * Default modal style for app-owned modal panels.
          */
-        export const Modal = modal()
+        export const Modal: ui.UiModalStyle = {
+            panelColor: DefaultModalPanelColor,
+            titleColor: ModalTitleColor,
+            contentMargin: ModalMargin,
+            titleGap: ModalTitleGap,
+        }
 
         /**
          * Modal style for panels that do not render a title.
          */
-        export const TitlelessModal = ui.modalStyle(
-            Modal,
-            ui.UiModalStyles.Titleless,
-        )
+        export const TitlelessModal: ui.UiModalStyle = {
+            panelColor: DefaultModalPanelColor,
+            titleColor: ModalTitleColor,
+            contentMargin: ModalMargin,
+            titleGap: ModalTitleGap,
+            showTitleBar: false,
+        }
 
         /**
          * Modal style for numeric entry.
          */
-        export const NumericModal = ui.modalStyle(TitlelessModal, {
+        export const NumericModal: ui.UiModalStyle = {
+            panelColor: DefaultModalPanelColor,
+            titleColor: ModalTitleColor,
             contentMargin: NumericModalMargin,
-        })
+            titleGap: ModalTitleGap,
+            showTitleBar: false,
+        }
 
         /**
          * Creates the standard modal style with an optional panel color.
          */
         export function modal(panelColor?: number): ui.UiModalStyle {
-            return ui.modalStyle(ui.UiModalStyles.Default, {
+            return {
                 panelColor:
                     panelColor === undefined
                         ? DefaultModalPanelColor
@@ -80,7 +92,7 @@ namespace microcode {
                 titleColor: ModalTitleColor,
                 contentMargin: ModalMargin,
                 titleGap: ModalTitleGap,
-            })
+            }
         }
 
         /**

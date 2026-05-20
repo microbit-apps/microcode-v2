@@ -20,12 +20,13 @@ namespace microcode {
             super()
             this.backgroundColor = 0xc
             this.navigation_ = navigation
-            const actionRow = new ui.UiRow<HomeAction>({
+            const actionRow = new HostedGrid<HomeAction>({
                 scopeId: HOME_ACTION_SCOPE,
                 controls: this.createActions(),
+                columnCount: HOME_ADD_SETTINGS ? 4 : 3,
                 controlWidth: HOME_ACTION_WIDTH,
                 controlHeight: HOME_ACTION_HEIGHT,
-                gap: HOME_ACTION_GAP,
+                columnGap: HOME_ACTION_GAP,
                 controlStyle: ui.buttonStyle(
                     AppStyles.iconButton(),
                     { focusLabelGap: HOME_ACTION_LABEL_GAP },
@@ -105,8 +106,8 @@ namespace microcode {
             this.openModal(this.createDiskModal())
         }
 
-        private createDiskModal(): ui.UiPicker<HomeDiskSlot> {
-            return new ui.UiPicker<HomeDiskSlot>({
+        private createDiskModal(): HostedPicker<HomeDiskSlot> {
+            return new HostedPicker<HomeDiskSlot>({
                 modalScopeId: HOME_DISK_MODAL_SCOPE,
                 controls: this.createDiskControls(),
                 titleId: "load",
