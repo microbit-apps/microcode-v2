@@ -137,7 +137,7 @@ namespace robot.robots {
     export enum Sensors {
         None = 0,
         LineDetector = 1 << 0,
-        Sonar = 1 << 1
+        Sonar = 1 << 1,
     }
 
     export interface RobotSimStateMessage extends RobotSimMessage {

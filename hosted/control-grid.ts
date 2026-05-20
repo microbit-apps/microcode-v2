@@ -15,172 +15,10 @@ namespace microcode {
         kind: "activated"
     }
 
-    interface HostedMoveInput {
-        scopeId: ui.UiFocusScopeId
-        currentTargetId?: ui.UiFocusId
-        direction: ui.UiFocusDirection
-        rows: ui.UiFocusNavigationTarget[][]
-        horizontalWrap?: boolean
-        verticalStrategy?: "column" | "nearest"
-    }
-
-    export function hostedMoveFocusInRow(
-        scopeId: ui.UiFocusScopeId,
-        currentTargetId: ui.UiFocusId,
-        direction: ui.UiFocusDirection,
-        targets: ui.UiFocusNavigationTarget[],
-    ): ui.UiFocusMoveResult {
-        return hostedMoveFocusInRaggedGrid({
-            scopeId,
-            currentTargetId,
-            direction,
-            rows: [targets],
-        })
-    }
-
-    export function hostedMoveFocusInRaggedGrid(
-        input: HostedMoveInput,
-    ): ui.UiFocusMoveResult {
-        const current = hostedCurrentCell(input.rows, input.currentTargetId)
-        if (!current)
-            return {
-                kind: "stayed",
-                scopeId: input.scopeId,
-                targetId: input.currentTargetId,
-                reason: "missingActive",
-            }
-        const destination =
-            input.direction == "left" || input.direction == "right"
-                ? hostedHorizontalDestination(input, current)
-                : hostedVerticalDestination(input, current)
-        if (destination)
-            return hostedMovedResult(
-                input.scopeId,
-                current.target,
-                destination.target,
-            )
-        if (
-            (input.direction == "left" || input.direction == "right") &&
-            input.horizontalWrap
-        )
-            return {
-                kind: "stayed",
-                scopeId: input.scopeId,
-                targetId: input.currentTargetId,
-                reason: "boundary",
-            }
-        return {
-            kind: "exited",
-            scopeId: input.scopeId,
-            targetId: input.currentTargetId,
-            direction: input.direction,
-        }
-    }
-
-    interface HostedMoveCell {
-        row: number
-        column: number
-        target: ui.UiFocusNavigationTarget
-    }
-
-    function hostedCurrentCell(
-        rows: ui.UiFocusNavigationTarget[][],
-        targetId: ui.UiFocusId,
-    ): HostedMoveCell {
-        for (let row = 0; row < rows.length; row++) {
-            const targets = rows[row]
-            for (let column = 0; column < targets.length; column++) {
-                const target = targets[column]
-                if (target.id == targetId && !target.hidden)
-                    return { row, column, target }
-            }
-        }
-        return undefined
-    }
-
-    function hostedHorizontalDestination(
-        input: HostedMoveInput,
-        current: HostedMoveCell,
-    ): HostedMoveCell {
-        const row = input.rows[current.row]
-        const step = input.direction == "left" ? -1 : 1
-        let column = current.column + step
-        while (column >= 0 && column < row.length) {
-            if (!row[column].hidden)
-                return { row: current.row, column, target: row[column] }
-            column += step
-        }
-        if (!input.horizontalWrap) return undefined
-        column = step < 0 ? row.length - 1 : 0
-        while (column != current.column) {
-            if (!row[column].hidden)
-                return { row: current.row, column, target: row[column] }
-            column += step
-        }
-        return undefined
-    }
-
-    function hostedVerticalDestination(
-        input: HostedMoveInput,
-        current: HostedMoveCell,
-    ): HostedMoveCell {
-        const step = input.direction == "up" ? -1 : 1
-        const sourceX =
-            current.target.rect.x + Math.idiv(current.target.rect.width, 2)
-        for (
-            let rowIndex = current.row + step;
-            rowIndex >= 0 && rowIndex < input.rows.length;
-            rowIndex += step
-        ) {
-            const row = input.rows[rowIndex]
-            if (input.verticalStrategy != "nearest") {
-                const target = row[current.column]
-                if (target && !target.hidden)
-                    return { row: rowIndex, column: current.column, target }
-            }
-            let best: HostedMoveCell = undefined
-            let bestDistance = 0
-            for (let column = 0; column < row.length; column++) {
-                const target = row[column]
-                if (target.hidden) continue
-                const dx = Math.abs(
-                    target.rect.x + Math.idiv(target.rect.width, 2) - sourceX,
-                )
-                if (!best || dx < bestDistance) {
-                    best = { row: rowIndex, column, target }
-                    bestDistance = dx
-                }
-            }
-            if (best) return best
-        }
-        return undefined
-    }
-
-    function hostedMovedResult(
-        scopeId: ui.UiFocusScopeId,
-        fromTarget: ui.UiFocusNavigationTarget,
-        toTarget: ui.UiFocusNavigationTarget,
-    ): ui.UiFocusMoveResult {
-        const result: ui.UiFocusMoveResult = {
-            kind: "moved",
-            fromScopeId: scopeId,
-            fromTargetId: fromTarget.id,
-            toScopeId: scopeId,
-            toTargetId: toTarget.id,
-        }
-        if (toTarget.scrollOwnerId !== undefined)
-            result.scrollRequest = {
-                scopeId,
-                targetId: toTarget.id,
-                scrollOwnerId: toTarget.scrollOwnerId,
-                targetRect: (toTarget.scrollRect || toTarget.rect).clone(),
-                reason: "focus",
-            }
-        return result
-    }
-
     export class HostedGrid<T>
-        implements ui.UiFocusableView<HostedGridResult>, ui.UiFocusNavigationProvider
+        implements
+            ui.UiFocusableView<HostedGridResult>,
+            ui.UiFocusNavigationProvider
     {
         public readonly layoutSpec: ui.UiLayoutSpec
         public readonly finalRect: ui.Rect
@@ -281,15 +119,11 @@ namespace microcode {
             }
         }
 
-        public registerNavigation(
-            controller: ui.UiFocusInputController,
-        ): void {
+        public registerNavigation(controller: ui.UiFocusInputController): void {
             controller.setNavigation(this.scopeId_, this)
         }
 
-        public focusDefault(
-            focus: ui.UiFocusState,
-        ): ui.UiFocusSetResult {
+        public focusDefault(focus: ui.UiFocusState): ui.UiFocusSetResult {
             return focus.setActiveScope(this.scopeId_)
         }
 
@@ -316,7 +150,7 @@ namespace microcode {
         public move(
             request: ui.UiFocusNavigationRequest,
         ): ui.UiFocusMoveResult {
-            return hostedMoveFocusInRaggedGrid({
+            return ui.moveFocusInRaggedGrid({
                 scopeId: this.scopeId_,
                 currentTargetId: request.currentTargetId,
                 direction: request.direction,
@@ -380,8 +214,7 @@ namespace microcode {
                 const targets: ui.UiFocusNavigationTarget[] = []
                 for (
                     let column = 0;
-                    column < this.columnCount_ &&
-                    index < this.controls_.length;
+                    column < this.columnCount_ && index < this.controls_.length;
                     column++
                 ) {
                     const control = this.controls_[index]
@@ -390,10 +223,7 @@ namespace microcode {
                         _uiControls.isFocusable(control)
                     )
                         targets.push({
-                            id: _uiControls.targetId(
-                                this.scopeId_,
-                                control.id,
-                            ),
+                            id: _uiControls.targetId(this.scopeId_, control.id),
                             rect: this.controlRects_[index],
                             hidden: !_uiControls.isVisible(control),
                         })
@@ -428,8 +258,7 @@ namespace microcode {
                 this.columnCount_,
             )
             return (
-                rowCount * this.controlHeight_ +
-                (rowCount - 1) * this.rowGap_
+                rowCount * this.controlHeight_ + (rowCount - 1) * this.rowGap_
             )
         }
     }
@@ -453,7 +282,7 @@ namespace microcode {
         titleControlHeight?: number
         titleControlGap?: number
         titleControlStyle?: ui.UiButtonStyle
-        modalStyle?: ui.UiModalStyle
+        modalStyle: ui.UiModalStyle
         onActivate?: ui.UiControlActivateHandler<T>
         onCancel?: (modalScopeId: ui.UiFocusScopeId) => void
     }
@@ -464,7 +293,9 @@ namespace microcode {
         | { kind: "cancelled"; modalScopeId: ui.UiFocusScopeId }
 
     export class HostedPicker<T>
-        implements ui.UiModal<HostedPickerResult<T>>, ui.UiFocusNavigationProvider
+        implements
+            ui.UiModal<HostedPickerResult<T>>,
+            ui.UiFocusNavigationProvider
     {
         public readonly layoutSpec: ui.UiLayoutSpec
         public readonly finalRect: ui.Rect
@@ -487,7 +318,11 @@ namespace microcode {
         private titleControlHeight_: number
         private titleControlGap_: number
         private titleControlStyle_: ui.UiButtonStyle
-        private modalStyle_: ui.UiModalStyle
+        private panelColor_: number
+        private titleColor_: number
+        private contentMargin_: number
+        private titleGap_: number
+        private showTitleBar_: boolean
         private controlRects_: ui.Rect[]
         private titleControlRects_: ui.Rect[]
         private controlView_: ui.UiButtonView
@@ -520,10 +355,18 @@ namespace microcode {
                 options.titleControlWidth || options.controlWidth
             this.titleControlHeight_ =
                 options.titleControlHeight || options.controlHeight
-            this.titleControlGap_ = options.titleControlGap || 0
+            this.titleControlGap_ =
+                options.titleControlGap !== undefined
+                    ? options.titleControlGap
+                    : AppStyles.ModalControlGap
             this.titleControlStyle_ =
                 options.titleControlStyle || options.controlStyle
-            this.modalStyle_ = options.modalStyle
+            const modalStyle = options.modalStyle
+            this.panelColor_ = modalStyle.panelColor
+            this.titleColor_ = modalStyle.titleColor
+            this.contentMargin_ = modalStyle.contentMargin
+            this.titleGap_ = modalStyle.titleGap
+            this.showTitleBar_ = modalStyle.showTitleBar !== false
             this.controlRects_ = []
             this.titleControlRects_ = []
             this.controlView_ = new ui.UiButtonView({
@@ -550,17 +393,16 @@ namespace microcode {
             constraints: ui.UiLayoutConstraints,
             output: ui.UiMeasuredSize,
         ): void {
-            const contentMargin = this.contentMargin()
             const width = Math.max(
                 this.contentWidth(),
                 this.titleControlContentWidth(),
             )
             const height =
-                this.contentHeight() + this.titleHeight() + contentMargin
+                this.contentHeight() + this.titleHeight() + this.contentMargin_
             output.set(
-                width + contentMargin * 2,
+                width + this.contentMargin_ * 2,
                 height,
-                width + contentMargin * 2,
+                width + this.contentMargin_ * 2,
                 height,
             )
             this.clearLayoutInvalidation()
@@ -568,9 +410,11 @@ namespace microcode {
 
         public arrange(rect: ui.Rect): void {
             this.finalRect.copyFrom(rect)
-            const margin = this.contentMargin()
-            this.arrangeControls(rect.x + margin, rect.y + this.titleHeight())
-            this.arrangeTitleControls(rect, margin)
+            this.arrangeControls(
+                rect.x + this.contentMargin_,
+                rect.y + this.titleHeight(),
+            )
+            this.arrangeTitleControls(rect, this.contentMargin_)
             this.clearLayoutInvalidation()
         }
 
@@ -599,8 +443,7 @@ namespace microcode {
                 this.titleControls_,
                 this.titleControlRects_,
             )
-            if (controller)
-                controller.setNavigation(this.modalScopeId_, this)
+            if (controller) controller.setNavigation(this.modalScopeId_, this)
             return focus.setActiveScope(this.modalScopeId_)
         }
 
@@ -645,7 +488,7 @@ namespace microcode {
         public move(
             request: ui.UiFocusNavigationRequest,
         ): ui.UiFocusMoveResult {
-            return hostedMoveFocusInRaggedGrid({
+            return ui.moveFocusInRaggedGrid({
                 scopeId: this.modalScopeId_,
                 currentTargetId: request.currentTargetId,
                 direction: request.direction,
@@ -660,14 +503,7 @@ namespace microcode {
             assets: ui.UiAssetResolver,
             focus?: ui.UiFocusState,
         ): void {
-            surface.drawRoundedRect(
-                this.finalRect,
-                15,
-                this.modalStyle_ &&
-                    this.modalStyle_.panelColor !== undefined
-                    ? this.modalStyle_.panelColor
-                    : 1,
-            )
+            surface.drawRoundedRect(this.finalRect, 15, this.panelColor_)
             this.drawTitle(surface, assets)
             this.renderControls(
                 surface,
@@ -718,23 +554,18 @@ namespace microcode {
             }
             if (title.length)
                 surface.drawText(title, x, this.finalRect.y + 4, {
-                    color:
-                        this.modalStyle_ &&
-                        this.modalStyle_.titleColor !== undefined
-                            ? this.modalStyle_.titleColor
-                            : 15,
+                    color: this.titleColor_,
                 })
         }
 
         private resolveTitleText(assets: ui.UiAssetResolver): string {
             if (this.title_ !== undefined) return this.title_
-            if (this.titleId_ !== undefined) return assets.getText(this.titleId_)
+            if (this.titleId_ !== undefined)
+                return assets.getText(this.titleId_)
             return ""
         }
 
-        private resolveTitleBitmap(
-            assets: ui.UiAssetResolver,
-        ): Bitmap {
+        private resolveTitleBitmap(assets: ui.UiAssetResolver): Bitmap {
             if (this.titleBitmap_ === undefined) return undefined
             if (typeof this.titleBitmap_ == "string")
                 return assets.getBitmap(this.titleBitmap_)
@@ -759,10 +590,7 @@ namespace microcode {
             if (!this.hasTitleControls()) return
             this.ensureRects(this.titleControls_, this.titleControlRects_)
             let x =
-                rect.x +
-                rect.width -
-                margin -
-                this.titleControlContentWidth()
+                rect.x + rect.width - margin - this.titleControlContentWidth()
             for (let i = 0; i < this.titleControls_.length; i++) {
                 this.titleControlRects_[i].set(
                     x,
@@ -799,7 +627,11 @@ namespace microcode {
 
         private navigationRows(): ui.UiFocusNavigationTarget[][] {
             const rows: ui.UiFocusNavigationTarget[][] = []
-            this.addNavigationRow(rows, this.titleControls_, this.titleControlRects_)
+            this.addNavigationRow(
+                rows,
+                this.titleControls_,
+                this.titleControlRects_,
+            )
             let index = 0
             const rowCount = Math.idiv(
                 this.controls_.length + this.columnCount_ - 1,
@@ -809,8 +641,7 @@ namespace microcode {
                 const targets: ui.UiFocusNavigationTarget[] = []
                 for (
                     let column = 0;
-                    column < this.columnCount_ &&
-                    index < this.controls_.length;
+                    column < this.columnCount_ && index < this.controls_.length;
                     column++
                 ) {
                     this.addNavigationTarget(
@@ -969,24 +800,26 @@ namespace microcode {
                 this.controls_.length + this.columnCount_ - 1,
                 this.columnCount_,
             )
-            return rowCount * this.controlHeight_ + (rowCount - 1) * this.rowGap_
+            return (
+                rowCount * this.controlHeight_ + (rowCount - 1) * this.rowGap_
+            )
         }
 
         private titleHeight(): number {
             if (this.hasTitleControls())
                 return (
-                    this.contentMargin() +
+                    this.contentMargin_ +
                     this.titleControlHeight_ +
-                    this.titleGap()
+                    this.titleGap_
                 )
             if (
-                !this.showTitleBar() &&
+                !this.showTitleBar_ &&
                 this.title_ === undefined &&
                 this.titleId_ === undefined &&
                 this.titleBitmap_ === undefined
             )
-                return this.contentMargin()
-            return 16 + this.titleGap()
+                return this.contentMargin_
+            return 16 + this.titleGap_
         }
 
         private titleControlContentWidth(): number {
@@ -994,25 +827,6 @@ namespace microcode {
             return (
                 this.titleControls_.length * this.titleControlWidth_ +
                 (this.titleControls_.length - 1) * this.titleControlGap_
-            )
-        }
-
-        private contentMargin(): number {
-            return this.modalStyle_ &&
-                this.modalStyle_.contentMargin !== undefined
-                ? this.modalStyle_.contentMargin
-                : 4
-        }
-
-        private titleGap(): number {
-            return this.modalStyle_ && this.modalStyle_.titleGap !== undefined
-                ? this.modalStyle_.titleGap
-                : 0
-        }
-
-        private showTitleBar(): boolean {
-            return (
-                !this.modalStyle_ || this.modalStyle_.showTitleBar !== false
             )
         }
     }

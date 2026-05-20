@@ -49,7 +49,7 @@ namespace docs {
             images,
             "image",
             "editor_background",
-            microcode.editorBackground
+            microcode.editorBackground,
         )
         control.simmessages.send(
             "docs",
@@ -61,8 +61,8 @@ namespace docs {
                         icon: s.icon || "",
                     })),
                     images,
-                })
-            )
+                }),
+            ),
         )
     }
 
@@ -82,7 +82,7 @@ namespace docs {
                     images,
                     "sample",
                     iname == "app" ? sampleName : `${sampleName}_${iname}`,
-                    res[iname]
+                    res[iname],
                 )
             })
 
@@ -101,8 +101,8 @@ namespace docs {
                 images,
                 "program",
                 iname == "app" ? "current" : `current_${iname}`,
-                res[iname]
-            )
+                res[iname],
+            ),
         )
         Screen.resetScreenImage()
         control.simmessages.send(
@@ -111,8 +111,8 @@ namespace docs {
                 JSON.stringify({
                     type: "art",
                     images,
-                })
-            )
+                }),
+            ),
         )
     }
 
@@ -178,7 +178,7 @@ namespace docs {
                     bound.width,
                     bound.height,
                     true,
-                    false
+                    false,
                 )
                 r[`page_${p + 1}_rule_${ri + 1}`] = imgr
             })
@@ -203,7 +203,7 @@ namespace docs {
         images: RenderedImage[],
         type: "icon" | "sample" | "icon_sample" | "image" | "program",
         name: string,
-        img: Bitmap
+        img: Bitmap,
     ) {
         const msg: RenderedImage = {
             type,

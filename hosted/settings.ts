@@ -74,15 +74,11 @@ namespace microcode {
 
         private createControls(): ui.UiControl<SettingsMode>[] {
             return [
-                this.modeControl(
-                    "classic",
-                    SETTINGS_CLASSIC_LABEL,
-                    () => this.selectMode("classic"),
+                this.modeControl("classic", SETTINGS_CLASSIC_LABEL, () =>
+                    this.selectMode("classic"),
                 ),
-                this.modeControl(
-                    "decimal",
-                    SETTINGS_DECIMAL_LABEL,
-                    () => this.selectMode("decimal"),
+                this.modeControl("decimal", SETTINGS_DECIMAL_LABEL, () =>
+                    this.selectMode("decimal"),
                 ),
             ]
         }

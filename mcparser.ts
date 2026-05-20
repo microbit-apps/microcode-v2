@@ -41,7 +41,7 @@ namespace microcode {
         const res = prog.pages.map(pageToString)
         ret.s = res
             .map((ps, i) =>
-                ps == "" && i > 0 ? "" : i == 0 ? ps : `page_${i + 1}:\n${ps}`
+                ps == "" && i > 0 ? "" : i == 0 ? ps : `page_${i + 1}:\n${ps}`,
             )
             .filter(s => s != "")
             .join("\n")
@@ -145,12 +145,12 @@ namespace microcode {
             ) {
                 control.assert(
                     tok.length == 7,
-                    `expected page_[1-5]:, got ${tok}}`
+                    `expected page_[1-5]:, got ${tok}}`,
                 )
                 const pageNum = parseInt(tok[5])
                 control.assert(
                     pageNum >= 1 && pageNum <= 5,
-                    `page number must be between 1 and 5, got ${pageNum}`
+                    `page number must be between 1 and 5, got ${pageNum}`,
                 )
                 if (currPage && currPageNum !== undefined) {
                     if (currRule) currPage.rules.push(currRule)
@@ -159,7 +159,7 @@ namespace microcode {
                 }
                 assert(
                     pageMap[pageNum] == undefined,
-                    `page ${pageNum} redefined`
+                    `page ${pageNum} redefined`,
                 )
                 currPage = new PageDefn()
                 currPageNum = pageNum
@@ -219,7 +219,7 @@ namespace microcode {
                 if (buf1[i] != buf2[i]) {
                     control.assert(
                         false,
-                        `buf/buf2[${i}] = ${buf[i]}/${buf2[i]}`
+                        `buf/buf2[${i}] = ${buf[i]}/${buf2[i]}`,
                     )
                 }
             }

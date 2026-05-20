@@ -440,7 +440,7 @@ namespace microcode {
             }
             case Tid.TID_ACTUATOR_MUSIC: {
                 const mod = getEditor(
-                    Tid.TID_MODIFIER_MELODY_EDITOR
+                    Tid.TID_MODIFIER_MELODY_EDITOR,
                 ) as MelodyEditor
                 return melodyToNotes(mod.field)
             }

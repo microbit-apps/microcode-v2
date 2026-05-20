@@ -27,11 +27,15 @@ namespace microcode {
                 controlWidth: HOME_ACTION_WIDTH,
                 controlHeight: HOME_ACTION_HEIGHT,
                 columnGap: HOME_ACTION_GAP,
-                controlStyle: ui.buttonStyle(
-                    AppStyles.iconButton(),
-                    { focusLabelGap: HOME_ACTION_LABEL_GAP },
+                controlStyle: ui.buttonStyle(AppStyles.iconButton(), {
+                    focusLabelGap: HOME_ACTION_LABEL_GAP,
+                }),
+                labelBounds: new ui.Rect(
+                    0,
+                    0,
+                    UI_SCREEN_WIDTH,
+                    UI_SCREEN_HEIGHT,
                 ),
-                labelBounds: new ui.Rect(0, 0, UI_SCREEN_WIDTH, UI_SCREEN_HEIGHT),
             })
 
             this.addCentered(
@@ -53,23 +57,14 @@ namespace microcode {
 
         private createActions(): ui.UiControl<HomeAction>[] {
             const actions: ui.UiControl<HomeAction>[] = [
-                ui.button<HomeAction>(
-                    "edit",
-                    "edit_program",
-                    "C0",
-                    () => this.navigation_.launchEditor(),
+                ui.button<HomeAction>("edit", "edit_program", "C0", () =>
+                    this.navigation_.launchEditor(),
                 ),
-                ui.button<HomeAction>(
-                    "samples",
-                    "smiley_buttons",
-                    "C1",
-                    () => this.navigation_.launchSamples(),
+                ui.button<HomeAction>("samples", "smiley_buttons", "C1", () =>
+                    this.navigation_.launchSamples(),
                 ),
-                ui.button<HomeAction>(
-                    "load",
-                    "largeDisk",
-                    "load",
-                    () => this.openDiskModal(),
+                ui.button<HomeAction>("load", "largeDisk", "load", () =>
+                    this.openDiskModal(),
                 ),
             ]
             if (HOME_ADD_SETTINGS) {
@@ -87,10 +82,8 @@ namespace microcode {
 
         private createDiskControls(): ui.UiControl<HomeDiskSlot>[] {
             return diskSlots().map(slot => {
-                return ui.iconButton<HomeDiskSlot>(
-                    slot,
-                    slot,
-                    () => this.loadDiskSlot(slot),
+                return ui.iconButton<HomeDiskSlot>(slot, slot, () =>
+                    this.loadDiskSlot(slot),
                 )
             })
         }

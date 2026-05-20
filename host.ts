@@ -62,8 +62,8 @@ namespace microcode {
                             ev == DAL.DEVICE_BUTTON_EVT_DOWN
                                 ? Tid.TID_SENSOR_PRESS
                                 : ev == DAL.DEVICE_BUTTON_EVT_UP
-                                ? Tid.TID_SENSOR_RELEASE
-                                : undefined
+                                  ? Tid.TID_SENSOR_RELEASE
+                                  : undefined
                         const filter = matchPressReleaseTable[b]
                         this._handler(tid, filter)
                     } else {
@@ -91,7 +91,7 @@ namespace microcode {
                 input.onGesture(g, () => {
                     this._handler(
                         Tid.TID_SENSOR_ACCELEROMETER,
-                        gestures2tids[index]
+                        gestures2tids[index],
                     )
                 })
             })
@@ -139,7 +139,7 @@ namespace microcode {
 
         private _handler: (sensorTid: number, filter: number) => void
         registerOnSensorEvent(
-            handler: (sensorTid: number, filter: number) => void
+            handler: (sensorTid: number, filter: number) => void,
         ) {
             this._handler = (tid, filter) => {
                 if (tid >= 0 && filter) handler(tid, filter)
@@ -203,14 +203,14 @@ namespace microcode {
                     music.stopAllSounds()
                     music.play(
                         music.builtinPlayableSoundEffect(this.getSound(param)),
-                        music.PlaybackMode.UntilDone
+                        music.PlaybackMode.UntilDone,
                     )
                     return
                 case Tid.TID_ACTUATOR_MUSIC:
                     music.stopAllSounds()
                     music.play(
                         music.stringPlayable(param, 120),
-                        music.PlaybackMode.UntilDone
+                        music.PlaybackMode.UntilDone,
                     )
                     return
             }

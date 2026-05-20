@@ -67,7 +67,7 @@ namespace microcode {
         constructor(
             public index: number,
             public rule: RuleDefn,
-            private interp: Interpreter
+            private interp: Interpreter,
         ) {}
 
         public active() {
@@ -140,7 +140,7 @@ namespace microcode {
             if (this.rule.filters.length) {
                 return this.interp.getValue(
                     [this.rule.sensor].concat(this.rule.filters),
-                    0
+                    0,
                 ) as boolean
             } else {
                 return true // sensor changed value, but no constraint
@@ -154,7 +154,7 @@ namespace microcode {
         private timerOrSequenceRule() {
             if (this.backgroundActive) {
                 this.interp.error(
-                    `trying to spawn another background fiber for ${this.index}`
+                    `trying to spawn another background fiber for ${this.index}`,
                 )
             }
             // make sure we have something to do
@@ -228,7 +228,7 @@ namespace microcode {
                         // get the loop bound
                         const loopBound = this.interp.getValue(
                             this.rule.modifiers.slice(this.modifierIndex + 1),
-                            0
+                            0,
                         ) as number
                         this.loopIndex++
                         if (this.loopIndex >= loopBound) {
@@ -383,7 +383,7 @@ namespace microcode {
         emitClearScreen(): void
         stopOngoingActions(): void
         registerOnSensorEvent(
-            handler: (tid: number, filter: number) => void
+            handler: (tid: number, filter: number) => void,
         ): void
         getSensorValue(tid: number, normalized: boolean): number
         execute(tid: ActionTid, param: any): void
@@ -465,10 +465,13 @@ namespace microcode {
         // state storage for sensor values
         public sensors: SensorMap = {}
 
-        constructor(private program: ProgramDefn, private host: RuntimeHost) {
+        constructor(
+            private program: ProgramDefn,
+            private host: RuntimeHost,
+        ) {
             this.host.emitClearScreen()
             this.host.registerOnSensorEvent((t, f) =>
-                this.onSensorEvent(t, f, f)
+                this.onSensorEvent(t, f, f),
             )
             for (const v of Object.keys(vars2tids)) this.state[v] = 0
             for (const tid of sensorTids) {
@@ -571,10 +574,10 @@ namespace microcode {
             }
 
             const liveIndices = Object.keys(resourceWinner).map(
-                k => resourceWinner[parseInt(k)]
+                k => resourceWinner[parseInt(k)],
             )
             const live = newRules.filter(rc =>
-                liveIndices.some(i => i === rc.index)
+                liveIndices.some(i => i === rc.index),
             )
             const dead = this.ruleClosures.filter(rc => {
                 const resource = rc.getOutputResource()
@@ -590,7 +593,7 @@ namespace microcode {
 
             // partition the live into instant and takes time
             const instant = live.filter(
-                rc => rc.getActionKind() === ActionKind.Instant
+                rc => rc.getActionKind() === ActionKind.Instant,
             )
 
             // execute the instant ones right now (guaranteed no conflict)
@@ -603,14 +606,14 @@ namespace microcode {
             this.processNewState()
 
             const switchPage = instant.find(
-                rc => rc.getOutputResource() == OutputResource.PageCounter
+                rc => rc.getOutputResource() == OutputResource.PageCounter,
             )
             if (switchPage) {
                 if (switchPage.runInstant()) return // others don't get chance to run
             }
 
             const takesTime = live.filter(
-                rc => rc.getActionKind() === ActionKind.TakesTime
+                rc => rc.getActionKind() === ActionKind.TakesTime,
             )
 
             takesTime.forEach(rc => {
@@ -633,7 +636,7 @@ namespace microcode {
         private setupEventQueue() {
             const matchingRules = (sensor: number, filter: number) => {
                 return this.ruleClosures.filter(rc =>
-                    rc.matchWhen(sensor, filter)
+                    rc.matchWhen(sensor, filter),
                 )
             }
             control.inBackground(() => {
@@ -662,7 +665,7 @@ namespace microcode {
                                 const event = ev as SensorUpdateEvent
                                 // see if any rule matches
                                 this.processNewRules(
-                                    matchingRules(event.sensor, event.filter)
+                                    matchingRules(event.sensor, event.filter),
                                 )
                                 break
                             }
@@ -676,8 +679,8 @@ namespace microcode {
                                 this.processNewRules(
                                     matchingRules(
                                         Tid.TID_SENSOR_START_PAGE,
-                                        undefined
-                                    )
+                                        undefined,
+                                    ),
                                 )
                                 break
                             }
@@ -741,7 +744,7 @@ namespace microcode {
                                 newReading,
                                 newReading > oldReading
                                     ? SensorChange.Up
-                                    : SensorChange.Down
+                                    : SensorChange.Down,
                             )
                         }
                     })

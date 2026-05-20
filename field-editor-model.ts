@@ -129,7 +129,10 @@ namespace microcode {
      * Numeric modifier tile whose field is stored as a string.
      */
     export class DigitEditor extends ModifierEditor {
-        constructor(public field: BoxedNumAsStr, private posInt = false) {
+        constructor(
+            public field: BoxedNumAsStr,
+            private posInt = false,
+        ) {
             super(posInt ? Tid.TID_POS_INT_EDITOR : Tid.TID_DECIMAL_EDITOR)
             this.fieldEditor = new DigitWidgetEditor(posInt)
             this.field = this.fieldEditor.clone(

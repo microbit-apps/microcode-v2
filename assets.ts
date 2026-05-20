@@ -60,7 +60,7 @@ namespace microcode {
     export class icons {
         public static get(
             name: string | number,
-            nullIfMissing = false
+            nullIfMissing = false,
         ): Bitmap {
             // editor icons
             if (name == "delete") return icondb.btn_delete
@@ -2973,7 +2973,7 @@ bffffffffffffffffffffffffffffffb
 
     export function numberToDecimalImage(
         i: number | string,
-        transparent = true
+        transparent = true,
     ) {
         const str = typeof i == "number" ? i.toString() : i
         const width = (str.length + 1) * bitmaps.font8.charWidth

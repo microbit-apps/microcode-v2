@@ -2,7 +2,7 @@ namespace microcode {
     export class Sample {
         constructor(
             public readonly icon: string,
-            public readonly b64: string
+            public readonly b64: string,
         ) {}
 
         get source() {
@@ -21,7 +21,7 @@ namespace microcode {
         constructor(
             public readonly label: string,
             public readonly icon: string,
-            public readonly src: string
+            public readonly src: string,
         ) {}
 
         get source() {
@@ -202,20 +202,14 @@ namespace microcode {
         // robotSamples(r)
         return r.s
             .filter(({ icon }) => !withIcon || !!icon)
-            .map(
-                ({ icon, b64 }) =>
-                    new Sample(icon, b64)
-            )
+            .map(({ icon, b64 }) => new Sample(icon, b64))
     }
 
     export function textSamples(withIcon: boolean): TextSample[] {
         const s = newSamples()
         return s
             .filter(({ icon }) => !withIcon || !!icon)
-            .map(
-                ({ label, icon, src }) =>
-                    new TextSample(label, icon, src)
-            )
+            .map(({ label, icon, src }) => new TextSample(label, icon, src))
     }
 
     function newSamples(): textSampleList {

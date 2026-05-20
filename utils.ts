@@ -29,7 +29,7 @@ namespace microcode {
         public writeByte(v: number) {
             assert(
                 0 <= v && v <= 0xff && (v | 0) == v,
-                "writeByte: v=" + v.toString()
+                "writeByte: v=" + v.toString(),
             )
             if (this.ptr >= this.buf.length) {
                 const copy = Buffer.create(this.buf.length * 2)
@@ -45,7 +45,10 @@ namespace microcode {
     }
 
     export class BufferReader {
-        constructor(private buf: Buffer, private ptr: number = 0) {}
+        constructor(
+            private buf: Buffer,
+            private ptr: number = 0,
+        ) {}
 
         public get buffer() {
             return this.buf

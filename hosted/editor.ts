@@ -113,21 +113,21 @@ namespace microcode {
     )
     const EDITOR_TILE_SUGGESTION_MODAL_STYLE = EDITOR_RULE_HANDLE_MODAL_STYLE
     const EDITOR_TILE_SUGGESTION_MAX_COLUMNS = 5
-    const EDITOR_TILE_SUGGESTION_TITLE_GAP =
-        EDITOR_FIELD_MODAL_GRID_GAP + 1
+    const EDITOR_TILE_SUGGESTION_TITLE_GAP = EDITOR_FIELD_MODAL_GRID_GAP + 1
     const EDITOR_TILE_SUGGESTION_MODAL_PANEL_STYLE: ui.UiModalStyle = {
         panelColor: AppStyles.DefaultModalPanelColor,
         titleColor: AppStyles.ModalTitleColor,
         contentMargin: AppStyles.ModalMargin,
         titleGap: EDITOR_TILE_SUGGESTION_TITLE_GAP,
     }
-    const EDITOR_TILE_SUGGESTION_TITLELESS_MODAL_PANEL_STYLE: ui.UiModalStyle = {
-        panelColor: AppStyles.DefaultModalPanelColor,
-        titleColor: AppStyles.ModalTitleColor,
-        contentMargin: AppStyles.ModalMargin,
-        titleGap: EDITOR_TILE_SUGGESTION_TITLE_GAP,
-        showTitleBar: false,
-    }
+    const EDITOR_TILE_SUGGESTION_TITLELESS_MODAL_PANEL_STYLE: ui.UiModalStyle =
+        {
+            panelColor: AppStyles.DefaultModalPanelColor,
+            titleColor: AppStyles.ModalTitleColor,
+            contentMargin: AppStyles.ModalMargin,
+            titleGap: EDITOR_TILE_SUGGESTION_TITLE_GAP,
+            showTitleBar: false,
+        }
     const EDITOR_FIELD_DELETE_STYLE = ui.buttonStyle(
         ui.UiButtonStyles.RedBorderedWhite,
         ui.UiButtonStyles.RoundedFrame,
@@ -171,11 +171,10 @@ namespace microcode {
         section?: RuleSection,
         index?: number,
     ): ui.UiFocusId {
-        return EDITOR_PAGE_SCOPE + "/" + ruleTargetControlId(
-            ruleIndex,
-            kind,
-            section,
-            index,
+        return (
+            EDITOR_PAGE_SCOPE +
+            "/" +
+            ruleTargetControlId(ruleIndex, kind, section, index)
         )
     }
 
@@ -388,7 +387,9 @@ namespace microcode {
         }
 
         private createDiskControls(): ui.UiControl<EditorDiskSlot>[] {
-            return diskSlots().map(slot => ui.iconButton<EditorDiskSlot>(slot, slot))
+            return diskSlots().map(slot =>
+                ui.iconButton<EditorDiskSlot>(slot, slot),
+            )
         }
 
         private saveDiskSlot(slot: EditorDiskSlot): void {
@@ -453,7 +454,8 @@ namespace microcode {
                         pending: false,
                     })
                 else this.openTileSuggestionModal(value)
-            } else if (value.kind == "insert") this.openTileSuggestionModal(value)
+            } else if (value.kind == "insert")
+                this.openTileSuggestionModal(value)
         }
 
         private openRuleHandleModal(value: RuleTargetControlValue): void {
@@ -488,11 +490,7 @@ namespace microcode {
             const virtualRule = this.isVirtualRule(value)
             if (!virtualRule && value.ruleIndex > 0)
                 controls.push(
-                    this.ruleHandleControl(
-                        "moveUp",
-                        "rule_up",
-                        "rule_up",
-                    ),
+                    this.ruleHandleControl("moveUp", "rule_up", "rule_up"),
                 )
             if (!virtualRule && value.ruleIndex < realRuleCount - 1)
                 controls.push(
@@ -537,19 +535,21 @@ namespace microcode {
 
             if (!virtualRule) {
                 if (action == "add") {
-                    this.applyHostedEdit(running, () =>
-                        !!page.insertRuleAt(value.ruleIndex, undefined)
+                    this.applyHostedEdit(
+                        running,
+                        () => !!page.insertRuleAt(value.ruleIndex, undefined),
                     )
                     focusKind = "insert"
                     focusSection = "sensors"
                     focusIndex = 0
                 } else if (action == "delete") {
-                    this.applyHostedEdit(running, () =>
-                        !!page.deleteRuleAt(value.ruleIndex)
+                    this.applyHostedEdit(
+                        running,
+                        () => !!page.deleteRuleAt(value.ruleIndex),
                     )
                 } else if (action == "moveUp" && value.ruleIndex > 0) {
                     this.applyHostedEdit(running, () =>
-                        this.moveRule(page, value.ruleIndex, -1)
+                        this.moveRule(page, value.ruleIndex, -1),
                     )
                     focusRuleIndex = value.ruleIndex - 1
                 } else if (
@@ -557,7 +557,7 @@ namespace microcode {
                     value.ruleIndex < this.realRuleCount(page) - 1
                 ) {
                     this.applyHostedEdit(running, () =>
-                        this.moveRule(page, value.ruleIndex, 1)
+                        this.moveRule(page, value.ruleIndex, 1),
                     )
                     focusRuleIndex = value.ruleIndex + 1
                 }
@@ -593,7 +593,9 @@ namespace microcode {
         }
 
         private currentPage(): PageDefn {
-            return this.progdef_ ? this.progdef_.pages[this.currPage_] : undefined
+            return this.progdef_
+                ? this.progdef_.pages[this.currPage_]
+                : undefined
         }
 
         private targetRule(value: RuleTargetControlValue): RuleDefn {
@@ -606,7 +608,9 @@ namespace microcode {
         private targetTile(value: RuleTargetControlValue): Tile {
             if (!value.section || value.index === undefined) return undefined
             const rule = this.targetRule(value)
-            return rule ? rule.getRuleRep()[value.section][value.index] : undefined
+            return rule
+                ? rule.getRuleRep()[value.section][value.index]
+                : undefined
         }
 
         private isVirtualRule(value: RuleTargetControlValue): boolean {
@@ -642,7 +646,10 @@ namespace microcode {
                 this.openPendingFieldEditor(value, suggestions[0])
                 return undefined
             }
-            const controls = this.createTileSuggestionControls(value, suggestions)
+            const controls = this.createTileSuggestionControls(
+                value,
+                suggestions,
+            )
             const selected = this.selectedTileSuggestionId(value, suggestions)
             const columnCount = Math.min(
                 EDITOR_TILE_SUGGESTION_MAX_COLUMNS,
@@ -706,7 +713,8 @@ namespace microcode {
                     tile,
                 },
                 textId: tidToString(getTid(tile)),
-                selected: selectedTid !== undefined && selectedTid == getTid(tile),
+                selected:
+                    selectedTid !== undefined && selectedTid == getTid(tile),
             }
             const icon = getIcon(tile)
             if (typeof icon == "string" || typeof icon == "number")
@@ -731,10 +739,8 @@ namespace microcode {
             target: RuleTargetControlValue,
             controlValue: TileSuggestionValue,
         ): void {
-            if (controlValue.kind == "delete")
-                this.deleteSuggestedTile(target)
-            else
-                this.applyTileSuggestion(target, controlValue.tile)
+            if (controlValue.kind == "delete") this.deleteSuggestedTile(target)
+            else this.applyTileSuggestion(target, controlValue.tile)
         }
 
         private selectedTileSuggestionId(
@@ -808,7 +814,8 @@ namespace microcode {
                 tile: candidate,
                 pending: true,
             }
-            if (isNumericEntryTile(candidate)) this.openNumericEntryModal(target)
+            if (isNumericEntryTile(candidate))
+                this.openNumericEntryModal(target)
             else if (isIconOrMelodyFieldEditorTile(candidate))
                 this.openFieldEditorModal(target)
         }
@@ -1059,12 +1066,7 @@ namespace microcode {
                     target.tile,
                     (<any>result).text,
                 )
-                this.commitTileSuggestion(
-                    target.value,
-                    tile,
-                    wasRunning,
-                    true,
-                )
+                this.commitTileSuggestion(target.value, tile, wasRunning, true)
                 return
             }
             const value = target.value
@@ -1126,14 +1128,15 @@ namespace microcode {
             }
             if (!value.section || value.index === undefined) return false
             const literal = numericLiteralTile(text)
-            if (literal !== undefined && getTid(tile) == literal)
-                return false
+            if (literal !== undefined && getTid(tile) == literal) return false
             const rule = this.targetRule(value)
             if (!rule) return false
             rule.updateAt(
                 value.section,
                 value.index,
-                literal !== undefined ? literal : new DigitEditor({ num: text }),
+                literal !== undefined
+                    ? literal
+                    : new DigitEditor({ num: text }),
             )
             return true
         }
@@ -1179,8 +1182,7 @@ namespace microcode {
                         this.commitIconFieldEditor(target, field, wasRunning)
                     else if (controlValue.kind == "delete")
                         this.deleteEditedTile(target.value, wasRunning)
-                    else
-                        this.toggleIconFieldCell(field, control)
+                    else this.toggleIconFieldCell(field, control)
                 },
             )
         }
@@ -1205,9 +1207,7 @@ namespace microcode {
                 controlWidth: EDITOR_FIELD_MODAL_CELL_SIZE,
                 controlHeight: EDITOR_FIELD_MODAL_CELL_SIZE,
                 rowGap:
-                    rowGap !== undefined
-                        ? rowGap
-                        : EDITOR_FIELD_MODAL_GRID_GAP,
+                    rowGap !== undefined ? rowGap : EDITOR_FIELD_MODAL_GRID_GAP,
                 columnGap: EDITOR_FIELD_MODAL_GRID_GAP,
                 titleControlWidth: EDITOR_FIELD_MODAL_CELL_SIZE,
                 titleControlHeight: EDITOR_FIELD_MODAL_CELL_SIZE,
@@ -1261,13 +1261,7 @@ namespace microcode {
                 0,
                 Math.idiv(EDITOR_FIELD_MODAL_CELL_SIZE - font.charHeight, 2),
             )
-            bitmap.print(
-                text,
-                x,
-                y,
-                15,
-                font,
-            )
+            bitmap.print(text, x, y, 15, font)
             return bitmap
         }
 
@@ -1308,8 +1302,7 @@ namespace microcode {
                         this.commitMelodyFieldEditor(target, field, wasRunning)
                     else if (controlValue.kind == "delete")
                         this.deleteEditedTile(target.value, wasRunning)
-                    else
-                        this.toggleMelodyFieldCell(field, controls, control)
+                    else this.toggleMelodyFieldCell(field, controls, control)
                 },
             )
         }
@@ -1359,9 +1352,7 @@ namespace microcode {
             row: number,
             col: number,
         ): string | Bitmap {
-            return field.getPixel(col, row)
-                ? "solid_red"
-                : "led_off"
+            return field.getPixel(col, row) ? "solid_red" : "led_off"
         }
 
         private melodyFieldBitmapId(
@@ -1370,8 +1361,7 @@ namespace microcode {
             col: number,
         ): string {
             const note = field.notes.charAt(col)
-            return note != "." &&
-                parseInt(note) == NUM_NOTES - 1 - row
+            return note != "." && parseInt(note) == NUM_NOTES - 1 - row
                 ? "note_on"
                 : "note_off"
         }
@@ -1431,12 +1421,7 @@ namespace microcode {
             const changed = !iconFieldsEqual(tile.getField(), field)
             if (target.pending) {
                 tile.field = field.clone()
-                this.commitTileSuggestion(
-                    target.value,
-                    tile,
-                    wasRunning,
-                    true,
-                )
+                this.commitTileSuggestion(target.value, tile, wasRunning, true)
                 return
             }
             if (changed)
@@ -1465,12 +1450,7 @@ namespace microcode {
             }
             if (target.pending) {
                 tile.field = nextField
-                this.commitTileSuggestion(
-                    target.value,
-                    tile,
-                    wasRunning,
-                    true,
-                )
+                this.commitTileSuggestion(target.value, tile, wasRunning, true)
                 return
             }
             if (changed)
@@ -1573,13 +1553,10 @@ namespace microcode {
             if (wasRunning) runProgram(this.progdef_)
             return changed
         }
-
     }
 
     class PageView
-        implements
-            ui.UiFocusableView<void>,
-            ui.UiFocusNavigationProvider
+        implements ui.UiFocusableView<void>, ui.UiFocusNavigationProvider
     {
         public readonly layoutSpec: ui.UiLayoutSpec
         public readonly finalRect: ui.Rect
@@ -1699,10 +1676,7 @@ namespace microcode {
             const result = focus.setActiveTarget(EDITOR_PAGE_SCOPE, targetId)
             if (
                 result.kind != "focused" &&
-                !(
-                    result.kind == "unchanged" &&
-                    result.targetId == targetId
-                )
+                !(result.kind == "unchanged" && result.targetId == targetId)
             )
                 return false
             if (!this.handleFocusScrollResult(result))
@@ -1789,7 +1763,10 @@ namespace microcode {
                 result.toScopeId,
                 result.toTargetId,
             )
-            if (!this.handleFocusScrollResult(focusResult) && result.scrollRequest)
+            if (
+                !this.handleFocusScrollResult(focusResult) &&
+                result.scrollRequest
+            )
                 this.handleScrollRequest(result.scrollRequest)
             return true
         }
@@ -1840,12 +1817,10 @@ namespace microcode {
         ): ui.UiFocusTargetReference {
             if (!this.toolbar_ || !source) return undefined
             const rect = this.fixedScopeExitComparisonRect(source)
-            return this.toolbar_.nearestTargetReference(
-                {
-                    id: source.id,
-                    rect,
-                },
-            )
+            return this.toolbar_.nearestTargetReference({
+                id: source.id,
+                rect,
+            })
         }
 
         public firstRuleHandleTarget(): ui.UiFocusNavigationTarget {
@@ -1862,8 +1837,7 @@ namespace microcode {
             const rows = this.navigationRows()
             for (let row = rows.length - 1; row >= 0; row--) {
                 const targets = rows[row]
-                if (targets.length)
-                    return targets[targets.length - 1]
+                if (targets.length) return targets[targets.length - 1]
             }
             return this.defaultNavigationTarget()
         }
@@ -1899,7 +1873,9 @@ namespace microcode {
             return this.contentOffsetX_ == 0
         }
 
-        public horizontalOriginScrollRect(target: PageNavigationTarget): ui.Rect {
+        public horizontalOriginScrollRect(
+            target: PageNavigationTarget,
+        ): ui.Rect {
             return new ui.Rect(
                 0,
                 target.contentRect.y,
@@ -1928,7 +1904,7 @@ namespace microcode {
         ): ui.UiFocusMoveResult | undefined {
             const rows = this.navigationRows()
             if (!rows.length) return undefined
-            const result = hostedMoveFocusInRaggedGrid({
+            const result = ui.moveFocusInRaggedGrid({
                 scopeId: EDITOR_PAGE_SCOPE,
                 currentTargetId: request.currentTargetId,
                 direction: request.direction,
@@ -1936,11 +1912,7 @@ namespace microcode {
                 verticalStrategy: "column",
             })
             const position = this.positionForTargetId(request.currentTargetId)
-            if (!position)
-                return this.moveToTarget(
-                    undefined,
-                    rows[0][0],
-                )
+            if (!position) return this.moveToTarget(undefined, rows[0][0])
 
             switch (request.direction) {
                 case "left":
@@ -2039,7 +2011,10 @@ namespace microcode {
 
             if (!contentBounds) return new ui.Size(0, 0)
             return new ui.Size(
-                Math.max(contentBounds.right + EDITOR_PAGE_MARGIN, UI_SCREEN_WIDTH),
+                Math.max(
+                    contentBounds.right + EDITOR_PAGE_MARGIN,
+                    UI_SCREEN_WIDTH,
+                ),
                 Math.max(
                     contentBounds.bottom + EDITOR_PAGE_MARGIN,
                     UI_SCREEN_HEIGHT - EDITOR_CONTENT_Y,
@@ -2198,7 +2173,9 @@ namespace microcode {
             return this.navigationTargets_
         }
 
-        private pageTargetComparisonRect(target: PageNavigationTarget): ui.Rect {
+        private pageTargetComparisonRect(
+            target: PageNavigationTarget,
+        ): ui.Rect {
             if (target.viewportRect.width && target.viewportRect.height)
                 return target.viewportRect
             if (!this.layout_) return target.viewportRect
@@ -2226,7 +2203,9 @@ namespace microcode {
             this.navigationTargets_ = []
             if (!this.layout_) return
             for (let i = 0; i < this.layout_.rules.length; i++) {
-                const row = this.layout_.rules[i].navigationTargets(this.layout_)
+                const row = this.layout_.rules[i].navigationTargets(
+                    this.layout_,
+                )
                 if (!row.length) continue
                 this.navigationRows_.push(row)
                 for (let column = 0; column < row.length; column++)
@@ -2254,9 +2233,7 @@ namespace microcode {
             }
         }
 
-        private currentPosition(
-            focus: ui.UiFocusState,
-        ): PageTargetPosition {
+        private currentPosition(focus: ui.UiFocusState): PageTargetPosition {
             return this.positionForTargetId(
                 focus.getActiveTargetId(EDITOR_PAGE_SCOPE),
             )
@@ -2283,16 +2260,13 @@ namespace microcode {
             const rows = this.navigationRows()
             for (let row = 0; row < rows.length; row++) {
                 for (let column = 0; column < rows[row].length; column++) {
-                    if (rows[row][column].id == targetId)
-                        return { row, column }
+                    if (rows[row][column].id == targetId) return { row, column }
                 }
             }
             return undefined
         }
 
-        private targetByFocusId(
-            targetId: ui.UiFocusId,
-        ): PageNavigationTarget {
+        private targetByFocusId(targetId: ui.UiFocusId): PageNavigationTarget {
             const targets = this.allNavigationTargets()
             for (let i = 0; i < targets.length; i++) {
                 if (targets[i].id == targetId) return targets[i]
@@ -2526,12 +2500,7 @@ namespace microcode {
             page: PageLayout,
         ): void {
             this.fillRect(surface, page, this.tray_, EDITOR_RULE_TRAY_COLOR)
-            this.fillRect(
-                surface,
-                page,
-                this.when_,
-                EDITOR_WHEN_SECTION_COLOR,
-            )
+            this.fillRect(surface, page, this.when_, EDITOR_WHEN_SECTION_COLOR)
             this.outlineTray(surface, page)
             this.renderControls(surface, assets)
         }
@@ -2560,7 +2529,9 @@ namespace microcode {
                     !_uiControls.isFocusable(control)
                 )
                     continue
-                const contentRect = this.targetContentRect(this.controlRects_[i])
+                const contentRect = this.targetContentRect(
+                    this.controlRects_[i],
+                )
                 const viewportRect = this.targetViewportRect(page, contentRect)
                 const scrollNeeded =
                     viewportRect.width < contentRect.width ||
@@ -2572,8 +2543,7 @@ namespace microcode {
                         ? EDITOR_PAGE_SCROLL_OWNER
                         : undefined,
                     scrollRect: scrollNeeded ? contentRect : undefined,
-                    hidden:
-                        viewportRect.width == 0 || viewportRect.height == 0,
+                    hidden: viewportRect.width == 0 || viewportRect.height == 0,
                     control,
                     contentRect,
                     viewportRect,
@@ -2686,7 +2656,10 @@ namespace microcode {
         ): ui.UiControl<RuleTargetControlValue> {
             const bitmap = this.bitmap(bitmapId)
             return {
-                id: ruleTargetControlId(this.ruleIndex, "static") + "/" + bitmapId,
+                id:
+                    ruleTargetControlId(this.ruleIndex, "static") +
+                    "/" +
+                    bitmapId,
                 value: {
                     kind: "static",
                     ruleIndex: this.ruleIndex,
@@ -2709,7 +2682,8 @@ namespace microcode {
             tile?: Tile,
             gapBefore?: number,
         ): ui.UiControl<RuleTargetControlValue> {
-            const generated = kind == "tile" && tile && isGeneratedRuleTile(tile)
+            const generated =
+                kind == "tile" && tile && isGeneratedRuleTile(tile)
             const generatedText = this.targetText(kind, tile)
             const framed =
                 kind == "tile" &&
@@ -2726,7 +2700,12 @@ namespace microcode {
                     index,
                 },
                 bitmap,
-                width: this.targetWidth(bitmap, framed, generated, generatedText),
+                width: this.targetWidth(
+                    bitmap,
+                    framed,
+                    generated,
+                    generatedText,
+                ),
                 height: this.targetHeight(bitmap, framed, generated),
                 gapBefore,
                 text: generatedText,
@@ -2744,9 +2723,7 @@ namespace microcode {
                     (tile as IconEditor).getField(),
                 )
             if (isMelodyFieldEditorTile(tile))
-                return icondb.melodyToImage(
-                    (tile as MelodyEditor).getField(),
-                )
+                return icondb.melodyToImage((tile as MelodyEditor).getField())
             return this.bitmap(getIcon(tile))
         }
 
@@ -2762,10 +2739,7 @@ namespace microcode {
             return undefined
         }
 
-        private targetFocusLabelId(
-            kind: RuleTargetKind,
-            tile?: Tile,
-        ): string {
+        private targetFocusLabelId(kind: RuleTargetKind, tile?: Tile): string {
             if (
                 kind == "tile" &&
                 tile &&
@@ -2959,10 +2933,7 @@ namespace microcode {
             surface.fillRect(this.absoluteRect(page.content, rect), color)
         }
 
-        private outlineTray(
-            surface: ui.DrawSurface,
-            page: PageLayout,
-        ): void {
+        private outlineTray(surface: ui.DrawSurface, page: PageLayout): void {
             const absolute = this.absoluteRect(page.content, this.tray_)
             const left = absolute.x
             const top = absolute.y
@@ -2998,10 +2969,7 @@ namespace microcode {
             )
         }
 
-        private absoluteRect(
-            viewport: ui.Rect,
-            rect: ui.Rect,
-        ): ui.Rect {
+        private absoluteRect(viewport: ui.Rect, rect: ui.Rect): ui.Rect {
             return new ui.Rect(
                 viewport.x + this.x_ + rect.x,
                 viewport.y + this.y_ + rect.y,
@@ -3045,10 +3013,7 @@ namespace microcode {
             return result
         }
 
-        private addControlIdsBounds(
-            target: ui.Rect,
-            ids: string[],
-        ): void {
+        private addControlIdsBounds(target: ui.Rect, ids: string[]): void {
             for (let i = 0; i < ids.length; i++) {
                 this.copyControlRect(ids[i], this.controlRectScratch_)
                 target.union(this.controlRectScratch_)
@@ -3222,7 +3187,11 @@ namespace microcode {
 
     type RuleTargetKind = "handle" | "tile" | "insert" | "static"
 
-    class EditorToolbar implements ui.UiFocusableView<EditorToolbarResult>, ui.UiFocusNavigationProvider {
+    class EditorToolbar
+        implements
+            ui.UiFocusableView<EditorToolbarResult>,
+            ui.UiFocusNavigationProvider
+    {
         public readonly layoutSpec: ui.UiLayoutSpec
         public readonly finalRect: ui.Rect
         public layoutDirty: boolean
@@ -3403,12 +3372,12 @@ namespace microcode {
             request: ui.UiFocusNavigationRequest,
         ): ui.UiFocusMoveResult | undefined {
             if (request.scopeId != EDITOR_TOOLBAR_SCOPE) return undefined
-            const result = hostedMoveFocusInRow(
-                EDITOR_TOOLBAR_SCOPE,
-                request.currentTargetId,
-                request.direction,
-                this.toolbarTargets(),
-            )
+            const result = ui.moveFocusInRaggedGrid({
+                scopeId: EDITOR_TOOLBAR_SCOPE,
+                currentTargetId: request.currentTargetId,
+                direction: request.direction,
+                rows: [this.toolbarTargets()],
+            })
             if (result.kind == "moved") return result
             if (
                 result.kind != "exited" &&
@@ -3432,7 +3401,9 @@ namespace microcode {
         private updateProgramControls(): void {
             const running = isProgramRunning()
             this.runControl_.bitmap = running ? icondb.runDisabled : icondb.run
-            this.stopControl_.bitmap = running ? icondb.stop : icondb.stopDisabled
+            this.stopControl_.bitmap = running
+                ? icondb.stop
+                : icondb.stopDisabled
             this.pageControl_.bitmapId = PAGE_IDS()[this.getPage_()]
         }
 
@@ -3464,15 +3435,9 @@ namespace microcode {
             direction: ui.UiFocusDirection,
             targetId: ui.UiFocusId,
         ): ui.UiFocusNavigationTarget {
-            if (
-                direction == "right" &&
-                targetId == this.targetId("page")
-            )
+            if (direction == "right" && targetId == this.targetId("page"))
                 return this.pageView_.firstRuleHandleTarget()
-            if (
-                direction == "left" &&
-                targetId == this.targetId("disk")
-            )
+            if (direction == "left" && targetId == this.targetId("disk"))
                 return this.pageView_.lastPageTarget()
             if (direction == "down")
                 return this.pageView_.nearestNavigationTarget(
@@ -3487,7 +3452,8 @@ namespace microcode {
             sourceY: number,
         ): number {
             const dx = target.rect.x + Math.idiv(target.rect.width, 2) - sourceX
-            const dy = target.rect.y + Math.idiv(target.rect.height, 2) - sourceY
+            const dy =
+                target.rect.y + Math.idiv(target.rect.height, 2) - sourceY
             return dx * dx + dy * dy
         }
 
@@ -3523,9 +3489,7 @@ namespace microcode {
             return EDITOR_TOOLBAR_SCOPE + "/" + controlId
         }
 
-        private actionForTargetId(
-            targetId: ui.UiFocusId,
-        ): EditorToolbarAction {
+        private actionForTargetId(targetId: ui.UiFocusId): EditorToolbarAction {
             for (let i = 0; i < this.toolbarControls_.length; i++) {
                 const control = this.toolbarControls_[i]
                 if (targetId == this.targetId(control.id)) return control.value
@@ -3615,6 +3579,5 @@ namespace microcode {
                 true,
             )
         }
-
     }
 }
