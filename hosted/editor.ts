@@ -1578,13 +1578,15 @@ namespace microcode {
         private getProgram_: () => ProgramDefn
         private getPage_: () => number
         private onActivateTarget_: (value: RuleTargetControlValue) => void
-        private contentLayout_: PageContentLayout
-        private scrollLayout_: ui.UiScrollViewportLayout
         private toolbar_: EditorToolbar
         private focus_: ui.UiFocusState
         private layout_: PageLayout
         private navigationRows_: PageNavigationTarget[][]
         private navigationTargets_: PageNavigationTarget[]
+        private contentOffsetX_: number
+        private contentOffsetY_: number
+        private viewportRect_: ui.Rect
+        private contentRect_: ui.Rect
         private measuredContentWidth_: number
         private measuredContentHeight_: number
 
@@ -1605,15 +1607,12 @@ namespace microcode {
             this.getProgram_ = getProgram
             this.getPage_ = getPage
             this.onActivateTarget_ = onActivateTarget
+            this.contentOffsetX_ = 0
+            this.contentOffsetY_ = 0
+            this.viewportRect_ = new ui.Rect()
+            this.contentRect_ = new ui.Rect()
             this.measuredContentWidth_ = 0
             this.measuredContentHeight_ = 0
-            this.contentLayout_ = new PageContentLayout(this)
-            this.scrollLayout_ = new ui.UiScrollViewportLayout({
-                layoutSpec: this.layoutSpec,
-                child: this.contentLayout_,
-                scrollX: true,
-                scrollY: true,
-            })
             this.toolbar_ = undefined
             this.focus_ = undefined
             this.layout_ = undefined
@@ -1625,25 +1624,28 @@ namespace microcode {
             constraints: ui.UiLayoutConstraints,
             output: ui.UiMeasuredSize,
         ): void {
-            this.scrollLayout_.measure(constraints, output)
+            output.set(
+                UI_SCREEN_WIDTH,
+                UI_SCREEN_HEIGHT - EDITOR_CONTENT_Y,
+                UI_SCREEN_WIDTH,
+                UI_SCREEN_HEIGHT - EDITOR_CONTENT_Y,
+            )
             this.clearLayoutInvalidation()
         }
 
         public arrange(rect: ui.Rect): void {
             this.finalRect.copyFrom(rect)
-            this.scrollLayout_.arrange(rect)
+            this.updateViewportRect()
             this.rebuildLayout(true)
             this.clearLayoutInvalidation()
         }
 
         public invalidateLayout(): void {
             this.layoutDirty = true
-            this.scrollLayout_.invalidateLayout()
         }
 
         public clearLayoutInvalidation(): void {
             this.layoutDirty = false
-            this.scrollLayout_.clearLayoutInvalidation()
         }
 
         public registerFocusTargets(focus: ui.UiFocusState): void {
@@ -1671,10 +1673,8 @@ namespace microcode {
 
         public pageChanged(): void {
             this.invalidateLayout()
-            if (this.finalRect.width || this.finalRect.height) {
-                this.scrollLayout_.arrange(this.finalRect)
+            if (this.finalRect.width || this.finalRect.height)
                 this.rebuildLayout(true)
-            }
             this.refreshFocusTargets()
         }
 
@@ -1745,18 +1745,6 @@ namespace microcode {
             const page = this.layout_
             if (!page) return
             this.drawPage(surface, assets, focus, page)
-        }
-
-        public measureContent(output: ui.UiMeasuredSize): void {
-            const page = this.measurePageContent()
-            output.set(
-                page ? page.width : 0,
-                page ? page.height : 0,
-                page ? page.width : 0,
-                page ? page.height : 0,
-            )
-            this.measuredContentWidth_ = output.preferredWidth
-            this.measuredContentHeight_ = output.preferredHeight
         }
 
         public handleBack(
@@ -1870,33 +1858,32 @@ namespace microcode {
         public handleScrollRequest(request: ui.UiFocusScrollRequest): void {
             if (request.scrollOwnerId != EDITOR_PAGE_SCROLL_OWNER) return
             if (!this.scrollRequestNeedsScroll(request)) return
-            const previousOffsetX = this.scrollLayout_.contentOffsetX
-            const previousOffsetY = this.scrollLayout_.contentOffsetY
-            this.scrollLayout_.scrollContentRectIntoView(request.targetRect)
+            const previousOffsetX = this.contentOffsetX_
+            const previousOffsetY = this.contentOffsetY_
+            this.scrollContentRectIntoView(request.targetRect)
             if (
-                previousOffsetX == this.scrollLayout_.contentOffsetX &&
-                previousOffsetY == this.scrollLayout_.contentOffsetY
+                previousOffsetX == this.contentOffsetX_ &&
+                previousOffsetY == this.contentOffsetY_
             )
                 return
-            this.scrollLayout_.arrange(this.finalRect)
             this.refreshScrollLayout()
             this.refreshFocusTargets()
         }
 
         public atVerticalBoundary(direction: ui.UiFocusDirection): boolean {
-            if (direction == "up") return this.scrollLayout_.contentOffsetY == 0
+            if (direction == "up") return this.contentOffsetY_ == 0
             if (direction == "down") {
                 const maxOffset = Math.max(
                     this.measuredContentHeight_ - this.finalRect.height,
                     0,
                 )
-                return this.scrollLayout_.contentOffsetY >= maxOffset
+                return this.contentOffsetY_ >= maxOffset
             }
             return true
         }
 
         public atHorizontalOrigin(): boolean {
-            return this.scrollLayout_.contentOffsetX == 0
+            return this.contentOffsetX_ == 0
         }
 
         public horizontalOriginScrollRect(target: PageNavigationTarget): ui.Rect {
@@ -1911,7 +1898,7 @@ namespace microcode {
         public verticalBoundaryScrollRect(
             direction: ui.UiFocusDirection,
         ): ui.Rect {
-            const x = this.scrollLayout_.contentOffsetX
+            const x = this.contentOffsetX_
             const width = Math.max(this.finalRect.width, 1)
             if (direction == "down")
                 return new ui.Rect(
@@ -1972,25 +1959,17 @@ namespace microcode {
 
             const rules = this.layoutRules(page)
             const content = this.arrangeRules(rules)
-            const viewport = new ui.Rect()
-            const contentRect = new ui.Rect()
-            this.scrollLayout_.getViewportRect(viewport)
-            this.scrollLayout_.getContentRect(contentRect)
+            this.measuredContentWidth_ = content.width
+            this.measuredContentHeight_ = content.height
+            this.updateContentRect()
             return {
                 control: this.pageControl(page),
-                viewport,
-                content: contentRect,
+                viewport: this.viewportRect_.clone(),
+                content: this.contentRect_.clone(),
                 contentWidth: content.width,
                 contentHeight: content.height,
                 rules,
             }
-        }
-
-        private measurePageContent(): ui.Size {
-            const page = this.currentPage()
-            if (!page) return undefined
-            const rules = this.layoutRules(page)
-            return this.arrangeRules(rules)
         }
 
         private currentPage(): PageDefn {
@@ -2085,9 +2064,75 @@ namespace microcode {
                 this.rebuildLayout(true)
                 return
             }
-            this.scrollLayout_.getViewportRect(this.layout_.viewport)
-            this.scrollLayout_.getContentRect(this.layout_.content)
+            this.updateContentRect()
+            this.layout_.viewport.copyFrom(this.viewportRect_)
+            this.layout_.content.copyFrom(this.contentRect_)
             this.rebuildNavigationCache()
+        }
+
+        private updateViewportRect(): void {
+            this.viewportRect_.copyFrom(this.finalRect)
+        }
+
+        private updateContentRect(): void {
+            this.contentOffsetX_ = this.clampScrollOffset(
+                this.contentOffsetX_,
+                this.measuredContentWidth_,
+                this.viewportRect_.width,
+            )
+            this.contentOffsetY_ = this.clampScrollOffset(
+                this.contentOffsetY_,
+                this.measuredContentHeight_,
+                this.viewportRect_.height,
+            )
+            this.contentRect_.set(
+                this.viewportRect_.x - this.contentOffsetX_,
+                this.viewportRect_.y - this.contentOffsetY_,
+                this.measuredContentWidth_,
+                this.measuredContentHeight_,
+            )
+        }
+
+        private scrollContentRectIntoView(target: ui.Rect): void {
+            this.contentOffsetX_ = this.scrollAxisIntoView(
+                this.contentOffsetX_,
+                this.viewportRect_.width,
+                this.measuredContentWidth_,
+                target.x,
+                target.width,
+            )
+            this.contentOffsetY_ = this.scrollAxisIntoView(
+                this.contentOffsetY_,
+                this.viewportRect_.height,
+                this.measuredContentHeight_,
+                target.y,
+                target.height,
+            )
+        }
+
+        private scrollAxisIntoView(
+            offset: number,
+            viewportSize: number,
+            contentSize: number,
+            targetStart: number,
+            targetSize: number,
+        ): number {
+            let nextOffset = offset
+            const targetEnd = targetStart + targetSize
+            if (targetSize > viewportSize) nextOffset = targetStart
+            else if (targetStart < offset) nextOffset = targetStart
+            else if (targetEnd > offset + viewportSize)
+                nextOffset = targetEnd - viewportSize
+            return this.clampScrollOffset(nextOffset, contentSize, viewportSize)
+        }
+
+        private clampScrollOffset(
+            offset: number,
+            contentSize: number,
+            viewportSize: number,
+        ): number {
+            const maxOffset = Math.max(contentSize - viewportSize, 0)
+            return Math.min(Math.max(offset, 0), maxOffset)
         }
 
         private scrollRequestNeedsScroll(
@@ -3115,44 +3160,6 @@ namespace microcode {
     interface PageTargetPosition {
         row: number
         column: number
-    }
-
-    class PageContentLayout implements ui.UiLayoutNode {
-        public readonly layoutSpec: ui.UiLayoutSpec
-        public readonly finalRect: ui.Rect
-        public layoutDirty: boolean
-        private owner_: PageView
-
-        constructor(owner: PageView) {
-            this.owner_ = owner
-            this.layoutSpec = {
-                width: { mode: "content" },
-                height: { mode: "content" },
-            }
-            this.finalRect = new ui.Rect()
-            this.layoutDirty = true
-        }
-
-        public measure(
-            constraints: ui.UiLayoutConstraints,
-            output: ui.UiMeasuredSize,
-        ): void {
-            this.owner_.measureContent(output)
-            this.clearLayoutInvalidation()
-        }
-
-        public arrange(rect: ui.Rect): void {
-            this.finalRect.copyFrom(rect)
-            this.clearLayoutInvalidation()
-        }
-
-        public invalidateLayout(): void {
-            this.layoutDirty = true
-        }
-
-        public clearLayoutInvalidation(): void {
-            this.layoutDirty = false
-        }
     }
 
     type RuleSection = "sensors" | "filters" | "actuators" | "modifiers"
