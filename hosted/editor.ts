@@ -1175,7 +1175,7 @@ namespace microcode {
                 EDITOR_ICON_FIELD_MODAL_STYLE,
                 controls,
                 5,
-                undefined,
+                EDITOR_FIELD_MODAL_GRID_GAP,
                 !target.pending,
                 (controlValue, control) => {
                     if (controlValue.kind == "commit")
@@ -1206,12 +1206,9 @@ namespace microcode {
                 columnCount,
                 controlWidth: EDITOR_FIELD_MODAL_CELL_SIZE,
                 controlHeight: EDITOR_FIELD_MODAL_CELL_SIZE,
-                rowGap:
-                    rowGap !== undefined ? rowGap : EDITOR_FIELD_MODAL_GRID_GAP,
+                rowGap,
                 columnGap: EDITOR_FIELD_MODAL_GRID_GAP,
-                titleControlWidth: EDITOR_FIELD_MODAL_CELL_SIZE,
-                titleControlHeight: EDITOR_FIELD_MODAL_CELL_SIZE,
-                modalStyle: modalStyle || EDITOR_FIELD_MODAL_STYLE,
+                modalStyle,
                 onActivate,
             })
         }
@@ -1232,7 +1229,7 @@ namespace microcode {
                 return {
                     id: "ok",
                     value: { kind: "commit" },
-                    bitmap: this.okBitmap(),
+                    text: "OK",
                     style: EDITOR_FIELD_OK_STYLE,
                 }
             return {
@@ -1241,28 +1238,6 @@ namespace microcode {
                 bitmapId: "delete",
                 style: EDITOR_FIELD_DELETE_STYLE,
             }
-        }
-
-        private okBitmap(): Bitmap {
-            const font = bitmaps.font8
-            const text = "OK"
-            const bitmap = bitmaps.create(
-                EDITOR_FIELD_MODAL_CELL_SIZE,
-                EDITOR_FIELD_MODAL_CELL_SIZE,
-            )
-            const x = Math.max(
-                0,
-                Math.idiv(
-                    EDITOR_FIELD_MODAL_CELL_SIZE - font.charWidth * text.length,
-                    2,
-                ),
-            )
-            const y = Math.max(
-                0,
-                Math.idiv(EDITOR_FIELD_MODAL_CELL_SIZE - font.charHeight, 2),
-            )
-            bitmap.print(text, x, y, 15, font)
-            return bitmap
         }
 
         private createIconFieldControls(
@@ -1275,7 +1250,7 @@ namespace microcode {
                         this.fieldCellControl(
                             row,
                             col,
-                            this.iconFieldBitmap(field, row, col),
+                            this.iconFieldBitmapId(field, row, col),
                         ),
                     )
                 }
@@ -1292,7 +1267,7 @@ namespace microcode {
             const wasRunning = isProgramRunning()
             return this.createFieldEditorPicker(
                 icons.get(Tid.TID_ACTUATOR_MUSIC),
-                undefined,
+                EDITOR_FIELD_MODAL_STYLE,
                 controls,
                 MELODY_LENGTH,
                 EDITOR_MELODY_FIELD_MODAL_ROW_GAP,
@@ -1328,30 +1303,25 @@ namespace microcode {
         private fieldCellControl(
             row: number,
             col: number,
-            bitmap: string | Bitmap,
+            bitmapId: string,
         ): ui.UiControl<FieldEditorModalValue> {
-            const control: ui.UiControl<FieldEditorModalValue> = {
+            return {
                 id: "cell-" + row + "-" + col,
                 value: {
                     kind: "cell",
                     row,
                     col,
                 },
+                bitmapId,
                 style: ui.UiButtonStyles.Transparent,
             }
-            if (typeof bitmap == "string") {
-                control.bitmapId = bitmap
-            } else {
-                control.bitmap = bitmap
-            }
-            return control
         }
 
-        private iconFieldBitmap(
+        private iconFieldBitmapId(
             field: Bitmap,
             row: number,
             col: number,
-        ): string | Bitmap {
+        ): string {
             return field.getPixel(col, row) ? "solid_red" : "led_off"
         }
 
@@ -1373,14 +1343,11 @@ namespace microcode {
             const value = control.value
             const on = field.getPixel(value.col, value.row) ? 0 : 1
             field.setPixel(value.col, value.row, on)
-            const bitmap = this.iconFieldBitmap(field, value.row, value.col)
-            if (typeof bitmap == "string") {
-                control.bitmapId = bitmap
-                control.bitmap = undefined
-            } else {
-                control.bitmap = bitmap
-                control.bitmapId = undefined
-            }
+            control.bitmapId = this.iconFieldBitmapId(
+                field,
+                value.row,
+                value.col,
+            )
         }
 
         private toggleMelodyFieldCell(
@@ -1390,21 +1357,18 @@ namespace microcode {
         ): void {
             const value = control.value
             const note = (NUM_NOTES - 1 - value.row).toString()
-            const active = field.notes.charAt(value.col) == note
+            const previous = field.notes.charAt(value.col)
+            const active = previous == note
             const next = active ? "." : note
             field.notes =
                 field.notes.slice(0, value.col) +
                 next +
                 field.notes.slice(value.col + 1)
-            for (let i = 0; i < controls.length; i++) {
-                const other = controls[i]
-                if (other.value.kind != "cell") continue
-                if (other.value.col != value.col) continue
-                other.bitmapId = this.melodyFieldBitmapId(
-                    field,
-                    other.value.row,
-                    other.value.col,
-                )
+            control.bitmapId = active ? "note_off" : "note_on"
+            if (!active && previous != ".") {
+                const previousRow = NUM_NOTES - 1 - parseInt(previous)
+                controls[previousRow * MELODY_LENGTH + value.col].bitmapId =
+                    "note_off"
             }
         }
 
@@ -1911,25 +1875,22 @@ namespace microcode {
                 rows,
                 verticalStrategy: "column",
             })
+            if (result.kind == "moved") return result
             const position = this.positionForTargetId(request.currentTargetId)
             if (!position) return this.moveToTarget(undefined, rows[0][0])
 
             switch (request.direction) {
                 case "left":
-                    if (result.kind == "moved") return result
                     if (position.column == 0 && !this.atHorizontalOrigin())
                         return this.horizontalOriginScrollMove(rows, position)
                     return this.horizontalEdgeMove(rows, position, -1)
                 case "right":
-                    if (result.kind == "moved") return result
                     return this.horizontalEdgeMove(rows, position, 1)
                 case "up":
-                    if (result.kind == "moved") return result
                     if (!this.atVerticalBoundary("up"))
                         return this.boundaryScrollMove(rows, position, "up")
                     return this.toolbarMove(rows, position)
                 case "down":
-                    if (result.kind == "moved") return result
                     if (!this.atVerticalBoundary("down"))
                         return this.boundaryScrollMove(rows, position, "down")
                     return result
