@@ -1320,10 +1320,8 @@ namespace microcode {
             }
             if (typeof bitmap == "string") {
                 control.bitmapId = bitmap
-                control.toggled = bitmap == "solid_red" || bitmap == "note_on"
             } else {
                 control.bitmap = bitmap
-                control.toggled = false
             }
             return control
         }
@@ -1365,7 +1363,6 @@ namespace microcode {
                 control.bitmap = bitmap
                 control.bitmapId = undefined
             }
-            control.toggled = on != 0
         }
 
         private toggleMelodyFieldCell(
@@ -1390,7 +1387,6 @@ namespace microcode {
                     other.value.row,
                     other.value.col,
                 )
-                other.toggled = other.bitmapId == "note_on"
             }
         }
 
