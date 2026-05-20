@@ -41,11 +41,9 @@ namespace microcode {
 
     interface RuleTargetControlValue {
         kind: RuleTargetKind
-        rule: RuleDefn
         ruleIndex: number
         section?: RuleSection
         index?: number
-        tile?: Tile
     }
 
     interface RuleTargetFocus {
@@ -437,26 +435,22 @@ namespace microcode {
             value: RuleTargetControlValue,
         ): void {
             if (value.kind == "handle") this.openRuleHandleModal(value)
-            else if (
-                value.kind == "tile" &&
-                isNumericEntryTile(value.tile)
-            )
-                this.openNumericEntryModal({
-                    value,
-                    tile: value.tile,
-                    pending: false,
-                })
-            else if (
-                value.kind == "tile" &&
-                isIconOrMelodyFieldEditorTile(value.tile)
-            )
-                this.openFieldEditorModal({
-                    value,
-                    tile: value.tile,
-                    pending: false,
-                })
-            else if (value.kind == "tile" || value.kind == "insert")
-                this.openTileSuggestionModal(value)
+            else if (value.kind == "tile") {
+                const tile = this.targetTile(value)
+                if (tile && isNumericEntryTile(tile))
+                    this.openNumericEntryModal({
+                        value,
+                        tile,
+                        pending: false,
+                    })
+                else if (tile && isIconOrMelodyFieldEditorTile(tile))
+                    this.openFieldEditorModal({
+                        value,
+                        tile,
+                        pending: false,
+                    })
+                else this.openTileSuggestionModal(value)
+            } else if (value.kind == "insert") this.openTileSuggestionModal(value)
         }
 
         private openRuleHandleModal(value: RuleTargetControlValue): void {
@@ -618,6 +612,19 @@ namespace microcode {
             return this.progdef_ ? this.progdef_.pages[this.currPage_] : undefined
         }
 
+        private targetRule(value: RuleTargetControlValue): RuleDefn {
+            const page = this.currentPage()
+            if (!page) return undefined
+            if (this.isVirtualRule(value)) return new RuleDefn()
+            return page.rules[value.ruleIndex]
+        }
+
+        private targetTile(value: RuleTargetControlValue): Tile {
+            if (!value.section || value.index === undefined) return undefined
+            const rule = this.targetRule(value)
+            return rule ? rule.getRuleRep()[value.section][value.index] : undefined
+        }
+
         private isVirtualRule(value: RuleTargetControlValue): boolean {
             return value.ruleIndex >= this.realRuleCount(this.currentPage())
         }
@@ -639,8 +646,10 @@ namespace microcode {
             value: RuleTargetControlValue,
         ): ui.UiModal<TileSuggestionModalResult> {
             if (!this.isTileSuggestionTarget(value)) return undefined
+            const rule = this.targetRule(value)
+            if (!rule) return undefined
             const suggestions = Language.getTileSuggestions(
-                value.rule,
+                rule,
                 value.section,
                 value.index,
             )
@@ -682,7 +691,8 @@ namespace microcode {
         private isTileSuggestionTarget(value: RuleTargetControlValue): boolean {
             if (!value.section || value.index === undefined) return false
             if (value.kind == "insert") return true
-            return value.kind == "tile" && value.tile && !isFieldEditorTile(value.tile)
+            const tile = this.targetTile(value)
+            return value.kind == "tile" && tile && !isFieldEditorTile(tile)
         }
 
         private createTileSuggestionControls(
@@ -748,20 +758,22 @@ namespace microcode {
         private selectedTileSuggestionTid(
             value: RuleTargetControlValue,
         ): number {
-            if (!value.tile) return undefined
-            if (!isFieldEditorTile(value.tile) && isNumericEntryTile(value.tile))
+            const tile = this.targetTile(value)
+            if (!tile) return undefined
+            if (!isFieldEditorTile(tile) && isNumericEntryTile(tile))
                 return Tid.TID_DECIMAL_EDITOR
-            return getTid(value.tile)
+            return getTid(tile)
         }
 
         private canDeleteFromSuggestionPicker(
             value: RuleTargetControlValue,
         ): boolean {
+            const tile = this.targetTile(value)
             return (
                 value.kind == "tile" &&
-                value.tile &&
-                !isFieldEditorTile(value.tile) &&
-                filterModifierWithDelete(value.tile)
+                tile &&
+                !isFieldEditorTile(tile) &&
+                filterModifierWithDelete(tile)
             )
         }
 
@@ -811,15 +823,16 @@ namespace microcode {
             value: RuleTargetControlValue,
             tile: Tile,
         ): ModifierEditor {
+            const existingTile = this.targetTile(value)
             if (
                 value.kind == "tile" &&
-                value.tile &&
-                !isFieldEditorTile(value.tile) &&
-                isNumericEntryTile(value.tile) &&
+                existingTile &&
+                !isFieldEditorTile(existingTile) &&
+                isNumericEntryTile(existingTile) &&
                 tile instanceof DigitEditor
             ) {
                 return new DigitEditor(
-                    { num: numericEntryText(value.tile) },
+                    { num: numericEntryText(existingTile) },
                     getTid(tile) == Tid.TID_POS_INT_EDITOR,
                 )
             }
@@ -833,7 +846,9 @@ namespace microcode {
         ): ModifierEditor {
             if (!value.section || value.index === undefined || value.index <= 0)
                 return undefined
-            const tiles = value.rule.getRuleRep()[value.section]
+            const rule = this.targetRule(value)
+            if (!rule) return undefined
+            const tiles = rule.getRuleRep()[value.section]
             const previous = tiles[value.index - 1]
             return previous instanceof ModifierEditor
                 ? (previous as ModifierEditor)
@@ -851,9 +866,10 @@ namespace microcode {
                 return
             }
             let added = 0
+            let rule: RuleDefn = undefined
             const inserting = value.kind == "insert"
             this.applyHostedEdit(wasRunning, () => {
-                const rule = this.committedTileSuggestionRule(value)
+                rule = this.committedTileSuggestionRule(value)
                 if (!rule) return
                 if (inserting) added = rule.push(tile, value.section)
                 else rule.updateAt(value.section, value.index, tile)
@@ -861,7 +877,7 @@ namespace microcode {
             })
             this.closeModal()
             if (inserting && !focusInsertedTile)
-                this.focusAfterInsertion(value, added)
+                this.focusAfterInsertion(value, rule, added)
             else
                 this.focusRuleTargetOrHandle(
                     value.ruleIndex,
@@ -874,10 +890,10 @@ namespace microcode {
         private committedTileSuggestionRule(
             value: RuleTargetControlValue,
         ): RuleDefn {
-            if (!this.isVirtualRule(value)) return value.rule
+            if (!this.isVirtualRule(value)) return this.targetRule(value)
             const page = this.currentPage()
             if (!page) return undefined
-            return page.insertRuleAt(value.ruleIndex, value.rule)
+            return page.insertRuleAt(value.ruleIndex, new RuleDefn())
         }
 
         private deleteSuggestedTile(value: RuleTargetControlValue): void {
@@ -888,8 +904,10 @@ namespace microcode {
             const wasRunning = isProgramRunning()
             const fallback = this.deleteFocusTarget(value)
             this.applyHostedEdit(wasRunning, () => {
-                value.rule.deleteAt(value.section, value.index)
-                Language.ensureValid(value.rule)
+                const rule = this.targetRule(value)
+                if (!rule) return
+                rule.deleteAt(value.section, value.index)
+                Language.ensureValid(rule)
             })
             this.closeModal()
             this.focusRuleTargetOrHandle(
@@ -902,12 +920,14 @@ namespace microcode {
 
         private focusAfterInsertion(
             value: RuleTargetControlValue,
+            rule: RuleDefn,
             added: number,
         ): void {
+            if (!rule) return
             if (
                 this.focusFollowingInsertion(
                     value.ruleIndex,
-                    value.rule,
+                    rule,
                     value.section,
                     value.index,
                     added,
@@ -1062,7 +1082,8 @@ namespace microcode {
             if (this.numericEntryResultChanged(value, text))
                 this.applyHostedEdit(wasRunning, () => {
                     this.writeNumericEntryResult(value, text)
-                    Language.ensureValid(value.rule)
+                    const rule = this.targetRule(value)
+                    if (rule) Language.ensureValid(rule)
                 })
             this.closeModal()
             this.pageView_.focusRuleTarget(
@@ -1091,30 +1112,36 @@ namespace microcode {
             value: RuleTargetControlValue,
             text: string,
         ): boolean {
-            if (getFieldEditor(value.tile)) {
-                const editor = value.tile as DigitEditor
+            const tile = this.targetTile(value)
+            if (!tile) return false
+            if (getFieldEditor(tile)) {
+                const editor = tile as DigitEditor
                 return editor.getField().num != text
             }
             if (!value.section || value.index === undefined) return false
             const literal = numericLiteralTile(text)
-            return literal === undefined || getTid(value.tile) != literal
+            return literal === undefined || getTid(tile) != literal
         }
 
         private writeNumericEntryResult(
             value: RuleTargetControlValue,
             text: string,
         ): boolean {
-            if (getFieldEditor(value.tile)) {
-                const editor = value.tile as DigitEditor
+            const tile = this.targetTile(value)
+            if (!tile) return false
+            if (getFieldEditor(tile)) {
+                const editor = tile as DigitEditor
                 if (editor.getField().num == text) return false
                 editor.getField().num = text
                 return true
             }
             if (!value.section || value.index === undefined) return false
             const literal = numericLiteralTile(text)
-            if (literal !== undefined && getTid(value.tile) == literal)
+            if (literal !== undefined && getTid(tile) == literal)
                 return false
-            value.rule.updateAt(
+            const rule = this.targetRule(value)
+            if (!rule) return false
+            rule.updateAt(
                 value.section,
                 value.index,
                 literal !== undefined ? literal : new DigitEditor({ num: text }),
@@ -1479,8 +1506,10 @@ namespace microcode {
             }
             const fallback = this.deleteFocusTarget(value)
             this.applyHostedEdit(wasRunning, () => {
-                value.rule.deleteAt(value.section, value.index)
-                Language.ensureValid(value.rule)
+                const rule = this.targetRule(value)
+                if (!rule) return
+                rule.deleteAt(value.section, value.index)
+                Language.ensureValid(rule)
             })
             this.closeModal()
             if (
@@ -1504,7 +1533,9 @@ namespace microcode {
         ): RuleTargetFocus {
             if (!value.section || value.index === undefined)
                 return { ruleIndex: value.ruleIndex, kind: "handle" }
-            const tiles = value.rule.getRuleRep()[value.section]
+            const rule = this.targetRule(value)
+            if (!rule) return { ruleIndex: value.ruleIndex, kind: "handle" }
+            const tiles = rule.getRuleRep()[value.section]
             if (value.index < tiles.length - 1) {
                 return {
                     ruleIndex: value.ruleIndex,
@@ -2737,7 +2768,6 @@ namespace microcode {
                 id: ruleTargetControlId(this.ruleIndex, "static") + "/" + bitmapId,
                 value: {
                     kind: "static",
-                    rule: this.rule,
                     ruleIndex: this.ruleIndex,
                 },
                 bitmap,
@@ -2771,11 +2801,9 @@ namespace microcode {
                 id: this.targetId(kind, section, index),
                 value: {
                     kind,
-                    rule: this.rule,
                     ruleIndex: this.ruleIndex,
                     section,
                     index,
-                    tile,
                 },
                 bitmap,
                 customContent,
