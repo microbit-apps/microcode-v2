@@ -27,29 +27,6 @@ namespace microcode {
         col?: number
     }
 
-    type FieldEditorModalActionResult =
-        | { kind: "keepOpen"; value?: FieldEditorModalValue }
-        | { kind: "closed" }
-        | { kind: "deleted" }
-
-    interface FieldEditorModalActivation {
-        (
-            control: ui.UiControl<FieldEditorModalValue>,
-        ): FieldEditorModalActionResult
-    }
-
-    type FieldEditorModalResult =
-        | {
-              kind: "keepOpen"
-              controlId: string
-              value: FieldEditorModalValue
-              control: ui.UiControl<FieldEditorModalValue>
-              updatedValue?: FieldEditorModalValue
-          }
-        | { kind: "closed"; modalScopeId: ui.UiFocusScopeId }
-        | { kind: "cancelled"; modalScopeId: ui.UiFocusScopeId }
-        | { kind: "deleted"; modalScopeId: ui.UiFocusScopeId }
-
     interface PageControlValue {
         kind: "page"
         page: PageDefn
@@ -361,6 +338,13 @@ namespace microcode {
 
         private handleBack(): void {
             if (this.pageView_.handleBack(this.focus, this.toolbar_)) return
+            if (
+                this.focus.getActiveScopeId() == EDITOR_TOOLBAR_SCOPE &&
+                this.currPage_ != 0
+            ) {
+                this.switchToPage(0)
+                return
+            }
             if (this.currPage_ == 0) this.navigation_.launchHome()
         }
 
@@ -1134,7 +1118,7 @@ namespace microcode {
 
         private createFieldEditorModal(
             target: TileEditTarget,
-        ): FieldEditorToggleModal {
+        ): ui.UiPicker<FieldEditorModalValue> {
             if (!target.tile || !isIconOrMelodyFieldEditorTile(target.tile))
                 return undefined
             if (isIconFieldEditorTile(target.tile))
@@ -1151,35 +1135,114 @@ namespace microcode {
         private createIconFieldEditorModal(
             target: TileEditTarget,
             tile: IconEditor,
-        ): FieldEditorToggleModal {
+        ): ui.UiPicker<FieldEditorModalValue> {
             const field = cloneIconField(tile)
             const controls = this.createIconFieldControls(field)
             const wasRunning = isProgramRunning()
-            return new FieldEditorToggleModal({
-                titleBitmap: icons.get(Tid.TID_ACTUATOR_PAINT),
-                modalStyle: EDITOR_ICON_FIELD_MODAL_STYLE,
+            return this.createFieldEditorPicker(
+                icons.get(Tid.TID_ACTUATOR_PAINT),
+                EDITOR_ICON_FIELD_MODAL_STYLE,
                 controls,
-                columnCount: 5,
-                defaultControlId: "cell-2-2",
-                controlSize: EDITOR_FIELD_MODAL_CELL_SIZE,
-                deleteEnabled: !target.pending,
-                onActivate: control => {
-                    const controlValue = control.value
+                5,
+                undefined,
+                !target.pending,
+                (controlValue, control) => {
                     if (controlValue.kind == "commit")
-                        return { kind: "closed" }
-                    if (controlValue.kind == "delete")
-                        return { kind: "deleted" }
-                    this.toggleIconFieldCell(field, control)
-                    return { kind: "keepOpen", value: controlValue }
+                        this.commitIconFieldEditor(target, field, wasRunning)
+                    else if (controlValue.kind == "delete")
+                        this.deleteEditedTile(target.value, wasRunning)
+                    else
+                        this.toggleIconFieldCell(field, control)
                 },
-                onResult: result =>
-                    this.applyIconFieldEditorResult(
-                        target,
-                        field,
-                        result,
-                        wasRunning,
-                    ),
+            )
+        }
+
+        private createFieldEditorPicker(
+            titleBitmap: Bitmap,
+            modalStyle: ui.UiModalStyle,
+            controls: ui.UiControl<FieldEditorModalValue>[],
+            columnCount: number,
+            rowGap: number,
+            deleteEnabled: boolean,
+            onActivate: ui.UiControlActivateHandler<FieldEditorModalValue>,
+        ): ui.UiPicker<FieldEditorModalValue> {
+            return new ui.UiPicker<FieldEditorModalValue>({
+                modalScopeId: EDITOR_FIELD_MODAL_SCOPE,
+                controls,
+                titleControls: this.fieldTitleControls(deleteEnabled),
+                titleBitmap,
+                defaultControlId: "cell-2-2",
+                closeOnActivate: false,
+                columnCount,
+                horizontalWrap: true,
+                controlWidth: EDITOR_FIELD_MODAL_CELL_SIZE,
+                controlHeight: EDITOR_FIELD_MODAL_CELL_SIZE,
+                rowGap:
+                    rowGap !== undefined
+                        ? rowGap
+                        : EDITOR_FIELD_MODAL_GRID_GAP,
+                columnGap: EDITOR_FIELD_MODAL_GRID_GAP,
+                titleControlWidth: EDITOR_FIELD_MODAL_CELL_SIZE,
+                titleControlHeight: EDITOR_FIELD_MODAL_CELL_SIZE,
+                titleGap: EDITOR_FIELD_MODAL_GRID_GAP,
+                modalStyle: modalStyle || AppStyles.Modal,
+                onActivate,
             })
+        }
+
+        private fieldTitleControls(
+            deleteEnabled: boolean,
+        ): ui.UiControl<FieldEditorModalValue>[] {
+            const controls: ui.UiControl<FieldEditorModalValue>[] = []
+            if (deleteEnabled) controls.push(this.fieldCommandControl("delete"))
+            controls.push(this.fieldCommandControl("ok"))
+            return controls
+        }
+
+        private fieldCommandControl(
+            action: "ok" | "delete",
+        ): ui.UiControl<FieldEditorModalValue> {
+            if (action == "ok")
+                return {
+                    id: "ok",
+                    value: { kind: "commit" },
+                    bitmap: this.okBitmap(),
+                    style: EDITOR_FIELD_OK_STYLE,
+                }
+            return {
+                id: "delete",
+                value: { kind: "delete" },
+                bitmapId: "delete",
+                style: EDITOR_FIELD_DELETE_STYLE,
+            }
+        }
+
+        private okBitmap(): Bitmap {
+            const font = bitmaps.font8
+            const text = "OK"
+            const bitmap = bitmaps.create(
+                EDITOR_FIELD_MODAL_CELL_SIZE,
+                EDITOR_FIELD_MODAL_CELL_SIZE,
+            )
+            const x = Math.max(
+                0,
+                Math.idiv(
+                    EDITOR_FIELD_MODAL_CELL_SIZE - font.charWidth * text.length,
+                    2,
+                ),
+            )
+            const y = Math.max(
+                0,
+                Math.idiv(EDITOR_FIELD_MODAL_CELL_SIZE - font.charHeight, 2),
+            )
+            bitmap.print(
+                text,
+                x,
+                y,
+                15,
+                font,
+            )
+            return bitmap
         }
 
         private createIconFieldControls(
@@ -1203,35 +1266,26 @@ namespace microcode {
         private createMelodyFieldEditorModal(
             target: TileEditTarget,
             tile: MelodyEditor,
-        ): FieldEditorToggleModal {
+        ): ui.UiPicker<FieldEditorModalValue> {
             const field = cloneMelodyField(tile)
             const controls = this.createMelodyFieldControls(field)
             const wasRunning = isProgramRunning()
-            return new FieldEditorToggleModal({
-                titleBitmap: icons.get(Tid.TID_ACTUATOR_MUSIC),
+            return this.createFieldEditorPicker(
+                icons.get(Tid.TID_ACTUATOR_MUSIC),
+                undefined,
                 controls,
-                columnCount: MELODY_LENGTH,
-                defaultControlId: "cell-2-2",
-                controlSize: EDITOR_FIELD_MODAL_CELL_SIZE,
-                rowGap: EDITOR_MELODY_FIELD_MODAL_ROW_GAP,
-                deleteEnabled: !target.pending,
-                onActivate: control => {
-                    const controlValue = control.value
+                MELODY_LENGTH,
+                EDITOR_MELODY_FIELD_MODAL_ROW_GAP,
+                !target.pending,
+                (controlValue, control) => {
                     if (controlValue.kind == "commit")
-                        return { kind: "closed" }
-                    if (controlValue.kind == "delete")
-                        return { kind: "deleted" }
-                    this.toggleMelodyFieldCell(field, controls, control)
-                    return { kind: "keepOpen", value: controlValue }
+                        this.commitMelodyFieldEditor(target, field, wasRunning)
+                    else if (controlValue.kind == "delete")
+                        this.deleteEditedTile(target.value, wasRunning)
+                    else
+                        this.toggleMelodyFieldCell(field, controls, control)
                 },
-                onResult: result =>
-                    this.applyMelodyFieldEditorResult(
-                        target,
-                        field,
-                        result,
-                        wasRunning,
-                    ),
-            })
+            )
         }
 
         private createMelodyFieldControls(
@@ -1340,32 +1394,6 @@ namespace microcode {
                 )
                 other.toggled = other.bitmapId == "note_on"
             }
-        }
-
-        private applyIconFieldEditorResult(
-            target: TileEditTarget,
-            field: Bitmap,
-            result: FieldEditorModalResult,
-            wasRunning: boolean,
-        ): void {
-            if (!result) return
-            if (result.kind == "closed")
-                this.commitIconFieldEditor(target, field, wasRunning)
-            else if (result.kind == "deleted")
-                this.deleteEditedTile(target.value, wasRunning)
-        }
-
-        private applyMelodyFieldEditorResult(
-            target: TileEditTarget,
-            field: Melody,
-            result: FieldEditorModalResult,
-            wasRunning: boolean,
-        ): void {
-            if (!result) return
-            if (result.kind == "closed")
-                this.commitMelodyFieldEditor(target, field, wasRunning)
-            else if (result.kind == "deleted")
-                this.deleteEditedTile(target.value, wasRunning)
         }
 
         private commitIconFieldEditor(
@@ -1510,207 +1538,6 @@ namespace microcode {
             if (wasRunning) runProgram(this.progdef_)
         }
 
-    }
-
-    interface FieldEditorToggleModalOptions {
-        title?: string
-        titleBitmap?: Bitmap | string
-        modalStyle?: ui.UiModalStyle
-        controls: ui.UiControl<FieldEditorModalValue>[]
-        columnCount: number
-        defaultControlId: string
-        controlSize: number
-        rowGap?: number
-        deleteEnabled?: boolean
-        onActivate: FieldEditorModalActivation
-        onResult: (result: FieldEditorModalResult) => void
-    }
-
-    class FieldEditorToggleModal
-        implements ui.UiModal<FieldEditorModalResult> {
-        public readonly layoutSpec: ui.UiLayoutSpec
-        public readonly finalRect: ui.Rect
-        public layoutDirty: boolean
-        private modal_: ui.UiPicker<FieldEditorModalValue>
-        private controlSize_: number
-        private onActivate_: FieldEditorModalActivation
-        private onResult_: (result: FieldEditorModalResult) => void
-
-        constructor(options: FieldEditorToggleModalOptions) {
-            this.controlSize_ = options.controlSize
-            this.modal_ = new ui.UiPicker<FieldEditorModalValue>({
-                modalScopeId: EDITOR_FIELD_MODAL_SCOPE,
-                controls: options.controls,
-                titleControls: this.titleControls(options.deleteEnabled !== false),
-                title: options.title,
-                titleBitmap: options.titleBitmap,
-                defaultControlId: options.defaultControlId,
-                closeOnActivate: false,
-                columnCount: options.columnCount,
-                horizontalWrap: true,
-                controlWidth: options.controlSize,
-                controlHeight: options.controlSize,
-                rowGap:
-                    options.rowGap !== undefined
-                        ? options.rowGap
-                        : EDITOR_FIELD_MODAL_GRID_GAP,
-                columnGap: EDITOR_FIELD_MODAL_GRID_GAP,
-                titleControlWidth: options.controlSize,
-                titleControlHeight: options.controlSize,
-                titleGap: EDITOR_FIELD_MODAL_GRID_GAP,
-                modalStyle: options.modalStyle || AppStyles.Modal,
-            })
-            this.layoutSpec = this.modal_.layoutSpec
-            this.finalRect = this.modal_.finalRect
-            this.layoutDirty = true
-            this.onActivate_ = options.onActivate
-            this.onResult_ = options.onResult
-        }
-
-        public get modalScopeId(): ui.UiFocusScopeId {
-            return EDITOR_FIELD_MODAL_SCOPE
-        }
-
-        public measure(
-            constraints: ui.UiLayoutConstraints,
-            output: ui.UiMeasuredSize,
-        ): void {
-            this.modal_.measure(constraints, output)
-            this.clearLayoutInvalidation()
-        }
-
-        public arrange(rect: ui.Rect): void {
-            this.modal_.arrange(rect)
-            this.clearLayoutInvalidation()
-        }
-
-        public invalidateLayout(): void {
-            this.layoutDirty = true
-            this.modal_.invalidateLayout()
-        }
-
-        public clearLayoutInvalidation(): void {
-            this.layoutDirty = false
-            this.modal_.clearLayoutInvalidation()
-        }
-
-        public open(
-            focus: ui.UiFocusState,
-            controller?: ui.UiFocusInputController,
-        ): ui.UiFocusSetResult {
-            return this.modal_.open(focus, controller)
-        }
-
-        public close(focus: ui.UiFocusState): ui.UiFocusSetResult {
-            return this.modal_.close(focus)
-        }
-
-        public handleFocusInput(
-            result: ui.UiFocusInputResult,
-        ): FieldEditorModalResult {
-            const pickerResult = this.modal_.handleFocusInput(result)
-            let modalResult: FieldEditorModalResult = undefined
-            if (pickerResult && pickerResult.kind == "keepOpen")
-                modalResult = this.createResultForActivation(pickerResult)
-            else if (pickerResult && pickerResult.kind == "cancelled") {
-                modalResult = {
-                    kind: "cancelled",
-                    modalScopeId: EDITOR_FIELD_MODAL_SCOPE,
-                }
-            }
-
-            if (modalResult && this.onResult_)
-                this.onResult_(modalResult)
-            return modalResult
-        }
-
-        public render(
-            surface: ui.DrawSurface,
-            assets: ui.UiAssetResolver,
-            focus?: ui.UiFocusState,
-        ): void {
-            this.modal_.render(surface, assets, focus)
-        }
-
-        private createResultForActivation(
-            result: {
-                kind: "keepOpen"
-                controlId: string
-                value: FieldEditorModalValue
-                control: ui.UiControl<FieldEditorModalValue>
-                updatedValue?: FieldEditorModalValue
-            },
-        ): FieldEditorModalResult {
-            const policyResult: FieldEditorModalActionResult = this.onActivate_
-                ? this.onActivate_(result.control)
-                : { kind: "keepOpen" }
-            if (policyResult.kind == "closed")
-                return {
-                    kind: "closed",
-                    modalScopeId: EDITOR_FIELD_MODAL_SCOPE,
-                }
-            if (policyResult.kind == "deleted")
-                return {
-                    kind: "deleted",
-                    modalScopeId: EDITOR_FIELD_MODAL_SCOPE,
-                }
-            return {
-                kind: "keepOpen",
-                controlId: result.controlId,
-                value: result.value,
-                control: result.control,
-                updatedValue: policyResult.value,
-            }
-        }
-
-        private titleControls(
-            deleteEnabled: boolean,
-        ): ui.UiControl<FieldEditorModalValue>[] {
-            const controls: ui.UiControl<FieldEditorModalValue>[] = []
-            if (deleteEnabled) controls.push(this.commandControl("delete"))
-            controls.push(this.commandControl("ok"))
-            return controls
-        }
-
-        private commandControl(
-            action: "ok" | "delete",
-        ): ui.UiControl<FieldEditorModalValue> {
-            if (action == "ok")
-                return {
-                    id: "ok",
-                    value: { kind: "commit" },
-                    bitmap: this.okBitmap(),
-                    style: EDITOR_FIELD_OK_STYLE,
-                }
-            return {
-                id: "delete",
-                value: { kind: "delete" },
-                bitmapId: "delete",
-                style: EDITOR_FIELD_DELETE_STYLE,
-            }
-        }
-
-        private okBitmap(): Bitmap {
-            const font = bitmaps.font8
-            const text = "OK"
-            const bitmap = bitmaps.create(this.controlSize_, this.controlSize_)
-            const x = Math.max(
-                0,
-                Math.idiv(this.controlSize_ - font.charWidth * text.length, 2),
-            )
-            const y = Math.max(
-                0,
-                Math.idiv(this.controlSize_ - font.charHeight, 2),
-            )
-            bitmap.print(
-                text,
-                x,
-                y,
-                15,
-                font,
-            )
-            return bitmap
-        }
     }
 
     class PageView
