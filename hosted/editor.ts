@@ -1735,16 +1735,8 @@ namespace microcode {
 
         public handleFocusInput(result: ui.UiFocusInputResult): void {
             if (result.kind == "activated") {
-                const activation =
-                    result.detail && result.detail.activationResult
-                        ? result.detail.activationResult
-                        : undefined
-                if (
-                    activation &&
-                    activation.kind == "activated" &&
-                    activation.scopeId == EDITOR_PAGE_SCOPE
-                ) {
-                    const target = this.targetByFocusId(activation.targetId)
+                if (result.scopeId == EDITOR_PAGE_SCOPE) {
+                    const target = this.targetByFocusId(result.targetId)
                     if (
                         target &&
                         target.control.value.kind != "static" &&
@@ -1936,7 +1928,7 @@ namespace microcode {
         ): ui.UiFocusMoveResult | undefined {
             const rows = this.navigationRows()
             if (!rows.length) return undefined
-            const result = ui.moveFocusInRaggedGrid({
+            const result = hostedMoveFocusInRaggedGrid({
                 scopeId: EDITOR_PAGE_SCOPE,
                 currentTargetId: request.currentTargetId,
                 direction: request.direction,
@@ -3385,17 +3377,10 @@ namespace microcode {
         ): EditorToolbarResult {
             if (
                 result.kind != "activated" ||
-                !result.detail ||
-                !result.detail.activationResult
+                result.scopeId != EDITOR_TOOLBAR_SCOPE
             )
                 return undefined
-            const activation = result.detail.activationResult
-            if (
-                activation.kind != "activated" ||
-                activation.scopeId != EDITOR_TOOLBAR_SCOPE
-            )
-                return undefined
-            const action = this.actionForTargetId(activation.targetId)
+            const action = this.actionForTargetId(result.targetId)
             if (action == "disk") this.openDisk_()
             else if (action == "run") runProgramIfStopped(this.getProgram_())
             else if (action == "stop") stopProgramIfRunning()
@@ -3418,12 +3403,12 @@ namespace microcode {
             request: ui.UiFocusNavigationRequest,
         ): ui.UiFocusMoveResult | undefined {
             if (request.scopeId != EDITOR_TOOLBAR_SCOPE) return undefined
-            const result = ui.moveFocusInRow({
-                scopeId: EDITOR_TOOLBAR_SCOPE,
-                currentTargetId: request.currentTargetId,
-                direction: request.direction,
-                targets: this.toolbarTargets(),
-            })
+            const result = hostedMoveFocusInRow(
+                EDITOR_TOOLBAR_SCOPE,
+                request.currentTargetId,
+                request.direction,
+                this.toolbarTargets(),
+            )
             if (result.kind == "moved") return result
             if (
                 result.kind != "exited" &&

@@ -15,8 +15,172 @@ namespace microcode {
         kind: "activated"
     }
 
+    interface HostedMoveInput {
+        scopeId: ui.UiFocusScopeId
+        currentTargetId?: ui.UiFocusId
+        direction: ui.UiFocusDirection
+        rows: ui.UiFocusNavigationTarget[][]
+        horizontalWrap?: boolean
+        verticalStrategy?: "column" | "nearest"
+    }
+
+    export function hostedMoveFocusInRow(
+        scopeId: ui.UiFocusScopeId,
+        currentTargetId: ui.UiFocusId,
+        direction: ui.UiFocusDirection,
+        targets: ui.UiFocusNavigationTarget[],
+    ): ui.UiFocusMoveResult {
+        return hostedMoveFocusInRaggedGrid({
+            scopeId,
+            currentTargetId,
+            direction,
+            rows: [targets],
+        })
+    }
+
+    export function hostedMoveFocusInRaggedGrid(
+        input: HostedMoveInput,
+    ): ui.UiFocusMoveResult {
+        const current = hostedCurrentCell(input.rows, input.currentTargetId)
+        if (!current)
+            return {
+                kind: "stayed",
+                scopeId: input.scopeId,
+                targetId: input.currentTargetId,
+                reason: "missingActive",
+            }
+        const destination =
+            input.direction == "left" || input.direction == "right"
+                ? hostedHorizontalDestination(input, current)
+                : hostedVerticalDestination(input, current)
+        if (destination)
+            return hostedMovedResult(
+                input.scopeId,
+                current.target,
+                destination.target,
+            )
+        if (
+            (input.direction == "left" || input.direction == "right") &&
+            input.horizontalWrap
+        )
+            return {
+                kind: "stayed",
+                scopeId: input.scopeId,
+                targetId: input.currentTargetId,
+                reason: "boundary",
+            }
+        return {
+            kind: "exited",
+            scopeId: input.scopeId,
+            targetId: input.currentTargetId,
+            direction: input.direction,
+        }
+    }
+
+    interface HostedMoveCell {
+        row: number
+        column: number
+        target: ui.UiFocusNavigationTarget
+    }
+
+    function hostedCurrentCell(
+        rows: ui.UiFocusNavigationTarget[][],
+        targetId: ui.UiFocusId,
+    ): HostedMoveCell {
+        for (let row = 0; row < rows.length; row++) {
+            const targets = rows[row]
+            for (let column = 0; column < targets.length; column++) {
+                const target = targets[column]
+                if (target.id == targetId && !target.hidden)
+                    return { row, column, target }
+            }
+        }
+        return undefined
+    }
+
+    function hostedHorizontalDestination(
+        input: HostedMoveInput,
+        current: HostedMoveCell,
+    ): HostedMoveCell {
+        const row = input.rows[current.row]
+        const step = input.direction == "left" ? -1 : 1
+        let column = current.column + step
+        while (column >= 0 && column < row.length) {
+            if (!row[column].hidden)
+                return { row: current.row, column, target: row[column] }
+            column += step
+        }
+        if (!input.horizontalWrap) return undefined
+        column = step < 0 ? row.length - 1 : 0
+        while (column != current.column) {
+            if (!row[column].hidden)
+                return { row: current.row, column, target: row[column] }
+            column += step
+        }
+        return undefined
+    }
+
+    function hostedVerticalDestination(
+        input: HostedMoveInput,
+        current: HostedMoveCell,
+    ): HostedMoveCell {
+        const step = input.direction == "up" ? -1 : 1
+        const sourceX =
+            current.target.rect.x + Math.idiv(current.target.rect.width, 2)
+        for (
+            let rowIndex = current.row + step;
+            rowIndex >= 0 && rowIndex < input.rows.length;
+            rowIndex += step
+        ) {
+            const row = input.rows[rowIndex]
+            if (input.verticalStrategy != "nearest") {
+                const target = row[current.column]
+                if (target && !target.hidden)
+                    return { row: rowIndex, column: current.column, target }
+            }
+            let best: HostedMoveCell = undefined
+            let bestDistance = 0
+            for (let column = 0; column < row.length; column++) {
+                const target = row[column]
+                if (target.hidden) continue
+                const dx = Math.abs(
+                    target.rect.x + Math.idiv(target.rect.width, 2) - sourceX,
+                )
+                if (!best || dx < bestDistance) {
+                    best = { row: rowIndex, column, target }
+                    bestDistance = dx
+                }
+            }
+            if (best) return best
+        }
+        return undefined
+    }
+
+    function hostedMovedResult(
+        scopeId: ui.UiFocusScopeId,
+        fromTarget: ui.UiFocusNavigationTarget,
+        toTarget: ui.UiFocusNavigationTarget,
+    ): ui.UiFocusMoveResult {
+        const result: ui.UiFocusMoveResult = {
+            kind: "moved",
+            fromScopeId: scopeId,
+            fromTargetId: fromTarget.id,
+            toScopeId: scopeId,
+            toTargetId: toTarget.id,
+        }
+        if (toTarget.scrollOwnerId !== undefined)
+            result.scrollRequest = {
+                scopeId,
+                targetId: toTarget.id,
+                scrollOwnerId: toTarget.scrollOwnerId,
+                targetRect: (toTarget.scrollRect || toTarget.rect).clone(),
+                reason: "focus",
+            }
+        return result
+    }
+
     export class HostedGrid<T>
-        implements ui.UiFocusableView<HostedGridResult>
+        implements ui.UiFocusableView<HostedGridResult>, ui.UiFocusNavigationProvider
     {
         public readonly layoutSpec: ui.UiLayoutSpec
         public readonly finalRect: ui.Rect
@@ -120,11 +284,7 @@ namespace microcode {
         public registerNavigation(
             controller: ui.UiFocusInputController,
         ): void {
-            controller.setNavigation(this.scopeId_, {
-                kind: "raggedGrid",
-                rows: this.navigationRows(),
-                horizontalWrap: true,
-            })
+            controller.setNavigation(this.scopeId_, this)
         }
 
         public focusDefault(
@@ -136,22 +296,12 @@ namespace microcode {
         public handleFocusInput(
             result: ui.UiFocusInputResult,
         ): HostedGridResult {
-            if (
-                result.kind != "activated" ||
-                !result.detail ||
-                !result.detail.activationResult
-            )
-                return undefined
-            const activation = result.detail.activationResult
-            if (
-                activation.kind != "activated" ||
-                activation.scopeId != this.scopeId_
-            )
+            if (result.kind != "activated" || result.scopeId != this.scopeId_)
                 return undefined
             const control = _uiControls.findControlByTargetId(
                 this.scopeId_,
                 this.controls_,
-                activation.targetId,
+                result.targetId,
             )
             if (!control) return undefined
             _uiControls.emitControlActivate(
@@ -161,6 +311,18 @@ namespace microcode {
                 undefined,
             )
             return { kind: "activated" }
+        }
+
+        public move(
+            request: ui.UiFocusNavigationRequest,
+        ): ui.UiFocusMoveResult {
+            return hostedMoveFocusInRaggedGrid({
+                scopeId: this.scopeId_,
+                currentTargetId: request.currentTargetId,
+                direction: request.direction,
+                rows: this.navigationRows(),
+                horizontalWrap: true,
+            })
         }
 
         public render(
@@ -301,7 +463,9 @@ namespace microcode {
         | { kind: "keepOpen" }
         | { kind: "cancelled"; modalScopeId: ui.UiFocusScopeId }
 
-    export class HostedPicker<T> implements ui.UiModal<HostedPickerResult<T>> {
+    export class HostedPicker<T>
+        implements ui.UiModal<HostedPickerResult<T>>, ui.UiFocusNavigationProvider
+    {
         public readonly layoutSpec: ui.UiLayoutSpec
         public readonly finalRect: ui.Rect
         public layoutDirty: boolean
@@ -343,8 +507,14 @@ namespace microcode {
             this.columnCount_ = Math.max(1, options.columnCount)
             this.controlWidth_ = options.controlWidth
             this.controlHeight_ = options.controlHeight
-            this.rowGap_ = options.rowGap || 0
-            this.columnGap_ = options.columnGap || 0
+            this.rowGap_ =
+                options.rowGap !== undefined
+                    ? options.rowGap
+                    : AppStyles.ModalControlGap
+            this.columnGap_ =
+                options.columnGap !== undefined
+                    ? options.columnGap
+                    : AppStyles.ModalControlGap
             this.controlStyle_ = options.controlStyle
             this.titleControlWidth_ =
                 options.titleControlWidth || options.controlWidth
@@ -430,12 +600,7 @@ namespace microcode {
                 this.titleControlRects_,
             )
             if (controller)
-                controller.setNavigation(this.modalScopeId_, {
-                    kind: "raggedGrid",
-                    rows: this.navigationRows(),
-                    horizontalWrap: true,
-                    verticalStrategy: "nearest",
-                })
+                controller.setNavigation(this.modalScopeId_, this)
             return focus.setActiveScope(this.modalScopeId_)
         }
 
@@ -446,13 +611,10 @@ namespace microcode {
         public handleFocusInput(
             result: ui.UiFocusInputResult,
         ): HostedPickerResult<T> {
-            if (
-                result.kind == "activated" &&
-                result.detail &&
-                result.detail.activationResult
-            ) {
+            if (result.kind == "activated") {
                 const control = this.activatedControl(
-                    result.detail.activationResult,
+                    result.scopeId,
+                    result.targetId,
                 )
                 if (!control) return undefined
                 const pickerResult = this.closeOnActivate_
@@ -478,6 +640,19 @@ namespace microcode {
                 }
             }
             return undefined
+        }
+
+        public move(
+            request: ui.UiFocusNavigationRequest,
+        ): ui.UiFocusMoveResult {
+            return hostedMoveFocusInRaggedGrid({
+                scopeId: this.modalScopeId_,
+                currentTargetId: request.currentTargetId,
+                direction: request.direction,
+                rows: this.navigationRows(),
+                horizontalWrap: true,
+                verticalStrategy: "nearest",
+            })
         }
 
         public render(
@@ -681,23 +856,20 @@ namespace microcode {
         }
 
         private activatedControl(
-            activation: ui.UiFocusActivationResult,
+            scopeId: ui.UiFocusScopeId,
+            targetId: ui.UiFocusId,
         ): ui.UiControl<T> {
-            if (
-                activation.kind != "activated" ||
-                activation.scopeId != this.modalScopeId_
-            )
-                return undefined
+            if (scopeId != this.modalScopeId_) return undefined
             return (
                 _uiControls.findControlByTargetId(
                     this.modalScopeId_,
                     this.titleControls_,
-                    activation.targetId,
+                    targetId,
                 ) ||
                 _uiControls.findControlByTargetId(
                     this.modalScopeId_,
                     this.controls_,
-                    activation.targetId,
+                    targetId,
                 )
             )
         }

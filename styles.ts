@@ -24,6 +24,11 @@ namespace microcode {
         export const ModalTitleGap = 4
 
         /**
+         * Standard gap between controls in compact modal pickers.
+         */
+        export const ModalControlGap = 1
+
+        /**
          * Default modal panel color for editor-owned modal panels.
          */
         export const DefaultModalPanelColor = 12
