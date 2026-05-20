@@ -57,7 +57,6 @@ namespace docs {
                 JSON.stringify({
                     type: "art",
                     samples: samples.map(s => ({
-                        label: s.label,
                         b64: s.b64,
                         icon: s.icon || "",
                     })),
@@ -71,9 +70,10 @@ namespace docs {
         app.popScene()
         const samples = microcode.samples(false)
         for (const sample of samples) {
-            console.log(`render sample ${sample.label}`)
+            const sampleName = sample.icon || "sample"
+            console.log(`render sample ${sampleName}`)
             const icon = microcode.icons.get(sample.icon, true)
-            if (icon) appendImage(images, "icon_sample", sample.label, icon)
+            if (icon) appendImage(images, "icon_sample", sampleName, icon)
             app.save(microcode.SAVESLOT_AUTO, sample.source)
 
             const res = _renderProgram()
@@ -81,7 +81,7 @@ namespace docs {
                 appendImage(
                     images,
                     "sample",
-                    iname == "app" ? sample.label : `${sample.label}_${iname}`,
+                    iname == "app" ? sampleName : `${sampleName}_${iname}`,
                     res[iname]
                 )
             })

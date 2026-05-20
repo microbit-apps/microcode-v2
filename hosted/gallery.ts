@@ -17,17 +17,14 @@ namespace microcode {
             super()
             this.backgroundColor = GALLERY_BACKGROUND_COLOR
             this.navigation_ = navigation
-            const controls = samples(true)
-                .filter(sample => !!sample.icon)
-                .map((sample, index) => {
-                    return {
-                        id: "sample-" + index,
-                        value: sample,
-                        bitmapId: sample.icon,
-                        textId: sample.ariaId,
-                        onActivate: (value: Sample) => this.openSample(value),
-                    }
-                })
+            const controls = samples(true).map((sample, index) => {
+                return {
+                    id: "sample-" + index,
+                    value: sample,
+                    bitmapId: sample.icon,
+                    onActivate: (value: Sample) => this.openSample(value),
+                }
+            })
 
             const galleryGrid = new ui.UiGrid<Sample>({
                 scopeId: GALLERY_SCOPE,

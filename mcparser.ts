@@ -203,7 +203,6 @@ namespace microcode {
         const samples = microcode.samples(false)
         console.log(`const newSamples: textSampleList = [`)
         for (const sample of samples) {
-            //console.log(`check sample ${sample.label}`)
             const buf = sample.source
             const prog = ProgramDefn.fromBuffer(new BufferReader(buf))
             const ret = { s: "" }
@@ -226,8 +225,6 @@ namespace microcode {
             }
             assert(buf1.length == buf2.length, `bufs not same length`)
             console.log(`{
- label: \"${sample.label}\",
- ariaId: ${sample.ariaId ? '"' + sample.ariaId + '"' : "undefined"},
  src: \`${pas2.replaceAll("`", "\\`")}\`,
  icon: ${sample.icon ? '"' + sample.icon + '"' : "undefined"},
 },\n`)
