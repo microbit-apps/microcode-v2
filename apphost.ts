@@ -22,24 +22,6 @@ namespace microcode {
         }
     }
 
-    class AppAccessibilitySink implements ui.UiAccessibilitySink {
-        public publish(message: string): void {
-            if (message) {
-                const content: accessibility.TextAccessibilityMessage = {
-                    type: "text",
-                    value: message,
-                }
-                accessibility.setLiveContent(content)
-            }
-        }
-    }
-
-    class AppProfiler implements ui.UiProfiler {
-        public mark(name: string): void {
-            if (name) profile()
-        }
-    }
-
     /**
      * Navigation surface used by screens.
      */
@@ -160,24 +142,6 @@ namespace microcode {
                 : undefined
         }
 
-        public dispatchPointerMove(x: number, y: number): void {
-            this.dispatchPointerInput("pointerMove", x, y)
-        }
-
-        public dispatchPointerClick(x: number, y: number): void {
-            this.dispatchPointerInput("pointerClick", x, y)
-        }
-
-        public dispatchWheel(dx: number, dy: number): void {
-            if (!this.runtime_) return
-            this.runtime_.dispatchInput({
-                action: "wheel",
-                source: "wheel",
-                dx,
-                dy,
-            })
-        }
-
         private createRuntime(): ui.UiRuntime {
             return new ui.UiRuntime({
                 display: new ui.DisplayShieldFrameAdapter({
@@ -185,8 +149,6 @@ namespace microcode {
                     displayProfile: UI_DISPLAY_PROFILE,
                 }),
                 assets: new AppAssetResolver(),
-                accessibility: new AppAccessibilitySink(),
-                profiler: new AppProfiler(),
                 clearColor: 0,
             })
         }
@@ -214,18 +176,5 @@ namespace microcode {
             controller.down.__update(dtms)
         }
 
-        private dispatchPointerInput(
-            action: "pointerMove" | "pointerClick",
-            x: number,
-            y: number,
-        ): void {
-            if (!this.runtime_) return
-            this.runtime_.dispatchInput({
-                action,
-                source: "pointer",
-                x,
-                y,
-            })
-        }
     }
 }

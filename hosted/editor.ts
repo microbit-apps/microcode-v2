@@ -125,7 +125,7 @@ namespace microcode {
         foregroundColor: 15,
         contentAlignment: "center",
         textPlacement: "content",
-        font: ui.font,
+        font: bitmaps.font8,
         padding: 0,
     }
     const EDITOR_RULE_SUBTLE_LABEL_STYLE = ui.buttonStyle(
@@ -333,7 +333,6 @@ namespace microcode {
                     runProgramIfStopped(this.progdef_)
                 return true
             }
-            if (event.action == "wheel") return this.handleWheel(event)
             return undefined
         }
 
@@ -364,13 +363,6 @@ namespace microcode {
         private handleBack(): void {
             if (this.pageView_.handleBack(this.focus, this.toolbar_)) return
             if (this.currPage_ == 0) this.navigation_.launchHome()
-        }
-
-        private handleWheel(event: ui.UiInputEvent): boolean {
-            if (event.dy === undefined || event.dy == 0) return true
-            if (event.dy < 0) this.moveEditorFocus("up")
-            else this.moveEditorFocus("down")
-            return true
         }
 
         private openDiskModal(): void {
@@ -1519,16 +1511,6 @@ namespace microcode {
             if (wasRunning) runProgram(this.progdef_)
         }
 
-        private moveEditorFocus(direction: ui.UiFocusDirection): void {
-            const activeScopeId = this.focus.getActiveScopeId()
-            if (activeScopeId == EDITOR_PAGE_SCOPE) {
-                this.pageView_.moveFocus(this.focus, direction)
-                return
-            }
-            const result = this.toolbar_.moveFocus(this.focus, direction)
-            if (result && result.kind == "focused" && result.scrollRequest)
-                this.pageView_.handleScrollRequest(result.scrollRequest)
-        }
     }
 
     interface FieldEditorToggleModalOptions {
@@ -1710,7 +1692,7 @@ namespace microcode {
         }
 
         private okBitmap(): Bitmap {
-            const font = bitmaps.font5
+            const font = bitmaps.font8
             const text = "OK"
             const bitmap = bitmaps.create(this.controlSize_, this.controlSize_)
             const x = Math.max(
@@ -1890,10 +1872,6 @@ namespace microcode {
         public handleFocusInput(result: ui.UiFocusInputResult): PageViewResult {
             if (result.kind == "activated")
                 return this.activationResult(result)
-            if (result.kind == "hit" && result.action == "pointerMove") {
-                this.focusPointerTarget(result)
-                return undefined
-            }
             if (result.kind == "moved" && result.scrollRequest) {
                 this.handleScrollRequest(result.scrollRequest)
                 return undefined
@@ -2256,7 +2234,6 @@ namespace microcode {
                     activatable: true,
                     scrollOwnerId: target.navigation.scrollOwnerId,
                     scrollRect: target.navigation.scrollRect,
-                    hitTestOrder: 1,
                 })
             }
         }
@@ -2363,19 +2340,6 @@ namespace microcode {
                 direction: result.direction,
                 scopeId: result.scopeId,
             }
-        }
-
-        private focusPointerTarget(result: ui.UiFocusInputResult): void {
-            if (!this.focus_ || !result.detail) return
-            const hit = result.detail.hitTestResult
-            if (!hit || hit.kind != "hit") return
-            if (hit.scopeId != EDITOR_PAGE_SCOPE) return
-            const focusResult = this.focus_.setActiveTarget(
-                hit.scopeId,
-                hit.targetId,
-            )
-            if (!this.handleFocusScrollResult(focusResult))
-                this.scrollTargetIntoView(hit.targetId)
         }
 
         private currentPosition(
@@ -2831,7 +2795,7 @@ namespace microcode {
             customContent?: ui.UiButtonCustomContent,
         ): number {
             if (text !== undefined) {
-                return (text.length + 1) * ui.font.charWidth
+                return (text.length + 1) * bitmaps.font8.charWidth
             }
             if (customContent) return EDITOR_RULE_GENERATED_TILE_SIZE
             return framed ? bitmap.width + 2 : bitmap.width
@@ -3784,10 +3748,6 @@ namespace microcode {
         public handleFocusInput(
             result: ui.UiFocusInputResult,
         ): ui.UiRowResult<T> {
-            if (result.kind == "hit" && result.action == "pointerMove") {
-                this.focusPointerTarget(result)
-                return undefined
-            }
             for (let i = 0; i < this.scopes_.length; i++) {
                 const rowResult = this.scopes_[i].row.handleFocusInput(result)
                 if (rowResult) return rowResult
@@ -4007,14 +3967,6 @@ namespace microcode {
                 })
             }
             return targets
-        }
-
-        private focusPointerTarget(result: ui.UiFocusInputResult): void {
-            if (!this.focus_ || !result.detail) return
-            const hit = result.detail.hitTestResult
-            if (!hit || hit.kind != "hit") return
-            if (!this.scopeById(hit.scopeId)) return
-            this.focus_.setActiveTarget(hit.scopeId, hit.targetId)
         }
 
         private scopeById(

@@ -17,11 +17,6 @@
     "run": "run program",
     "stop": "stop program",
 
-    "SR_LED": "LED {x} {y} {state}",
-    "SR_NOTE": "note {index} {state}",
-    "SR_ON": "on",
-    "SR_OFF": "off",
-
     "C0": "edit",
     "C1": "samples",
 

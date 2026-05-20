@@ -22,10 +22,6 @@ namespace microcode {
         else if (id === "page") res = "page";
         else if (id === "run") res = "run program";
         else if (id === "stop") res = "stop program";
-        else if (id === "SR_LED") res = "LED {x} {y} {state}";
-        else if (id === "SR_NOTE") res = "note {index} {state}";
-        else if (id === "SR_ON") res = "on";
-        else if (id === "SR_OFF") res = "off";
         else if (id === "C0") res = "edit";
         else if (id === "C1") res = "samples";
         else if (id === "T10") res = "start page";

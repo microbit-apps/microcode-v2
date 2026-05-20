@@ -1,24 +1,6 @@
 namespace microcode {
     // mapping of micro:bit and DAL namespace into MicroCode tiles
 
-    type SensorInfo = { [id: string]: { tid: number } }
-
-    const sensorInfo: SensorInfo = {
-        Light: { tid: Tid.TID_SENSOR_LED_LIGHT },
-        Microphone: { tid: Tid.TID_SENSOR_MICROPHONE },
-        Temperature: { tid: Tid.TID_SENSOR_TEMP },
-        Magnet: { tid: Tid.TID_SENSOR_MAGNET },
-    }
-
-    function tidToSensor(tid: number): string {
-        let result: string = undefined
-        Object.keys(sensorInfo).forEach(k => {
-            const keyTid = sensorInfo[k].tid
-            if (tid == keyTid) result = k
-        })
-        return result
-    }
-
     type IdMap = { [id: number]: number }
 
     // see DAL for these values
@@ -65,8 +47,6 @@ namespace microcode {
     ]
 
     export class MicrobitHost implements RuntimeHost {
-        private sensors: Sensor[] = []
-
         constructor() {
             this._handler = (s: number, f: number) => {}
 
@@ -116,8 +96,6 @@ namespace microcode {
                 })
             })
 
-            this.startSensors()
-
             radio.onReceivedNumber(radioNum => {
                 this._handler(Tid.TID_SENSOR_RADIO_RECEIVE, radioNum)
             })
@@ -132,21 +110,31 @@ namespace microcode {
         }
 
         public getSensorValue(tid: number, normalized: boolean): number {
-            const sensorName = tidToSensor(tid)
-            const sensor = this.sensors.find(s => s.getName() == sensorName)
-            if (sensor)
-                return normalized
-                    ? sensor.getNormalisedReading()
-                    : sensor.getReading()
-            return 0
-        }
-
-        private startSensors() {
-            // initialize sensors
-            this.sensors.push(Sensor.getFromName("Light"))
-            this.sensors.push(Sensor.getFromName("Temperature"))
-            this.sensors.push(Sensor.getFromName("Magnet"))
-            this.sensors.push(Sensor.getFromName("Microphone"))
+            let value = 0
+            let min = 0
+            let max = 1
+            switch (tid) {
+                case Tid.TID_SENSOR_LED_LIGHT:
+                    value = input.lightLevel()
+                    max = 255
+                    break
+                case Tid.TID_SENSOR_TEMP:
+                    value = input.temperature()
+                    min = -40
+                    max = 100
+                    break
+                case Tid.TID_SENSOR_MAGNET:
+                    value = input.magneticForce(Dimension.Strength)
+                    min = -5000
+                    max = 5000
+                    break
+                case Tid.TID_SENSOR_MICROPHONE:
+                    value = input.soundLevel()
+                    max = 255
+                    break
+            }
+            if (!normalized) return value
+            return Math.abs(value) / (Math.abs(min) + max)
         }
 
         private _handler: (sensorTid: number, filter: number) => void

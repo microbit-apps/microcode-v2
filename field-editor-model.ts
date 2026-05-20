@@ -297,7 +297,7 @@ namespace microcode {
     export const NUM_NOTES = 5
 
     /**
-     * Note names used by melody text parsing and accessibility.
+     * Note names used by melody text parsing.
      */
     export const noteNames = ["C", "D", "E", "F", "G", "A", "B", "C5", "D5"]
 

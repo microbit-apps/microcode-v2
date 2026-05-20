@@ -4,6 +4,8 @@
     },
     "scripts": {
         "setup": "git submodule update --init --recursive",
-        "sync-local-pxt-deps": "node scripts/sync-local-pxt-deps.js"
+        "sync-local-pxt-deps": "node scripts/sync-local-pxt-deps.js",
+        "build:hardware:v2": "makecode build --variant mbcodal --always-built",
+        "size-stats": "node scripts/size-stats.js"
     }
 }

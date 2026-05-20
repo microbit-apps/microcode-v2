@@ -45,7 +45,12 @@ namespace microcode {
         /**
          * Button style for compact modal controls.
          */
-        export const ModalButton = ui.UiButtonStyles.LightShadowedWhite
+        export const ModalButton = ui.buttonStyle(
+            ui.UiButtonStyles.LightShadowedWhite,
+            {
+                font: bitmaps.font8,
+            },
+        )
 
         /**
          * Palette used by the numeric entry display.
@@ -99,7 +104,7 @@ namespace microcode {
                 focusColor: APP_FOCUS_COLOR,
                 focusLabelBackgroundColor: APP_FOCUS_LABEL_BACKGROUND,
                 focusLabelColor: APP_FOCUS_LABEL_COLOR,
-                focusLabelFont: ui.font,
+                focusLabelFont: bitmaps.font8,
             }
             if (gap !== undefined) style.focusLabelGap = gap
             return style

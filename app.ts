@@ -14,11 +14,6 @@ namespace microcode {
             // One interval delay to ensure all static constructors have executed.
             basic.pause(500)
 
-            // Application configuration
-            ui.getIcon = id => icons.get(id)
-            ui.resolveTooltip = (ariaId: string) =>
-                resolveTooltip(ariaId)
-
             const buf = this.load(SAVESLOT_AUTO)
             if (buf) {
                 const prog = ProgramDefn.fromBuffer(new BufferReader(buf))

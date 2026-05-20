@@ -1,7 +1,6 @@
 namespace microcode {
     export let microcodeClassic = false
     export let jacdacEnabled = false
-    export let reportAria = false
 
     type SettingsMode = "classic" | "decimal"
 
@@ -22,7 +21,7 @@ namespace microcode {
             contentAlignment: "center",
             foregroundColor: 15,
             selectedColor: 7,
-            font: bitmaps.font5,
+            font: bitmaps.font8,
         },
     )
 
@@ -121,7 +120,7 @@ namespace microcode {
         }
 
         private drawTitle(surface: ui.DrawSurface): void {
-            const font = bitmaps.font5
+            const font = bitmaps.font8
             surface.drawText(
                 SETTINGS_TITLE,
                 Math.idiv(

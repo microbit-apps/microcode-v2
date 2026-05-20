@@ -51,20 +51,12 @@ namespace microcode {
                 if (event.phase != "released") this.navigation_.pop()
                 return true
             }
-            if (event.action == "pointerMove") return this.handlePointerMove(event)
             return undefined
         }
 
         private openSample(sample: Sample): void {
             settings.writeBuffer(SAVESLOT_AUTO, sample.source)
             this.navigation_.launchEditor()
-        }
-
-        private handlePointerMove(event: ui.UiInputEvent): boolean {
-            if (event.x === undefined || event.y === undefined) return true
-            const hit = this.focus.hitTest(event.x, event.y)
-            this.focus.setActiveTarget(hit)
-            return true
         }
     }
 }
