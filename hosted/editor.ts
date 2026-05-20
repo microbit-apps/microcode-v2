@@ -79,7 +79,6 @@ namespace microcode {
     }
 
     const EDITOR_TOOLBAR_SCOPE = "editor/toolbar"
-    const EDITOR_PAGE_SELECTOR_SCOPE = "editor/page-selector"
     const EDITOR_PAGE_SCOPE = "editor/page"
     const EDITOR_PAGE_SCROLL_OWNER = "editor/page-scroll"
     const EDITOR_BACKGROUND_COLOR = 6
@@ -3440,18 +3439,18 @@ namespace microcode {
 
     type RuleTargetKind = "handle" | "tile" | "insert" | "static"
 
-    class EditorToolbar implements ui.UiFocusableView<EditorToolbarResult> {
+    class EditorToolbar implements ui.UiFocusableView<EditorToolbarResult>, ui.UiFocusNavigationProvider {
         public readonly layoutSpec: ui.UiLayoutSpec
         public readonly finalRect: ui.Rect
         public layoutDirty: boolean
         private getProgram_: () => ProgramDefn
         private getPage_: () => number
+        private pageView_: PageView
         private runControl_: ui.UiControl<EditorToolbarAction>
         private stopControl_: ui.UiControl<EditorToolbarAction>
         private pageControl_: ui.UiControl<EditorToolbarAction>
         private toolbarRow_: ui.UiRow<EditorToolbarAction>
-        private pageRow_: ui.UiRow<EditorToolbarAction>
-        private focusNavigator_: FocusScopeNavigator<EditorToolbarAction>
+        private navigationScratch_: ui.UiFocusNavigationTarget[]
 
         constructor(
             getProgram: () => ProgramDefn,
@@ -3468,6 +3467,7 @@ namespace microcode {
             this.layoutDirty = true
             this.getProgram_ = getProgram
             this.getPage_ = getPage
+            this.pageView_ = pageView
             this.runControl_ = {
                 id: "run",
                 value: "run",
@@ -3496,8 +3496,11 @@ namespace microcode {
                 },
                 this.runControl_,
                 this.stopControl_,
+                this.pageControl_,
             ]
-            const pageControls = [this.pageControl_]
+            this.pageControl_.gapBefore =
+                EDITOR_TOOLBAR_PAGE_X -
+                (EDITOR_TOOLBAR_LEFT_X + EDITOR_TOOLBAR_LEFT_WIDTH)
             const controlStyle = ui.buttonStyle(
                 EDITOR_RULE_SUBTLE_LABEL_STYLE,
                 ui.UiButtonStyles.BorderedPurple,
@@ -3512,70 +3515,7 @@ namespace microcode {
                 gap: EDITOR_TOOLBAR_GAP,
                 controlStyle,
             })
-            this.pageRow_ = new ui.UiRow<EditorToolbarAction>({
-                scopeId: EDITOR_PAGE_SELECTOR_SCOPE,
-                controls: pageControls,
-                defaultControlId: "page",
-                controlWidth: EDITOR_TOOLBAR_BUTTON_SIZE,
-                controlHeight: EDITOR_TOOLBAR_BUTTON_SIZE,
-                controlStyle,
-            })
-            this.focusNavigator_ = new FocusScopeNavigator<EditorToolbarAction>(
-                [{ row: this.toolbarRow_ }, { row: this.pageRow_ }],
-                [
-                    {
-                        fromScopeId: EDITOR_TOOLBAR_SCOPE,
-                        direction: "right",
-                        toScopeId: EDITOR_PAGE_SELECTOR_SCOPE,
-                    },
-                    {
-                        fromScopeId: EDITOR_TOOLBAR_SCOPE,
-                        direction: "left",
-                        toScopeId: EDITOR_PAGE_SCOPE,
-                    },
-                    {
-                        fromScopeId: EDITOR_PAGE_SELECTOR_SCOPE,
-                        direction: "left",
-                        toScopeId: EDITOR_TOOLBAR_SCOPE,
-                    },
-                    {
-                        fromScopeId: EDITOR_TOOLBAR_SCOPE,
-                        direction: "down",
-                        toScopeId: EDITOR_PAGE_SCOPE,
-                    },
-                    {
-                        fromScopeId: EDITOR_PAGE_SELECTOR_SCOPE,
-                        direction: "down",
-                        toScopeId: EDITOR_PAGE_SCOPE,
-                    },
-                    {
-                        fromScopeId: EDITOR_PAGE_SELECTOR_SCOPE,
-                        direction: "right",
-                        toScopeId: EDITOR_PAGE_SCOPE,
-                    },
-                ],
-                (
-                    scopeId: ui.UiFocusScopeId,
-                    source: ui.UiFocusNavigationTarget,
-                    link: FocusScopeLink,
-                ) => {
-                    if (
-                        scopeId == EDITOR_PAGE_SCOPE &&
-                        link.fromScopeId == EDITOR_PAGE_SELECTOR_SCOPE &&
-                        link.direction == "right"
-                    )
-                        return pageView.firstRuleHandleTarget()
-                    if (
-                        scopeId == EDITOR_PAGE_SCOPE &&
-                        link.fromScopeId == EDITOR_TOOLBAR_SCOPE &&
-                        link.direction == "left"
-                    )
-                        return pageView.lastPageTarget()
-                    if (scopeId == EDITOR_PAGE_SCOPE)
-                        return pageView.nearestNavigationTarget(source)
-                    return undefined
-                },
-            )
+            this.navigationScratch_ = []
         }
 
         public measure(
@@ -3597,15 +3537,7 @@ namespace microcode {
                 new ui.Rect(
                     rect.x + EDITOR_TOOLBAR_LEFT_X,
                     rect.y + EDITOR_TOOLBAR_BUTTON_Y,
-                    EDITOR_TOOLBAR_LEFT_WIDTH,
-                    EDITOR_TOOLBAR_BUTTON_SIZE,
-                ),
-            )
-            this.pageRow_.arrange(
-                new ui.Rect(
-                    rect.x + EDITOR_TOOLBAR_PAGE_X,
-                    rect.y + EDITOR_TOOLBAR_BUTTON_Y,
-                    EDITOR_TOOLBAR_BUTTON_SIZE,
+                    UI_SCREEN_WIDTH - EDITOR_TOOLBAR_LEFT_X,
                     EDITOR_TOOLBAR_BUTTON_SIZE,
                 ),
             )
@@ -3614,24 +3546,24 @@ namespace microcode {
 
         public invalidateLayout(): void {
             this.layoutDirty = true
-            this.focusNavigator_.invalidateLayout()
+            this.toolbarRow_.invalidateLayout()
         }
 
         public clearLayoutInvalidation(): void {
             this.layoutDirty = false
-            this.focusNavigator_.clearLayoutInvalidation()
+            this.toolbarRow_.clearLayoutInvalidation()
         }
 
         public registerFocusTargets(focus: ui.UiFocusState): void {
-            this.focusNavigator_.registerFocusTargets(focus)
+            this.toolbarRow_.registerFocusTargets(focus)
         }
 
         public registerNavigation(controller: ui.UiFocusInputController): void {
-            this.focusNavigator_.registerNavigation(controller)
+            controller.setNavigation(EDITOR_TOOLBAR_SCOPE, this)
         }
 
         public focusDefault(focus: ui.UiFocusState): ui.UiFocusSetResult {
-            return this.focusNavigator_.focusDefault(focus)
+            return this.toolbarRow_.focusDefault(focus)
         }
 
         public focusRun(focus: ui.UiFocusState): ui.UiFocusSetResult {
@@ -3646,7 +3578,7 @@ namespace microcode {
             direction: ui.UiFocusDirection,
         ): ui.UiFocusSetResult {
             const activeScopeId = focus.getActiveScopeId()
-            const result = this.focusNavigator_.move({
+            const result = this.move({
                 scopeId: activeScopeId,
                 currentTargetId: focus.getActiveTargetId(activeScopeId),
                 direction,
@@ -3658,13 +3590,16 @@ namespace microcode {
         public nearestTargetReference(
             source: ui.UiFocusNavigationTarget,
         ): ui.UiFocusTargetReference {
-            return this.focusNavigator_.nearestTargetReference(source)
+            const target = this.nearestToolbarTarget(source)
+            return target
+                ? { scopeId: EDITOR_TOOLBAR_SCOPE, targetId: target.id }
+                : undefined
         }
 
         public handleFocusInput(
             result: ui.UiFocusInputResult,
         ): EditorToolbarResult {
-            return this.focusNavigator_.handleFocusInput(result)
+            return this.toolbarRow_.handleFocusInput(result)
         }
 
         public render(
@@ -3673,7 +3608,30 @@ namespace microcode {
             focus?: ui.UiFocusState,
         ): void {
             this.updateProgramControls()
-            this.focusNavigator_.render(surface, assets, focus)
+            this.toolbarRow_.render(surface, assets, focus)
+        }
+
+        public move(
+            request: ui.UiFocusNavigationRequest,
+        ): ui.UiFocusMoveResult | undefined {
+            if (request.scopeId != EDITOR_TOOLBAR_SCOPE) return undefined
+            const result = ui.moveFocusInRow({
+                scopeId: EDITOR_TOOLBAR_SCOPE,
+                currentTargetId: request.currentTargetId,
+                direction: request.direction,
+                targets: this.toolbarTargets(),
+            })
+            if (result.kind == "moved") return result
+            if (result.kind != "exited") return result
+            const target = this.pageTargetForExit(result)
+            if (!target) return result
+            return {
+                kind: "moved",
+                fromScopeId: EDITOR_TOOLBAR_SCOPE,
+                fromTargetId: result.targetId,
+                toScopeId: EDITOR_PAGE_SCOPE,
+                toTargetId: target.id,
+            }
         }
 
         private updateProgramControls(): void {
@@ -3682,234 +3640,11 @@ namespace microcode {
             this.stopControl_.bitmap = running ? icondb.stop : icondb.stopDisabled
             this.pageControl_.bitmapId = PAGE_IDS()[this.getPage_()]
         }
-    }
 
-    interface FocusScopeEntry<T> {
-        row: ui.UiRow<T>
-    }
-
-    interface FocusScopeLink {
-        fromScopeId: ui.UiFocusScopeId
-        direction: ui.UiFocusDirection
-        toScopeId: ui.UiFocusScopeId
-    }
-
-    interface FocusTargetResolver {
-        (
-            scopeId: ui.UiFocusScopeId,
-            source: ui.UiFocusNavigationTarget,
-            link: FocusScopeLink,
-        ): ui.UiFocusNavigationTarget
-    }
-
-    class FocusScopeNavigator<T> implements ui.UiFocusNavigationProvider {
-        private scopes_: FocusScopeEntry<T>[]
-        private links_: FocusScopeLink[]
-        private externalTarget_: FocusTargetResolver
-        private focus_: ui.UiFocusState
-
-        constructor(
-            scopes: FocusScopeEntry<T>[],
-            links: FocusScopeLink[],
-            externalTarget?: FocusTargetResolver,
-        ) {
-            this.scopes_ = scopes
-            this.links_ = links
-            this.externalTarget_ = externalTarget
-            this.focus_ = undefined
-        }
-
-        public invalidateLayout(): void {
-            for (let i = 0; i < this.scopes_.length; i++)
-                this.scopes_[i].row.invalidateLayout()
-        }
-
-        public clearLayoutInvalidation(): void {
-            for (let i = 0; i < this.scopes_.length; i++)
-                this.scopes_[i].row.clearLayoutInvalidation()
-        }
-
-        public registerFocusTargets(focus: ui.UiFocusState): void {
-            this.focus_ = focus
-            for (let i = 0; i < this.scopes_.length; i++)
-                this.scopes_[i].row.registerFocusTargets(focus)
-        }
-
-        public registerNavigation(controller: ui.UiFocusInputController): void {
-            for (let i = 0; i < this.scopes_.length; i++)
-                controller.setNavigation(this.scopes_[i].row.scopeId, this)
-        }
-
-        public focusDefault(focus: ui.UiFocusState): ui.UiFocusSetResult {
-            return this.scopes_[0].row.focusDefault(focus)
-        }
-
-        public handleFocusInput(
-            result: ui.UiFocusInputResult,
-        ): ui.UiRowResult<T> {
-            for (let i = 0; i < this.scopes_.length; i++) {
-                const rowResult = this.scopes_[i].row.handleFocusInput(result)
-                if (rowResult) return rowResult
-            }
-            return undefined
-        }
-
-        public render(
-            surface: ui.DrawSurface,
-            assets: ui.UiAssetResolver,
-            focus?: ui.UiFocusState,
-        ): void {
-            for (let i = 0; i < this.scopes_.length; i++)
-                this.scopes_[i].row.render(surface, assets, focus)
-        }
-
-        public nearestTargetReference(
-            source: ui.UiFocusNavigationTarget,
-        ): ui.UiFocusTargetReference {
-            let nearest: ui.UiFocusTargetReference = undefined
-            let nearestDistance = 0
-            for (let i = 0; i < this.scopes_.length; i++) {
-                const target = this.nearestTargetInScope(this.scopes_[i], source)
-                if (!target) continue
-                const distance = this.targetDistance(source, target)
-                if (!nearest || distance < nearestDistance) {
-                    nearest = {
-                        scopeId: this.scopes_[i].row.scopeId,
-                        targetId: target.id,
-                    }
-                    nearestDistance = distance
-                }
-            }
-            return nearest
-        }
-
-        public move(
-            request: ui.UiFocusNavigationRequest,
-        ): ui.UiFocusMoveResult | undefined {
-            const scope = this.scopeById(request.scopeId)
-            if (!scope) return undefined
-            const result = ui.moveFocusInRow({
-                scopeId: scope.row.scopeId,
-                currentTargetId: request.currentTargetId,
-                direction: request.direction,
-                targets: this.navigationTargets(scope),
-            })
-            if (result.kind == "exited") return this.moveThroughLink(result)
-            if (result.kind == "stayed" && result.reason == "boundary")
-                return this.moveThroughBoundary(request)
-            return result
-        }
-
-        private moveThroughBoundary(
-            request: ui.UiFocusNavigationRequest,
-        ): ui.UiFocusMoveResult {
-            const result = this.moveThroughLink({
-                kind: "exited",
-                scopeId: request.scopeId,
-                targetId: request.currentTargetId,
-                direction: request.direction,
-            })
-            if (result.kind == "moved") return result
-            return {
-                kind: "stayed",
-                scopeId: request.scopeId,
-                targetId: request.currentTargetId,
-                reason: "boundary",
-            }
-        }
-
-        private moveThroughLink(
-            exit: ui.UiFocusMoveResult,
-        ): ui.UiFocusMoveResult {
-            if (exit.kind != "exited") return exit
-            for (let i = 0; i < this.links_.length; i++) {
-                const link = this.links_[i]
-                if (
-                    link.fromScopeId != exit.scopeId ||
-                    link.direction != exit.direction
-                )
-                    continue
-                const target = this.targetForLink(link, exit)
-                if (target) return this.movedTo(exit, link.toScopeId, target)
-            }
-            return exit
-        }
-
-        private movedTo(
-            exit: ui.UiFocusMoveResult,
-            scopeId: ui.UiFocusScopeId,
-            target: ui.UiFocusNavigationTarget,
-        ): ui.UiFocusMoveResult {
-            if (exit.kind != "exited") return exit
-            return {
-                kind: "moved",
-                fromScopeId: exit.scopeId,
-                fromTargetId: exit.targetId,
-                toScopeId: scopeId,
-                toTargetId: target.id,
-            }
-        }
-
-        private targetForLink(
-            link: FocusScopeLink,
-            exit: ui.UiFocusMoveResult,
-        ): ui.UiFocusNavigationTarget {
-            const scope = this.scopeById(link.toScopeId)
-            if (!scope) return this.externalTargetForLink(link, exit)
-            const source = this.sourceTargetForLink(link, exit)
-            const nearest = this.nearestTargetInScope(scope, source)
-            if (nearest) return nearest
-            const preferred = scope.row.resolvePreferredTargetId()
-            if (preferred) {
-                const preferredTarget = this.targetByTargetId(scope, preferred)
-                if (preferredTarget) return preferredTarget
-            }
-            const targets = this.navigationTargets(scope)
-            for (let i = 0; i < targets.length; i++) {
-                const target = targets[i]
-                if (!target.hidden) return target
-            }
-            return undefined
-        }
-
-        private externalTargetForLink(
-            link: FocusScopeLink,
-            exit: ui.UiFocusMoveResult,
-        ): ui.UiFocusNavigationTarget {
-            if (!this.externalTarget_) return undefined
-            const source = this.sourceTargetForLink(link, exit)
-            return this.externalTarget_(link.toScopeId, source, link)
-        }
-
-        private sourceTargetForLink(
-            link: FocusScopeLink,
-            exit: ui.UiFocusMoveResult,
-        ): ui.UiFocusNavigationTarget {
-            const sourceScope = this.scopeById(link.fromScopeId)
-            return sourceScope && exit.kind == "exited"
-                ? this.targetByTargetId(sourceScope, exit.targetId)
-                : undefined
-        }
-
-        private targetByTargetId(
-            scope: FocusScopeEntry<T>,
-            targetId: ui.UiFocusId,
-        ): ui.UiFocusNavigationTarget {
-            const targets = this.navigationTargets(scope)
-            for (let i = 0; i < targets.length; i++) {
-                const target = targets[i]
-                if (target.id == targetId && !target.hidden)
-                    return target
-            }
-            return undefined
-        }
-
-        private nearestTargetInScope(
-            scope: FocusScopeEntry<T>,
+        private nearestToolbarTarget(
             source: ui.UiFocusNavigationTarget,
         ): ui.UiFocusNavigationTarget {
-            if (!source) return undefined
-            const targets = this.navigationTargets(scope)
+            const targets = this.toolbarTargets()
             let nearest: ui.UiFocusNavigationTarget = undefined
             let nearestDistance = 0
             const sourceX = source.rect.x + Math.idiv(source.rect.width, 2)
@@ -3930,13 +3665,25 @@ namespace microcode {
             return nearest
         }
 
-        private targetDistance(
-            source: ui.UiFocusNavigationTarget,
-            target: ui.UiFocusNavigationTarget,
-        ): number {
-            const sourceX = source.rect.x + Math.idiv(source.rect.width, 2)
-            const sourceY = source.rect.y + Math.idiv(source.rect.height, 2)
-            return this.targetDistanceFromCenter(target, sourceX, sourceY)
+        private pageTargetForExit(
+            exit: ui.UiFocusMoveResult,
+        ): ui.UiFocusNavigationTarget {
+            if (exit.kind != "exited") return undefined
+            if (
+                exit.direction == "right" &&
+                exit.targetId == this.targetId("page")
+            )
+                return this.pageView_.firstRuleHandleTarget()
+            if (
+                exit.direction == "left" &&
+                exit.targetId == this.targetId("disk")
+            )
+                return this.pageView_.lastPageTarget()
+            if (exit.direction == "down")
+                return this.pageView_.nearestNavigationTarget(
+                    this.toolbarTargetById(exit.targetId),
+                )
+            return undefined
         }
 
         private targetDistanceFromCenter(
@@ -3949,39 +3696,23 @@ namespace microcode {
             return dx * dx + dy * dy
         }
 
-        private navigationTargets(
-            scope: FocusScopeEntry<T>,
-        ): ui.UiFocusNavigationTarget[] {
-            const controls = scope.row.controls
-            const targets: ui.UiFocusNavigationTarget[] = []
-            for (let i = 0; i < controls.length; i++) {
-                const control = controls[i]
-                const rect = new ui.Rect()
-                scope.row.getControlRect(control.id, rect)
-                targets.push({
-                    id: this.targetId(scope.row.scopeId, control.id),
-                    rect,
-                    hidden: control.visible === false,
-                })
-            }
-            return targets
-        }
-
-        private scopeById(
-            scopeId: ui.UiFocusScopeId,
-        ): FocusScopeEntry<T> {
-            for (let i = 0; i < this.scopes_.length; i++) {
-                const scope = this.scopes_[i]
-                if (scope.row.scopeId == scopeId) return scope
+        private toolbarTargetById(
+            targetId: ui.UiFocusId,
+        ): ui.UiFocusNavigationTarget {
+            const targets = this.toolbarTargets()
+            for (let i = 0; i < targets.length; i++) {
+                if (targets[i].id == targetId) return targets[i]
             }
             return undefined
         }
 
-        private targetId(
-            scopeId: ui.UiFocusScopeId,
-            controlId: string,
-        ): ui.UiFocusId {
-            return scopeId + "/" + controlId
+        private toolbarTargets(): ui.UiFocusNavigationTarget[] {
+            this.toolbarRow_.copyNavigationTargets(this.navigationScratch_)
+            return this.navigationScratch_
+        }
+
+        private targetId(controlId: string): ui.UiFocusId {
+            return EDITOR_TOOLBAR_SCOPE + "/" + controlId
         }
 
     }
