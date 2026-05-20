@@ -115,6 +115,18 @@ namespace microcode {
     const EDITOR_TILE_SUGGESTION_MAX_COLUMNS = 5
     const EDITOR_TILE_SUGGESTION_TITLE_GAP =
         EDITOR_FIELD_MODAL_GRID_GAP + 1
+    const EDITOR_TILE_SUGGESTION_MODAL_PANEL_STYLE = ui.modalStyle(
+        AppStyles.Modal,
+        {
+            titleGap: EDITOR_TILE_SUGGESTION_TITLE_GAP,
+        },
+    )
+    const EDITOR_TILE_SUGGESTION_TITLELESS_MODAL_PANEL_STYLE = ui.modalStyle(
+        AppStyles.TitlelessModal,
+        {
+            titleGap: EDITOR_TILE_SUGGESTION_TITLE_GAP,
+        },
+    )
     const EDITOR_FIELD_DELETE_STYLE = ui.buttonStyle(
         ui.UiButtonStyles.RedBorderedWhite,
         ui.UiButtonStyles.RoundedFrame,
@@ -123,7 +135,10 @@ namespace microcode {
         ui.UiButtonStyles.GreenBorderedWhite,
         ui.UiButtonStyles.RoundedFrame,
     )
-    const EDITOR_ICON_FIELD_MODAL_STYLE = ui.modalStyle(AppStyles.Modal, {
+    const EDITOR_FIELD_MODAL_STYLE = ui.modalStyle(AppStyles.Modal, {
+        titleGap: EDITOR_FIELD_MODAL_GRID_GAP,
+    })
+    const EDITOR_ICON_FIELD_MODAL_STYLE = ui.modalStyle(EDITOR_FIELD_MODAL_STYLE, {
         panelColor: 0,
     })
 
@@ -649,7 +664,6 @@ namespace microcode {
                     : undefined,
                 titleId,
                 defaultControlId: selected,
-                horizontalWrap: true,
                 columnCount,
                 controlWidth: AppStyles.ModalItemSize,
                 controlHeight: AppStyles.ModalItemSize,
@@ -659,8 +673,9 @@ namespace microcode {
                 titleControlWidth: AppStyles.ModalItemSize,
                 titleControlHeight: AppStyles.ModalItemSize,
                 titleControlStyle: EDITOR_TILE_SUGGESTION_MODAL_STYLE,
-                titleGap: EDITOR_TILE_SUGGESTION_TITLE_GAP,
-                modalStyle: titleId ? AppStyles.Modal : AppStyles.TitlelessModal,
+                modalStyle: titleId
+                    ? EDITOR_TILE_SUGGESTION_MODAL_PANEL_STYLE
+                    : EDITOR_TILE_SUGGESTION_TITLELESS_MODAL_PANEL_STYLE,
             })
         }
 
@@ -1003,7 +1018,6 @@ namespace microcode {
                 deleteIcon: "delete",
                 modalStyle: AppStyles.NumericModal,
                 keyStyle: AppStyles.ModalButton,
-                displayPalette: AppStyles.NumericDisplayPalette,
                 onResult: result =>
                     this.applyNumericEntryResult(target, result, wasRunning),
             })
@@ -1172,7 +1186,6 @@ namespace microcode {
                 defaultControlId: "cell-2-2",
                 closeOnActivate: false,
                 columnCount,
-                horizontalWrap: true,
                 controlWidth: EDITOR_FIELD_MODAL_CELL_SIZE,
                 controlHeight: EDITOR_FIELD_MODAL_CELL_SIZE,
                 rowGap:
@@ -1182,8 +1195,7 @@ namespace microcode {
                 columnGap: EDITOR_FIELD_MODAL_GRID_GAP,
                 titleControlWidth: EDITOR_FIELD_MODAL_CELL_SIZE,
                 titleControlHeight: EDITOR_FIELD_MODAL_CELL_SIZE,
-                titleGap: EDITOR_FIELD_MODAL_GRID_GAP,
-                modalStyle: modalStyle || AppStyles.Modal,
+                modalStyle: modalStyle || EDITOR_FIELD_MODAL_STYLE,
                 onActivate,
             })
         }

@@ -49,14 +49,6 @@ namespace microcode {
         )
 
         /**
-         * Palette used by the numeric entry display.
-         */
-        export const NumericDisplayPalette: ui.UiControlPalette = {
-            backgroundColor: 1,
-            foregroundColor: 15,
-        }
-
-        /**
          * Default modal style for app-owned modal panels.
          */
         export const Modal = modal()
