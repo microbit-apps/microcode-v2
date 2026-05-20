@@ -374,17 +374,12 @@ namespace microcode {
                 controlHeight: AppStyles.ModalItemSize,
                 controlStyle: AppStyles.ModalButton,
                 modalStyle: AppStyles.Modal,
+                onActivate: slot => this.saveDiskSlot(slot),
             })
         }
 
         private createDiskControls(): ui.UiControl<EditorDiskSlot>[] {
-            return diskSlots().map(slot =>
-                ui.iconButton<EditorDiskSlot>(
-                    slot,
-                    slot,
-                    () => this.saveDiskSlot(slot),
-                )
-            )
+            return diskSlots().map(slot => ui.iconButton<EditorDiskSlot>(slot, slot))
         }
 
         private saveDiskSlot(slot: EditorDiskSlot): void {
@@ -407,6 +402,7 @@ namespace microcode {
                 controlHeight: AppStyles.ModalItemSize,
                 controlStyle: AppStyles.ModalButton,
                 modalStyle: AppStyles.TitlelessModal,
+                onActivate: pageIndex => this.switchToPage(pageIndex),
             })
         }
 
@@ -418,8 +414,6 @@ namespace microcode {
                     value: index,
                     bitmapId: pageId,
                     selected: index == this.currPage_,
-                    onActivate: (pageIndex: number) =>
-                        this.switchToPage(pageIndex),
                 }
             })
         }
@@ -470,6 +464,7 @@ namespace microcode {
                 controlHeight: AppStyles.ModalItemSize,
                 controlStyle: EDITOR_RULE_HANDLE_MODAL_STYLE,
                 modalStyle: AppStyles.TitlelessModal,
+                onActivate: action => this.applyRuleHandleAction(action, value),
             })
         }
 
@@ -477,8 +472,8 @@ namespace microcode {
             value: RuleTargetControlValue,
         ): ui.UiControl<RuleHandleAction>[] {
             const controls: ui.UiControl<RuleHandleAction>[] = [
-                this.ruleHandleControl("add", "plus", "add_rule", value),
-                this.ruleHandleControl("delete", "delete", "delete_rule", value),
+                this.ruleHandleControl("add", "plus", "add_rule"),
+                this.ruleHandleControl("delete", "delete", "delete_rule"),
             ]
             const realRuleCount = this.realRuleCount(this.currentPage())
             const virtualRule = this.isVirtualRule(value)
@@ -488,7 +483,6 @@ namespace microcode {
                         "moveUp",
                         "rule_up",
                         "rule_up",
-                        value,
                     ),
                 )
             if (!virtualRule && value.ruleIndex < realRuleCount - 1)
@@ -497,7 +491,6 @@ namespace microcode {
                         "moveDown",
                         "rule_down",
                         "rule_down",
-                        value,
                     ),
                 )
             return controls
@@ -507,14 +500,12 @@ namespace microcode {
             action: RuleHandleAction,
             bitmapId: string,
             textId: string,
-            value: RuleTargetControlValue,
         ): ui.UiControl<RuleHandleAction> {
             return {
                 id: action,
                 value: action,
                 bitmapId,
                 textId,
-                onActivate: () => this.applyRuleHandleAction(action, value),
             }
         }
 
@@ -685,6 +676,8 @@ namespace microcode {
                 modalStyle: titleId
                     ? EDITOR_TILE_SUGGESTION_MODAL_PANEL_STYLE
                     : EDITOR_TILE_SUGGESTION_TITLELESS_MODAL_PANEL_STYLE,
+                onActivate: controlValue =>
+                    this.applyTileSuggestionValue(value, controlValue),
             })
         }
 
@@ -721,7 +714,6 @@ namespace microcode {
                 },
                 textId: tidToString(getTid(tile)),
                 selected: selectedTid !== undefined && selectedTid == getTid(tile),
-                onActivate: () => this.applyTileSuggestion(value, tile),
             }
             const icon = getIcon(tile)
             if (typeof icon == "string" || typeof icon == "number")
@@ -739,8 +731,17 @@ namespace microcode {
                 bitmapId: "delete",
                 textId: "delete",
                 style: EDITOR_FIELD_DELETE_STYLE,
-                onActivate: () => this.deleteSuggestedTile(value),
             }
+        }
+
+        private applyTileSuggestionValue(
+            target: RuleTargetControlValue,
+            controlValue: TileSuggestionValue,
+        ): void {
+            if (controlValue.kind == "delete")
+                this.deleteSuggestedTile(target)
+            else
+                this.applyTileSuggestion(target, controlValue.tile)
         }
 
         private selectedTileSuggestionId(
@@ -1595,7 +1596,6 @@ namespace microcode {
         private layout_: PageLayout
         private navigationRows_: PageNavigationTarget[][]
         private navigationTargets_: PageNavigationTarget[]
-        private rowNavigationScratch_: ui.UiFocusNavigationTarget[]
         private measuredContentWidth_: number
         private measuredContentHeight_: number
 
@@ -1630,7 +1630,6 @@ namespace microcode {
             this.layout_ = undefined
             this.navigationRows_ = []
             this.navigationTargets_ = []
-            this.rowNavigationScratch_ = []
         }
 
         public measure(
@@ -1725,7 +1724,7 @@ namespace microcode {
             const rows = this.navigationRows()
             for (let row = 0; row < rows.length; row++) {
                 for (let column = 0; column < rows[row].length; column++) {
-                    if (rows[row][column].navigation.id != targetId) continue
+                    if (rows[row][column].id != targetId) continue
                     if (column > 0)
                         return this.focusTargetFromValue(
                             rows[row][column - 1].control.value,
@@ -1816,10 +1815,10 @@ namespace microcode {
                 for (let column = 0; column < rows[row].length; column++) {
                     const target = rows[row][column]
                     if (this.isDefaultRuleTarget(target.control.value))
-                        return target.navigation
+                        return target
                 }
             }
-            if (rows.length && rows[0].length) return rows[0][0].navigation
+            if (rows.length && rows[0].length) return rows[0][0]
             return undefined
         }
 
@@ -1843,7 +1842,7 @@ namespace microcode {
                     nearestDistance = distance
                 }
             }
-            return nearest ? nearest.navigation : undefined
+            return nearest
         }
 
         public nearestToolbarTarget(
@@ -1853,7 +1852,7 @@ namespace microcode {
             const rect = this.fixedScopeExitComparisonRect(source)
             return this.toolbar_.nearestTargetReference(
                 {
-                    id: source.navigation.id,
+                    id: source.id,
                     rect,
                 },
             )
@@ -1864,7 +1863,7 @@ namespace microcode {
             const targets = this.allNavigationTargets()
             for (let i = 0; i < targets.length; i++) {
                 const target = targets[i]
-                if (target.navigation.id == targetId) return target.navigation
+                if (target.id == targetId) return target
             }
             return this.defaultNavigationTarget()
         }
@@ -1874,7 +1873,7 @@ namespace microcode {
             for (let row = rows.length - 1; row >= 0; row--) {
                 const targets = rows[row]
                 if (targets.length)
-                    return targets[targets.length - 1].navigation
+                    return targets[targets.length - 1]
             }
             return this.defaultNavigationTarget()
         }
@@ -1940,26 +1939,42 @@ namespace microcode {
         ): ui.UiFocusMoveResult | undefined {
             const rows = this.navigationRows()
             if (!rows.length) return undefined
+            const result = ui.moveFocusInRaggedGrid({
+                scopeId: EDITOR_PAGE_SCOPE,
+                currentTargetId: request.currentTargetId,
+                direction: request.direction,
+                rows,
+                verticalStrategy: "column",
+            })
             const position = this.positionForTargetId(request.currentTargetId)
             if (!position)
                 return this.moveToTarget(
                     undefined,
-                    undefined,
-                    rows[0][0].navigation,
+                    rows[0][0],
                 )
 
             switch (request.direction) {
                 case "left":
-                    return this.moveLeft(rows, position)
+                    if (result.kind == "moved") return result
+                    if (position.column == 0 && !this.atHorizontalOrigin())
+                        return this.horizontalOriginScrollMove(rows, position)
+                    return this.horizontalEdgeMove(rows, position, -1)
                 case "right":
-                    return this.moveRight(rows, position)
+                    if (result.kind == "moved") return result
+                    return this.horizontalEdgeMove(rows, position, 1)
                 case "up":
-                    return this.moveUp(rows, position)
+                    if (result.kind == "moved") return result
+                    if (!this.atVerticalBoundary("up"))
+                        return this.boundaryScrollMove(rows, position, "up")
+                    return this.toolbarMove(rows, position)
                 case "down":
-                    return this.moveDown(rows, position)
+                    if (result.kind == "moved") return result
+                    if (!this.atVerticalBoundary("down"))
+                        return this.boundaryScrollMove(rows, position, "down")
+                    return result
             }
 
-            return undefined
+            return result
         }
 
         private pageLayout(): PageLayout {
@@ -2120,13 +2135,13 @@ namespace microcode {
             for (let i = 0; i < targets.length; i++) {
                 const target = targets[i]
                 this.focus_.setTarget({
-                    id: target.navigation.id,
+                    id: target.id,
                     scopeId: EDITOR_PAGE_SCOPE,
                     rect: target.viewportRect,
                     hidden: false,
                     activatable: true,
-                    scrollOwnerId: target.navigation.scrollOwnerId,
-                    scrollRect: target.navigation.scrollRect,
+                    scrollOwnerId: target.scrollOwnerId,
+                    scrollRect: target.scrollRect,
                 })
             }
         }
@@ -2252,7 +2267,7 @@ namespace microcode {
             if (row < 0 || row >= rows.length) return
             const targets = rows[row]
             if (column < 0 || column >= targets.length) return
-            const target = targets[column].navigation
+            const target = targets[column]
             const result = focus.setActiveTarget(EDITOR_PAGE_SCOPE, target.id)
             if (!this.handleFocusScrollResult(result))
                 this.scrollTargetIntoView(target.id)
@@ -2264,7 +2279,7 @@ namespace microcode {
             const rows = this.navigationRows()
             for (let row = 0; row < rows.length; row++) {
                 for (let column = 0; column < rows[row].length; column++) {
-                    if (rows[row][column].navigation.id == targetId)
+                    if (rows[row][column].id == targetId)
                         return { row, column }
                 }
             }
@@ -2276,7 +2291,7 @@ namespace microcode {
         ): PageNavigationTarget {
             const targets = this.allNavigationTargets()
             for (let i = 0; i < targets.length; i++) {
-                if (targets[i].navigation.id == targetId) return targets[i]
+                if (targets[i].id == targetId) return targets[i]
             }
             return undefined
         }
@@ -2301,133 +2316,57 @@ namespace microcode {
             })
         }
 
-        private moveLeft(
+        private horizontalEdgeMove(
             rows: PageNavigationTarget[][],
             position: PageTargetPosition,
+            step: number,
         ): ui.UiFocusMoveResult {
-            const rowResult = ui.moveFocusInRow({
-                scopeId: EDITOR_PAGE_SCOPE,
-                currentTargetId: rows[position.row][position.column].navigation.id,
-                direction: "left",
-                targets: this.copyRowNavigationTargets(rows[position.row]),
-            })
-            if (rowResult.kind == "moved") return rowResult
-
-            if (position.column == 0 && !this.atHorizontalOrigin())
-                return this.horizontalOriginScrollMove(rows, position)
-
             let row = position.row
-            let column = position.column - 1
+            let column = position.column + step
             if (column < 0) {
                 row--
                 if (row < 0) row = rows.length - 1
                 column = rows[row].length - 1
-            }
-            return this.moveToPosition(rows, position, row, column)
-        }
-
-        private moveRight(
-            rows: PageNavigationTarget[][],
-            position: PageTargetPosition,
-        ): ui.UiFocusMoveResult {
-            const rowResult = ui.moveFocusInRow({
-                scopeId: EDITOR_PAGE_SCOPE,
-                currentTargetId: rows[position.row][position.column].navigation.id,
-                direction: "right",
-                targets: this.copyRowNavigationTargets(rows[position.row]),
-            })
-            if (rowResult.kind == "moved") return rowResult
-            if (
-                position.row == rows.length - 1 &&
-                position.column == rows[position.row].length - 1
-            )
-                return this.moveToPosition(rows, position, 0, 0)
-
-            let row = position.row
-            let column = position.column + 1
-            if (column >= rows[row].length) {
+            } else if (column >= rows[row].length) {
                 row++
                 if (row >= rows.length) row = 0
                 column = 0
             }
-            return this.moveToPosition(rows, position, row, column)
+            return this.moveToTarget(
+                rows[position.row][position.column].id,
+                rows[row][column],
+            )
         }
 
-        private moveUp(
+        private toolbarMove(
             rows: PageNavigationTarget[][],
             position: PageTargetPosition,
         ): ui.UiFocusMoveResult {
-            if (position.row == 0) {
-                if (!this.atVerticalBoundary("up"))
-                    return this.boundaryScrollMove(rows, position, "up")
-                const target = this.nearestToolbarTarget(
-                    rows[position.row][position.column],
-                )
-                if (target)
-                    return {
-                        kind: "moved",
-                        fromScopeId: EDITOR_PAGE_SCOPE,
-                        fromTargetId:
-                            rows[position.row][position.column].navigation.id,
-                        toScopeId: target.scopeId,
-                        toTargetId: target.targetId,
-                    }
+            const target = this.nearestToolbarTarget(
+                rows[position.row][position.column],
+            )
+            if (target)
                 return {
                     kind: "moved",
                     fromScopeId: EDITOR_PAGE_SCOPE,
-                    fromTargetId: rows[position.row][position.column].navigation.id,
-                    toScopeId: EDITOR_TOOLBAR_SCOPE,
-                    toTargetId: EDITOR_TOOLBAR_SCOPE + "/run",
+                    fromTargetId: rows[position.row][position.column].id,
+                    toScopeId: target.scopeId,
+                    toTargetId: target.targetId,
                 }
+            return {
+                kind: "moved",
+                fromScopeId: EDITOR_PAGE_SCOPE,
+                fromTargetId: rows[position.row][position.column].id,
+                toScopeId: EDITOR_TOOLBAR_SCOPE,
+                toTargetId: EDITOR_TOOLBAR_SCOPE + "/run",
             }
-            return this.moveToPosition(
-                rows,
-                position,
-                position.row - 1,
-                Math.min(position.column, rows[position.row - 1].length - 1),
-            )
-        }
-
-        private moveDown(
-            rows: PageNavigationTarget[][],
-            position: PageTargetPosition,
-        ): ui.UiFocusMoveResult {
-            if (position.row == rows.length - 1) {
-                if (!this.atVerticalBoundary("down"))
-                    return this.boundaryScrollMove(rows, position, "down")
-                return {
-                    kind: "stayed",
-                    scopeId: EDITOR_PAGE_SCOPE,
-                    targetId: rows[position.row][position.column].navigation.id,
-                    reason: "boundary",
-                }
-            }
-            return this.moveToPosition(
-                rows,
-                position,
-                position.row + 1,
-                Math.min(position.column, rows[position.row + 1].length - 1),
-            )
-        }
-
-        private moveToPosition(
-            rows: PageNavigationTarget[][],
-            from: PageTargetPosition,
-            row: number,
-            column: number,
-        ): ui.UiFocusMoveResult {
-            return this.moveToTarget(
-                rows[from.row][from.column].navigation.id,
-                EDITOR_PAGE_SCOPE,
-                rows[row][column].navigation,
-            )
         }
 
         private horizontalOriginScrollMove(
             rows: PageNavigationTarget[][],
             position: PageTargetPosition,
         ): ui.UiFocusMoveResult {
-            const target = rows[position.row][position.column].navigation
+            const target = rows[position.row][position.column]
             return {
                 kind: "moved",
                 fromScopeId: EDITOR_PAGE_SCOPE,
@@ -2451,7 +2390,7 @@ namespace microcode {
             position: PageTargetPosition,
             direction: ui.UiFocusDirection,
         ): ui.UiFocusMoveResult {
-            const target = rows[position.row][position.column].navigation
+            const target = rows[position.row][position.column]
             return {
                 kind: "moved",
                 fromScopeId: EDITOR_PAGE_SCOPE,
@@ -2470,12 +2409,11 @@ namespace microcode {
 
         private moveToTarget(
             fromTargetId: ui.UiFocusId,
-            fromScopeId: ui.UiFocusScopeId,
             target: ui.UiFocusNavigationTarget,
         ): ui.UiFocusMoveResult {
             const result: ui.UiFocusMoveResult = {
                 kind: "moved",
-                fromScopeId: fromScopeId || EDITOR_PAGE_SCOPE,
+                fromScopeId: EDITOR_PAGE_SCOPE,
                 fromTargetId,
                 toScopeId: EDITOR_PAGE_SCOPE,
                 toTargetId: target.id,
@@ -2490,16 +2428,6 @@ namespace microcode {
                 }
             }
             return result
-        }
-
-        private copyRowNavigationTargets(
-            row: PageNavigationTarget[],
-        ): ui.UiFocusNavigationTarget[] {
-            while (this.rowNavigationScratch_.length)
-                this.rowNavigationScratch_.pop()
-            for (let i = 0; i < row.length; i++)
-                this.rowNavigationScratch_.push(row[i].navigation)
-            return this.rowNavigationScratch_
         }
     }
 
@@ -2643,19 +2571,17 @@ namespace microcode {
                     viewportRect.width < contentRect.width ||
                     viewportRect.height < contentRect.height
                 result.push({
+                    id: target.id,
+                    rect: viewportRect,
+                    scrollOwnerId: scrollNeeded
+                        ? EDITOR_PAGE_SCROLL_OWNER
+                        : undefined,
+                    scrollRect: scrollNeeded ? contentRect : undefined,
+                    hidden:
+                        viewportRect.width == 0 || viewportRect.height == 0,
                     control,
                     contentRect,
                     viewportRect,
-                    navigation: {
-                        id: target.id,
-                        rect: viewportRect,
-                        scrollOwnerId: scrollNeeded
-                            ? EDITOR_PAGE_SCROLL_OWNER
-                            : undefined,
-                        scrollRect: scrollNeeded ? contentRect : undefined,
-                        hidden:
-                            viewportRect.width == 0 || viewportRect.height == 0,
-                    },
                 })
             }
             return result
@@ -3215,11 +3141,10 @@ namespace microcode {
               scopeId: ui.UiFocusScopeId
           }
 
-    interface PageNavigationTarget {
+    interface PageNavigationTarget extends ui.UiFocusNavigationTarget {
         control: ui.UiControl<RuleTargetControlValue>
         contentRect: ui.Rect
         viewportRect: ui.Rect
-        navigation: ui.UiFocusNavigationTarget
     }
 
     interface PageTargetPosition {
@@ -3302,19 +3227,16 @@ namespace microcode {
                 id: "run",
                 value: "run",
                 textId: "run",
-                onActivate: () => runProgramIfStopped(this.getProgram_()),
             }
             this.stopControl_ = {
                 id: "stop",
                 value: "stop",
                 textId: "stop",
-                onActivate: () => stopProgramIfRunning(),
             }
             this.pageControl_ = {
                 id: "page",
                 value: "page",
                 textId: "page",
-                onActivate: openPage,
             }
             const toolbarControls: ui.UiControl<EditorToolbarAction>[] = [
                 {
@@ -3322,7 +3244,6 @@ namespace microcode {
                     value: "disk",
                     bitmap: icondb.disk,
                     textId: "disk",
-                    onActivate: openDisk,
                 },
                 this.runControl_,
                 this.stopControl_,
@@ -3344,6 +3265,14 @@ namespace microcode {
                 controlHeight: EDITOR_TOOLBAR_BUTTON_SIZE,
                 gap: EDITOR_TOOLBAR_GAP,
                 controlStyle,
+                onActivate: action => {
+                    if (action == "disk") openDisk()
+                    else if (action == "run")
+                        runProgramIfStopped(this.getProgram_())
+                    else if (action == "stop")
+                        stopProgramIfRunning()
+                    else if (action == "page") openPage()
+                },
             })
             this.navigationScratch_ = []
         }
