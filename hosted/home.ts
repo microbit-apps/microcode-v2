@@ -28,7 +28,7 @@ namespace microcode {
                 gap: HOME_ACTION_GAP,
                 controlStyle: ui.buttonStyle(
                     AppStyles.iconButton(),
-                    AppStyles.focusLabel(HOME_ACTION_LABEL_GAP),
+                    { focusLabelGap: HOME_ACTION_LABEL_GAP },
                 ),
                 labelBounds: new ui.Rect(0, 0, UI_SCREEN_WIDTH, UI_SCREEN_HEIGHT),
             })

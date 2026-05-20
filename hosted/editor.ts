@@ -99,10 +99,8 @@ namespace microcode {
     const EDITOR_RULE_GENERATED_TILE_SIZE = 18
     const EDITOR_RULE_GENERATED_TILE_CONTENT_STYLE: ui.UiButtonStyle = {
         foregroundColor: 15,
-        contentAlignment: "center",
         textPlacement: "content",
         font: bitmaps.font8,
-        padding: 0,
     }
     const EDITOR_RULE_SUBTLE_LABEL_STYLE = ui.buttonStyle(
         ui.UiButtonStyles.Transparent,

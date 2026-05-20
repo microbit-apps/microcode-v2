@@ -1,8 +1,4 @@
 namespace microcode {
-    const APP_FOCUS_COLOR = 9
-    const APP_FOCUS_LABEL_BACKGROUND = 15
-    const APP_FOCUS_LABEL_COLOR = 1
-
     /**
      * Shared visual styles for microcode screens and modal controls.
      */
@@ -58,7 +54,6 @@ namespace microcode {
         export const NumericDisplayPalette: ui.UiControlPalette = {
             backgroundColor: 1,
             foregroundColor: 15,
-            focusColor: 11,
         }
 
         /**
@@ -97,30 +92,12 @@ namespace microcode {
         }
 
         /**
-         * Creates the shared focus-label style fragment.
-         */
-        export function focusLabel(gap?: number): ui.UiButtonStyle {
-            const style: ui.UiButtonStyle = {
-                focusColor: APP_FOCUS_COLOR,
-                focusLabelBackgroundColor: APP_FOCUS_LABEL_BACKGROUND,
-                focusLabelColor: APP_FOCUS_LABEL_COLOR,
-                focusLabelFont: bitmaps.font8,
-            }
-            if (gap !== undefined) style.focusLabelGap = gap
-            return style
-        }
-
-        /**
          * Creates the shared icon-button style used by screen controls.
          */
         export function iconButton(): ui.UiButtonStyle {
             return ui.buttonStyle(
                 ui.UiButtonStyles.Transparent,
                 ui.UiButtonStyles.FocusLabel,
-                focusLabel(),
-                {
-                    focusLabelPadding: 1,
-                },
             )
         }
     }

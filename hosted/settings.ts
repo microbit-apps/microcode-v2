@@ -18,9 +18,7 @@ namespace microcode {
     const SETTINGS_BUTTON_STYLE = ui.buttonStyle(
         ui.UiButtonStyles.LightShadowedWhite,
         {
-            contentAlignment: "center",
             foregroundColor: 15,
-            selectedColor: 7,
             font: bitmaps.font8,
         },
     )
