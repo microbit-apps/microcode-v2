@@ -57,13 +57,13 @@ namespace microcode {
     export type Tile = number | ModifierEditor
 
     export function getTid(tile: Tile): number {
-        if (tile instanceof ModifierEditor) return tile.tid
-        return tile
+        if (isModifierEditor(tile)) return (tile as ModifierEditor).tid
+        return tile as number
     }
 
-    export function getIcon(tile: Tile) {
-        if (tile instanceof ModifierEditor) return tile.getIcon()
-        return tile
+    export function getIcon(tile: Tile): string | number | Bitmap {
+        if (isModifierEditor(tile)) return editorIcon(tile as ModifierEditor)
+        return tile as number
     }
 
     export type RuleRep = { [name: string]: Tile[] }
@@ -217,13 +217,8 @@ namespace microcode {
         public toBuffer(bw: BufferWriter) {
             const handleFieldEditors = (tile: Tile) => {
                 bw.writeByte(getTid(tile))
-                const fieldEditor = getFieldEditor(tile)
-                if (fieldEditor) {
-                    bw.writeBuffer(
-                        fieldEditor.toBuffer(
-                            (tile as ModifierEditor).getField(),
-                        ),
-                    )
+                if (isModifierEditor(tile)) {
+                    bw.writeBuffer(editorFieldToBuffer(tile as ModifierEditor))
                 }
             }
             if (this.isEmpty()) return
@@ -244,11 +239,9 @@ namespace microcode {
                     by =
                         Tid.TID_FILTER_CUP_X_READ +
                         (by - Tid.TID_MODIFIER_CUP_X_READ)
-                const tile = getEditor(by)
-                if (tile instanceof ModifierEditor) {
-                    const field = tile.fieldEditor.fromBuffer(br)
-                    const newOne = tile.getNewInstance(field)
-                    defn.push(<any>newOne, which, false)
+                const tile = createEditorFromBuffer(by, br)
+                if (tile) {
+                    defn.push(<any>tile, which, false)
                 } else {
                     defn.push(by, which, false)
                 }

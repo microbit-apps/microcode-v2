@@ -305,7 +305,7 @@ namespace microcode {
                     case Tid.TID_ACTUATOR_PAINT: {
                         const mod = this.rule.modifiers[this.modifierIndex]
                         const modEditor = mod as ModifierEditor
-                        param = modEditor.getField()
+                        param = modEditor.field
                         break
                     }
                     case Tid.TID_ACTUATOR_MUSIC: {

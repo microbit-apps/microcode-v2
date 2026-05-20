@@ -187,27 +187,11 @@ namespace microcode {
         )
     }
 
-    function isIconFieldEditorTile(tile: Tile): boolean {
-        return tile instanceof IconEditor
-    }
-
-    function isMelodyFieldEditorTile(tile: Tile): boolean {
-        return tile instanceof MelodyEditor
-    }
-
-    function isIconOrMelodyFieldEditorTile(tile: Tile): boolean {
-        return isIconFieldEditorTile(tile) || isMelodyFieldEditorTile(tile)
-    }
-
-    function isFieldEditorTile(tile: Tile): boolean {
-        return !!getFieldEditor(tile)
-    }
-
     function isGeneratedRuleTile(tile: Tile): boolean {
         return (
             isNumericEntryTile(tile) ||
-            isIconFieldEditorTile(tile) ||
-            isMelodyFieldEditorTile(tile)
+            isIconEditor(tile) ||
+            isMelodyEditor(tile)
         )
     }
 
@@ -226,15 +210,15 @@ namespace microcode {
     }
 
     function numericEntryText(tile: Tile): string {
-        if (getFieldEditor(tile)) {
+        if (isModifierEditor(tile)) {
             const editor = tile as DigitEditor
-            return editor.getField().num
+            return editor.field
         }
         return "" + getParam(tile)
     }
 
     function cloneIconField(tile: IconEditor): Bitmap {
-        return (tile.getField() as Bitmap).clone()
+        return tile.field.clone()
     }
 
     function iconFieldsEqual(left: Bitmap, right: Bitmap): boolean {
@@ -248,7 +232,7 @@ namespace microcode {
     }
 
     function cloneMelodyField(tile: MelodyEditor): Melody {
-        const field = tile.getField() as Melody
+        const field = tile.field
         return {
             notes: field.notes.slice(0),
             tempo: field.tempo,
@@ -447,7 +431,7 @@ namespace microcode {
                         tile,
                         pending: false,
                     })
-                else if (tile && isIconOrMelodyFieldEditorTile(tile))
+                else if (tile && (isIconEditor(tile) || isMelodyEditor(tile)))
                     this.openFieldEditorModal({
                         value,
                         tile,
@@ -682,7 +666,7 @@ namespace microcode {
             if (!value.section || value.index === undefined) return false
             if (value.kind == "insert") return true
             const tile = this.targetTile(value)
-            return value.kind == "tile" && tile && !isFieldEditorTile(tile)
+            return value.kind == "tile" && tile && !isModifierEditor(tile)
         }
 
         private createTileSuggestionControls(
@@ -757,7 +741,7 @@ namespace microcode {
         ): number {
             const tile = this.targetTile(value)
             if (!tile) return undefined
-            if (!isFieldEditorTile(tile) && isNumericEntryTile(tile))
+            if (!isModifierEditor(tile) && isNumericEntryTile(tile))
                 return Tid.TID_DECIMAL_EDITOR
             return getTid(tile)
         }
@@ -769,7 +753,7 @@ namespace microcode {
             return (
                 value.kind == "tile" &&
                 tile &&
-                !isFieldEditorTile(tile) &&
+                !isModifierEditor(tile) &&
                 filterModifierWithDelete(tile)
             )
         }
@@ -781,17 +765,14 @@ namespace microcode {
         }
 
         private isSingleFieldEditorSuggestion(suggestions: Tile[]): boolean {
-            return (
-                suggestions.length == 1 &&
-                suggestions[0] instanceof ModifierEditor
-            )
+            return suggestions.length == 1 && isModifierEditor(suggestions[0])
         }
 
         private applyTileSuggestion(
             value: RuleTargetControlValue,
             tile: Tile,
         ): void {
-            if (tile instanceof ModifierEditor) {
+            if (isModifierEditor(tile)) {
                 this.closeModal()
                 this.openPendingFieldEditor(value, tile)
                 return
@@ -813,7 +794,7 @@ namespace microcode {
             }
             if (isNumericEntryTile(candidate))
                 this.openNumericEntryModal(target)
-            else if (isIconOrMelodyFieldEditorTile(candidate))
+            else if (isIconEditor(candidate) || isMelodyEditor(candidate))
                 this.openFieldEditorModal(target)
         }
 
@@ -825,18 +806,18 @@ namespace microcode {
             if (
                 value.kind == "tile" &&
                 existingTile &&
-                !isFieldEditorTile(existingTile) &&
+                !isModifierEditor(existingTile) &&
                 isNumericEntryTile(existingTile) &&
-                tile instanceof DigitEditor
+                isDigitEditor(tile)
             ) {
-                return new DigitEditor(
-                    { num: numericEntryText(existingTile) },
+                return createDigitEditor(
+                    numericEntryText(existingTile),
                     getTid(tile) == Tid.TID_POS_INT_EDITOR,
                 )
             }
             const source = this.previousFieldEditor(value) || tile
-            if (!(source instanceof ModifierEditor)) return undefined
-            return source.getNewInstance()
+            if (!isModifierEditor(source)) return undefined
+            return createEditorInstance(source as ModifierEditor)
         }
 
         private previousFieldEditor(
@@ -848,7 +829,7 @@ namespace microcode {
             if (!rule) return undefined
             const tiles = rule.getRuleRep()[value.section]
             const previous = tiles[value.index - 1]
-            return previous instanceof ModifierEditor
+            return isModifierEditor(previous)
                 ? (previous as ModifierEditor)
                 : undefined
         }
@@ -1084,9 +1065,9 @@ namespace microcode {
         }
 
         private writeNumericTextToTile(tile: Tile, text: string): void {
-            if (!getFieldEditor(tile)) return
+            if (!isModifierEditor(tile)) return
             const editor = tile as DigitEditor
-            editor.getField().num = text
+            editor.field = text
         }
 
         private completedNumericTile(tile: Tile, text: string): Tile {
@@ -1102,9 +1083,9 @@ namespace microcode {
         ): boolean {
             const tile = this.targetTile(value)
             if (!tile) return false
-            if (getFieldEditor(tile)) {
+            if (isModifierEditor(tile)) {
                 const editor = tile as DigitEditor
-                return editor.getField().num != text
+                return editor.field != text
             }
             if (!value.section || value.index === undefined) return false
             const literal = numericLiteralTile(text)
@@ -1117,10 +1098,10 @@ namespace microcode {
         ): boolean {
             const tile = this.targetTile(value)
             if (!tile) return false
-            if (getFieldEditor(tile)) {
+            if (isModifierEditor(tile)) {
                 const editor = tile as DigitEditor
-                if (editor.getField().num == text) return false
-                editor.getField().num = text
+                if (editor.field == text) return false
+                editor.field = text
                 return true
             }
             if (!value.section || value.index === undefined) return false
@@ -1131,9 +1112,7 @@ namespace microcode {
             rule.updateAt(
                 value.section,
                 value.index,
-                literal !== undefined
-                    ? literal
-                    : new DigitEditor({ num: text }),
+                literal !== undefined ? literal : createDigitEditor(text),
             )
             return true
         }
@@ -1147,9 +1126,12 @@ namespace microcode {
         private createFieldEditorModal(
             target: TileEditTarget,
         ): HostedPicker<FieldEditorModalValue> {
-            if (!target.tile || !isIconOrMelodyFieldEditorTile(target.tile))
+            if (
+                !target.tile ||
+                (!isIconEditor(target.tile) && !isMelodyEditor(target.tile))
+            )
                 return undefined
-            if (isIconFieldEditorTile(target.tile))
+            if (isIconEditor(target.tile))
                 return this.createIconFieldEditorModal(
                     target,
                     target.tile as IconEditor,
@@ -1374,12 +1356,12 @@ namespace microcode {
             field: Bitmap,
             wasRunning: boolean,
         ): void {
-            if (!target.tile || !isIconFieldEditorTile(target.tile)) {
+            if (!target.tile || !isIconEditor(target.tile)) {
                 this.closeModal()
                 return
             }
             const tile = target.tile as IconEditor
-            const changed = !iconFieldsEqual(tile.getField(), field)
+            const changed = !iconFieldsEqual(tile.field, field)
             if (target.pending) {
                 tile.field = field.clone()
                 this.commitTileSuggestion(target.value, tile, wasRunning, true)
@@ -1399,12 +1381,12 @@ namespace microcode {
             field: Melody,
             wasRunning: boolean,
         ): void {
-            if (!target.tile || !isMelodyFieldEditorTile(target.tile)) {
+            if (!target.tile || !isMelodyEditor(target.tile)) {
                 this.closeModal()
                 return
             }
             const tile = target.tile as MelodyEditor
-            const changed = !melodyFieldsEqual(tile.getField(), field)
+            const changed = !melodyFieldsEqual(tile.field, field)
             const nextField = {
                 notes: field.notes.slice(0),
                 tempo: field.tempo,
@@ -2647,7 +2629,7 @@ namespace microcode {
                 kind == "tile" &&
                 tile &&
                 !generated &&
-                !getFieldEditor(tile) &&
+                !isModifierEditor(tile) &&
                 !isConstant(getTid(tile))
             return {
                 id: this.targetId(kind, section, index),
@@ -2676,12 +2658,10 @@ namespace microcode {
 
         private targetBitmap(tile: Tile): Bitmap {
             if (isNumericEntryTile(tile)) return undefined
-            if (isIconFieldEditorTile(tile))
-                return icondb.renderMicrobitLEDs(
-                    (tile as IconEditor).getField(),
-                )
-            if (isMelodyFieldEditorTile(tile))
-                return icondb.melodyToImage((tile as MelodyEditor).getField())
+            if (isIconEditor(tile))
+                return icondb.renderMicrobitLEDs((tile as IconEditor).field)
+            if (isMelodyEditor(tile))
+                return icondb.melodyToImage((tile as MelodyEditor).field)
             return this.bitmap(getIcon(tile))
         }
 
@@ -2773,12 +2753,12 @@ namespace microcode {
         }
 
         private generatedTileFrameStyle(tile?: Tile): ui.UiButtonStyle {
-            if (tile && isIconFieldEditorTile(tile))
+            if (tile && isIconEditor(tile))
                 return {
                     edgeColor: 15,
                     shadowColor: 15,
                 }
-            if (tile && isMelodyFieldEditorTile(tile))
+            if (tile && isMelodyEditor(tile))
                 return {
                     edgeColor: 1,
                     shadowColor: 1,

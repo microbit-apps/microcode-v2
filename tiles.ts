@@ -436,7 +436,7 @@ namespace microcode {
             case Tid.TID_ACTUATOR_PAINT: {
                 const mod = getEditor(Tid.TID_MODIFIER_ICON_EDITOR)
                 const modEditor = mod as ModifierEditor
-                return modEditor.getField()
+                return modEditor.field
             }
             case Tid.TID_ACTUATOR_MUSIC: {
                 const mod = getEditor(
@@ -856,7 +856,7 @@ namespace microcode {
             case Tid.TID_DECIMAL_EDITOR:
             case Tid.TID_POS_INT_EDITOR: {
                 const modEditor = tile as DigitEditor
-                const str = modEditor.getField().num
+                const str = modEditor.field
                 return str == "" ? 0 : parseFloat(str)
             }
             case Tid.TID_SENSOR_CUP_X_WRITTEN:
