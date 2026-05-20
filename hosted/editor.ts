@@ -2229,7 +2229,6 @@ namespace microcode {
                     id: target.navigation.id,
                     scopeId: EDITOR_PAGE_SCOPE,
                     rect: target.viewportRect,
-                    disabled: false,
                     hidden: false,
                     activatable: true,
                     scrollOwnerId: target.navigation.scrollOwnerId,
@@ -2423,7 +2422,7 @@ namespace microcode {
         private controls_: ui.UiControl<RuleTargetControlValue>[]
         private whenControlIds_: string[]
         private doControlIds_: string[]
-        private strip_: ui.UiControlStrip<RuleTargetControlValue>
+        private strip_: ui.UiRow<RuleTargetControlValue>
         private stripOffsetX_: number
         private stripOffsetY_: number
         private measureScratch_: ui.UiMeasuredSize
@@ -2461,7 +2460,7 @@ namespace microcode {
             // horizontal layout, focus rectangles, focus rendering, and built-in
             // control drawing; `RuleView` only draws the rule tray bands around
             // the arranged controls.
-            this.strip_ = new ui.UiControlStrip<RuleTargetControlValue>({
+            this.strip_ = new ui.UiRow<RuleTargetControlValue>({
                 scopeId: EDITOR_PAGE_SCOPE,
                 controls: this.controls_,
                 controlWidth: 1,
@@ -2528,7 +2527,7 @@ namespace microcode {
             focus: ui.UiFocusState,
             page: PageLayout,
         ): void {
-            this.strip_.renderFocusOverlay(surface, assets, focus)
+            this.strip_.renderFocus(surface, assets, focus)
         }
 
         public arrangeForPage(page: PageLayout): void {
@@ -3868,7 +3867,7 @@ namespace microcode {
             const targets = this.navigationTargets(scope)
             for (let i = 0; i < targets.length; i++) {
                 const target = targets[i]
-                if (!target.disabled && !target.hidden) return target
+                if (!target.hidden) return target
             }
             return undefined
         }
@@ -3899,7 +3898,7 @@ namespace microcode {
             const targets = this.navigationTargets(scope)
             for (let i = 0; i < targets.length; i++) {
                 const target = targets[i]
-                if (target.id == targetId && !target.disabled && !target.hidden)
+                if (target.id == targetId && !target.hidden)
                     return target
             }
             return undefined
@@ -3917,7 +3916,7 @@ namespace microcode {
             const sourceY = source.rect.y + Math.idiv(source.rect.height, 2)
             for (let i = 0; i < targets.length; i++) {
                 const target = targets[i]
-                if (target.disabled || target.hidden) continue
+                if (target.hidden) continue
                 const distance = this.targetDistanceFromCenter(
                     target,
                     sourceX,
@@ -3962,7 +3961,6 @@ namespace microcode {
                 targets.push({
                     id: this.targetId(scope.row.scopeId, control.id),
                     rect,
-                    disabled: control.disabled || false,
                     hidden: control.visible === false,
                 })
             }
