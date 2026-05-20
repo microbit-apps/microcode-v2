@@ -49,7 +49,6 @@ namespace microcode {
 
         public render(surface: ui.DrawSurface): void {
             // Draw from back to front
-            surface.clear(this.backgroundColor)
             this.drawLogo(surface)
             this.drawVersion(surface)
             super.render(surface)
@@ -125,8 +124,6 @@ namespace microcode {
         }
 
         private drawLogo(surface: ui.DrawSurface): void {
-            // The animation is ordinary screen state. It advances during render
-            // because the host runs frames continuously while this screen is top.
             this.logoOffset_ = Math.min(0, this.logoOffset_ + 2)
             const t = control.millis()
             const dy = this.logoOffset_ == 0 ? (Math.idiv(t, 800) & 1) - 1 : 0

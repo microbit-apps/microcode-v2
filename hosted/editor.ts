@@ -7,39 +7,14 @@ namespace microcode {
     type EditorDiskSlot = string
     type EditorPagePickerValue = number
     type RuleHandleAction = "add" | "delete" | "moveUp" | "moveDown"
-    type TileSuggestionAction = "suggestion" | "delete"
-    type FieldEditorModalAction = "cell" | "commit" | "delete"
+    type TileSuggestionValue = Tile
+    type FieldEditorModalValue = number
 
-    interface TileSuggestionValue {
-        kind: TileSuggestionAction
-        tile?: Tile
-    }
-
-    interface TileEditTarget {
-        value: RuleTargetControlValue
-        tile: Tile
-        pending: boolean
-    }
+    const TILE_SUGGESTION_DELETE = -1
+    const FIELD_EDITOR_COMMIT = -1
+    const FIELD_EDITOR_DELETE = -2
 
     type TileSuggestionModalResult = HostedPickerResult<TileSuggestionValue>
-
-    interface FieldEditorModalValue {
-        kind: FieldEditorModalAction
-        row?: number
-        col?: number
-    }
-
-    interface PageControlValue {
-        kind: "page"
-        page: PageDefn
-        pageIndex: number
-    }
-
-    interface RuleControlValue {
-        kind: "rule"
-        rule: RuleDefn
-        ruleIndex: number
-    }
 
     interface RuleTargetControlValue {
         kind: RuleTargetKind
@@ -149,17 +124,13 @@ namespace microcode {
         titleGap: EDITOR_FIELD_MODAL_GRID_GAP,
     }
 
-    function ruleControlId(ruleIndex: number): string {
-        return "rule-" + ruleIndex
-    }
-
     function ruleTargetControlId(
         ruleIndex: number,
         kind: RuleTargetKind,
         section?: RuleSection,
         index?: number,
     ): string {
-        let id = ruleControlId(ruleIndex) + "/" + kind
+        let id = "rule-" + ruleIndex + "/" + kind
         if (section) id += "/" + section
         if (index !== undefined) id += "-" + index
         return id
@@ -426,17 +397,9 @@ namespace microcode {
             else if (value.kind == "tile") {
                 const tile = this.targetTile(value)
                 if (tile && isNumericEntryTile(tile))
-                    this.openNumericEntryModal({
-                        value,
-                        tile,
-                        pending: false,
-                    })
+                    this.openNumericEntryModal(value, tile, false)
                 else if (tile && (isIconEditor(tile) || isMelodyEditor(tile)))
-                    this.openFieldEditorModal({
-                        value,
-                        tile,
-                        pending: false,
-                    })
+                    this.openFieldEditorModal(value, tile, false)
                 else this.openTileSuggestionModal(value)
             } else if (value.kind == "insert")
                 this.openTileSuggestionModal(value)
@@ -689,10 +652,7 @@ namespace microcode {
             const selectedTid = this.selectedTileSuggestionTid(value)
             const control: ui.UiControl<TileSuggestionValue> = {
                 id: "suggestion-" + index,
-                value: {
-                    kind: "suggestion",
-                    tile,
-                },
+                value: tile,
                 textId: tidToString(getTid(tile)),
                 selected:
                     selectedTid !== undefined && selectedTid == getTid(tile),
@@ -709,7 +669,7 @@ namespace microcode {
         ): ui.UiControl<TileSuggestionValue> {
             return {
                 id: "delete",
-                value: { kind: "delete" },
+                value: TILE_SUGGESTION_DELETE,
                 bitmapId: "delete",
                 textId: "delete",
                 style: EDITOR_FIELD_DELETE_STYLE,
@@ -720,8 +680,9 @@ namespace microcode {
             target: RuleTargetControlValue,
             controlValue: TileSuggestionValue,
         ): void {
-            if (controlValue.kind == "delete") this.deleteSuggestedTile(target)
-            else this.applyTileSuggestion(target, controlValue.tile)
+            if (controlValue == TILE_SUGGESTION_DELETE)
+                this.deleteSuggestedTile(target)
+            else this.applyTileSuggestion(target, controlValue)
         }
 
         private selectedTileSuggestionId(
@@ -787,15 +748,10 @@ namespace microcode {
         ): void {
             const candidate = this.fieldEditorCandidate(value, tile)
             if (!candidate) return
-            const target: TileEditTarget = {
-                value,
-                tile: candidate,
-                pending: true,
-            }
             if (isNumericEntryTile(candidate))
-                this.openNumericEntryModal(target)
+                this.openNumericEntryModal(value, candidate, true)
             else if (isIconEditor(candidate) || isMelodyEditor(candidate))
-                this.openFieldEditorModal(target)
+                this.openFieldEditorModal(value, candidate, true)
         }
 
         private fieldEditorCandidate(
@@ -992,62 +948,82 @@ namespace microcode {
                 this.pageView_.focusRuleTarget(this.focus, ruleIndex, "handle")
         }
 
-        private openNumericEntryModal(target: TileEditTarget): void {
+        private openNumericEntryModal(
+            value: RuleTargetControlValue,
+            tile: Tile,
+            pending: boolean,
+        ): void {
             if (this.hasModal) return
-            const modal = this.createNumericEntryModal(target)
+            const modal = this.createNumericEntryModal(value, tile, pending)
             if (modal) this.openModal(modal)
         }
 
         private createNumericEntryModal(
-            target: TileEditTarget,
+            value: RuleTargetControlValue,
+            tile: Tile,
+            pending: boolean,
         ): ui.UiNumericEntryModal {
-            if (!target.tile || !isNumericEntryTile(target.tile))
-                return undefined
+            if (!tile || !isNumericEntryTile(tile)) return undefined
             const wasRunning = isProgramRunning()
             return new ui.UiNumericEntryModal({
                 modalScopeId: EDITOR_NUMERIC_MODAL_SCOPE,
-                mode: numericEntryMode(target.tile),
-                initialText: numericEntryText(target.tile),
+                mode: numericEntryMode(tile),
+                initialText: numericEntryText(tile),
                 maxLength: 8,
-                deleteEnabled: !target.pending,
+                deleteEnabled: !pending,
                 deleteIcon: "delete",
                 modalStyle: AppStyles.NumericModal,
                 keyStyle: AppStyles.ModalButton,
                 onResult: result =>
-                    this.applyNumericEntryResult(target, result, wasRunning),
+                    this.applyNumericEntryResult(
+                        value,
+                        tile,
+                        pending,
+                        result,
+                        wasRunning,
+                    ),
             })
         }
 
         private applyNumericEntryResult(
-            target: TileEditTarget,
+            value: RuleTargetControlValue,
+            tile: Tile,
+            pending: boolean,
             result: ui.UiNumericEntryResult,
             wasRunning: boolean,
         ): void {
             if (!result) return
             if (result.kind == "completed")
-                this.completeNumericEntry(target, result, wasRunning)
+                this.completeNumericEntry(
+                    value,
+                    tile,
+                    pending,
+                    result,
+                    wasRunning,
+                )
             else if (result.kind == "deleted")
-                this.deleteEditedTile(target.value, wasRunning)
+                this.deleteEditedTile(value, wasRunning)
         }
 
         private completeNumericEntry(
-            target: TileEditTarget,
+            value: RuleTargetControlValue,
+            tile: Tile,
+            pending: boolean,
             result: ui.UiNumericEntryResult,
             wasRunning: boolean,
         ): void {
-            if (!target.tile || !isNumericEntryTile(target.tile)) {
+            if (!tile || !isNumericEntryTile(tile)) {
                 this.closeModal()
                 return
             }
-            if (target.pending) {
-                const tile = this.completedNumericTile(
-                    target.tile,
+            if (pending) {
+                const completedTile = this.completedNumericTile(
+                    tile,
                     (<any>result).text,
                 )
-                this.commitTileSuggestion(target.value, tile, wasRunning, true)
+                this.commitTileSuggestion(value, completedTile, wasRunning, true)
                 return
             }
-            const value = target.value
             const text = (<any>result).text
             if (this.numericEntryResultChanged(value, text))
                 this.applyTargetRuleEdit(value, wasRunning, rule => {
@@ -1117,34 +1093,40 @@ namespace microcode {
             return true
         }
 
-        private openFieldEditorModal(target: TileEditTarget): void {
+        private openFieldEditorModal(
+            value: RuleTargetControlValue,
+            tile: Tile,
+            pending: boolean,
+        ): void {
             if (this.hasModal) return
-            const modal = this.createFieldEditorModal(target)
+            const modal = this.createFieldEditorModal(value, tile, pending)
             if (modal) this.openModal(modal)
         }
 
         private createFieldEditorModal(
-            target: TileEditTarget,
+            value: RuleTargetControlValue,
+            tile: Tile,
+            pending: boolean,
         ): HostedPicker<FieldEditorModalValue> {
-            if (
-                !target.tile ||
-                (!isIconEditor(target.tile) && !isMelodyEditor(target.tile))
-            )
+            if (!tile || (!isIconEditor(tile) && !isMelodyEditor(tile)))
                 return undefined
-            if (isIconEditor(target.tile))
+            if (isIconEditor(tile))
                 return this.createIconFieldEditorModal(
-                    target,
-                    target.tile as IconEditor,
+                    value,
+                    tile as IconEditor,
+                    pending,
                 )
             return this.createMelodyFieldEditorModal(
-                target,
-                target.tile as MelodyEditor,
+                value,
+                tile as MelodyEditor,
+                pending,
             )
         }
 
         private createIconFieldEditorModal(
-            target: TileEditTarget,
+            value: RuleTargetControlValue,
             tile: IconEditor,
+            pending: boolean,
         ): HostedPicker<FieldEditorModalValue> {
             const field = cloneIconField(tile)
             const controls = this.createIconFieldControls(field)
@@ -1155,13 +1137,19 @@ namespace microcode {
                 controls,
                 5,
                 EDITOR_FIELD_MODAL_GRID_GAP,
-                !target.pending,
+                !pending,
                 (controlValue, control) => {
-                    if (controlValue.kind == "commit")
-                        this.commitIconFieldEditor(target, field, wasRunning)
-                    else if (controlValue.kind == "delete")
-                        this.deleteEditedTile(target.value, wasRunning)
-                    else this.toggleIconFieldCell(field, control)
+                    if (controlValue == FIELD_EDITOR_COMMIT)
+                        this.commitIconFieldEditor(
+                            value,
+                            tile,
+                            pending,
+                            field,
+                            wasRunning,
+                        )
+                    else if (controlValue == FIELD_EDITOR_DELETE)
+                        this.deleteEditedTile(value, wasRunning)
+                    else this.toggleIconFieldCell(field, controlValue, control)
                 },
             )
         }
@@ -1180,7 +1168,8 @@ namespace microcode {
                 controls,
                 titleControls: this.fieldTitleControls(deleteEnabled),
                 titleBitmap,
-                defaultControlId: "cell-2-2",
+                defaultControlId:
+                    "cell-" + (2 * columnCount + Math.min(2, columnCount - 1)),
                 closeOnActivate: false,
                 columnCount,
                 controlWidth: EDITOR_FIELD_MODAL_CELL_SIZE,
@@ -1207,13 +1196,13 @@ namespace microcode {
             if (action == "ok")
                 return {
                     id: "ok",
-                    value: { kind: "commit" },
+                    value: FIELD_EDITOR_COMMIT,
                     text: "OK",
                     style: EDITOR_FIELD_OK_STYLE,
                 }
             return {
                 id: "delete",
-                value: { kind: "delete" },
+                value: FIELD_EDITOR_DELETE,
                 bitmapId: "delete",
                 style: EDITOR_FIELD_DELETE_STYLE,
             }
@@ -1229,6 +1218,7 @@ namespace microcode {
                         this.fieldCellControl(
                             row,
                             col,
+                            5,
                             this.iconFieldBitmapId(field, row, col),
                         ),
                     )
@@ -1238,8 +1228,9 @@ namespace microcode {
         }
 
         private createMelodyFieldEditorModal(
-            target: TileEditTarget,
+            value: RuleTargetControlValue,
             tile: MelodyEditor,
+            pending: boolean,
         ): HostedPicker<FieldEditorModalValue> {
             const field = cloneMelodyField(tile)
             const controls = this.createMelodyFieldControls(field)
@@ -1250,13 +1241,25 @@ namespace microcode {
                 controls,
                 MELODY_LENGTH,
                 EDITOR_MELODY_FIELD_MODAL_ROW_GAP,
-                !target.pending,
+                !pending,
                 (controlValue, control) => {
-                    if (controlValue.kind == "commit")
-                        this.commitMelodyFieldEditor(target, field, wasRunning)
-                    else if (controlValue.kind == "delete")
-                        this.deleteEditedTile(target.value, wasRunning)
-                    else this.toggleMelodyFieldCell(field, controls, control)
+                    if (controlValue == FIELD_EDITOR_COMMIT)
+                        this.commitMelodyFieldEditor(
+                            value,
+                            tile,
+                            pending,
+                            field,
+                            wasRunning,
+                        )
+                    else if (controlValue == FIELD_EDITOR_DELETE)
+                        this.deleteEditedTile(value, wasRunning)
+                    else
+                        this.toggleMelodyFieldCell(
+                            field,
+                            controls,
+                            controlValue,
+                            control,
+                        )
                 },
             )
         }
@@ -1271,6 +1274,7 @@ namespace microcode {
                         this.fieldCellControl(
                             row,
                             col,
+                            MELODY_LENGTH,
                             this.melodyFieldBitmapId(field, row, col),
                         ),
                     )
@@ -1282,15 +1286,13 @@ namespace microcode {
         private fieldCellControl(
             row: number,
             col: number,
+            columnCount: number,
             bitmapId: string,
         ): ui.UiControl<FieldEditorModalValue> {
+            const cell = row * columnCount + col
             return {
-                id: "cell-" + row + "-" + col,
-                value: {
-                    kind: "cell",
-                    row,
-                    col,
-                },
+                id: "cell-" + cell,
+                value: cell,
                 bitmapId,
                 style: ui.UiButtonStyles.Transparent,
             }
@@ -1317,54 +1319,54 @@ namespace microcode {
 
         private toggleIconFieldCell(
             field: Bitmap,
+            cell: number,
             control: ui.UiControl<FieldEditorModalValue>,
         ): void {
-            const value = control.value
-            const on = field.getPixel(value.col, value.row) ? 0 : 1
-            field.setPixel(value.col, value.row, on)
-            control.bitmapId = this.iconFieldBitmapId(
-                field,
-                value.row,
-                value.col,
-            )
+            const row = Math.idiv(cell, 5)
+            const col = cell % 5
+            const on = field.getPixel(col, row) ? 0 : 1
+            field.setPixel(col, row, on)
+            control.bitmapId = this.iconFieldBitmapId(field, row, col)
         }
 
         private toggleMelodyFieldCell(
             field: Melody,
             controls: ui.UiControl<FieldEditorModalValue>[],
+            cell: number,
             control: ui.UiControl<FieldEditorModalValue>,
         ): void {
-            const value = control.value
-            const note = (NUM_NOTES - 1 - value.row).toString()
-            const previous = field.notes.charAt(value.col)
+            const row = Math.idiv(cell, MELODY_LENGTH)
+            const col = cell % MELODY_LENGTH
+            const note = (NUM_NOTES - 1 - row).toString()
+            const previous = field.notes.charAt(col)
             const active = previous == note
             const next = active ? "." : note
             field.notes =
-                field.notes.slice(0, value.col) +
+                field.notes.slice(0, col) +
                 next +
-                field.notes.slice(value.col + 1)
+                field.notes.slice(col + 1)
             control.bitmapId = active ? "note_off" : "note_on"
             if (!active && previous != ".") {
                 const previousRow = NUM_NOTES - 1 - parseInt(previous)
-                controls[previousRow * MELODY_LENGTH + value.col].bitmapId =
-                    "note_off"
+                controls[previousRow * MELODY_LENGTH + col].bitmapId = "note_off"
             }
         }
 
         private commitIconFieldEditor(
-            target: TileEditTarget,
+            value: RuleTargetControlValue,
+            tile: IconEditor,
+            pending: boolean,
             field: Bitmap,
             wasRunning: boolean,
         ): void {
-            if (!target.tile || !isIconEditor(target.tile)) {
+            if (!tile || !isIconEditor(tile)) {
                 this.closeModal()
                 return
             }
-            const tile = target.tile as IconEditor
             const changed = !iconFieldsEqual(tile.field, field)
-            if (target.pending) {
+            if (pending) {
                 tile.field = field.clone()
-                this.commitTileSuggestion(target.value, tile, wasRunning, true)
+                this.commitTileSuggestion(value, tile, wasRunning, true)
                 return
             }
             if (changed)
@@ -1373,27 +1375,28 @@ namespace microcode {
                     return true
                 })
             this.closeModal()
-            this.focusTargetValue(target.value)
+            this.focusTargetValue(value)
         }
 
         private commitMelodyFieldEditor(
-            target: TileEditTarget,
+            value: RuleTargetControlValue,
+            tile: MelodyEditor,
+            pending: boolean,
             field: Melody,
             wasRunning: boolean,
         ): void {
-            if (!target.tile || !isMelodyEditor(target.tile)) {
+            if (!tile || !isMelodyEditor(tile)) {
                 this.closeModal()
                 return
             }
-            const tile = target.tile as MelodyEditor
             const changed = !melodyFieldsEqual(tile.field, field)
             const nextField = {
                 notes: field.notes.slice(0),
                 tempo: field.tempo,
             }
-            if (target.pending) {
+            if (pending) {
                 tile.field = nextField
-                this.commitTileSuggestion(target.value, tile, wasRunning, true)
+                this.commitTileSuggestion(value, tile, wasRunning, true)
                 return
             }
             if (changed)
@@ -1402,7 +1405,7 @@ namespace microcode {
                     return true
                 })
             this.closeModal()
-            this.focusTargetValue(target.value)
+            this.focusTargetValue(value)
         }
 
         private deleteEditedTile(
@@ -1654,11 +1657,7 @@ namespace microcode {
             if (result.kind == "activated") {
                 if (result.scopeId == EDITOR_PAGE_SCOPE) {
                     const target = this.targetByFocusId(result.targetId)
-                    if (
-                        target &&
-                        target.control.value.kind != "static" &&
-                        this.onActivateTarget_
-                    )
+                    if (target && this.onActivateTarget_)
                         this.onActivateTarget_(target.control.value)
                 }
             } else if (result.kind == "moved" && result.scrollRequest) {
@@ -1888,7 +1887,6 @@ namespace microcode {
             this.measuredContentHeight_ = content.height
             this.updateContentRect()
             return {
-                control: this.pageControl(page),
                 viewport: this.viewportRect_.clone(),
                 content: this.contentRect_.clone(),
                 contentWidth: content.width,
@@ -1910,18 +1908,6 @@ namespace microcode {
                 rules.push(new RuleView(page.rules[i], rules.length, false))
             rules.push(new RuleView(new RuleDefn(), rules.length, true))
             return rules
-        }
-
-        private pageControl(page: PageDefn): ui.UiControl<PageControlValue> {
-            const pageIndex = this.getPage_()
-            return {
-                id: "page-" + pageIndex,
-                value: {
-                    kind: "page",
-                    page,
-                    pageIndex,
-                },
-            }
         }
 
         private arrangeRules(rules: RuleView[]): ui.Size {
@@ -2350,7 +2336,6 @@ namespace microcode {
     }
 
     class RuleView {
-        public readonly control: ui.UiControl<RuleControlValue>
         public readonly rule: RuleDefn
         public readonly ruleIndex: number
         private readonly virtualRule_: boolean
@@ -2378,7 +2363,6 @@ namespace microcode {
             this.rule = ruledef
             this.ruleIndex = ruleIndex
             this.virtualRule_ = virtualRule
-            this.control = this.ruleControl(ruledef, ruleIndex)
             this.x_ = 0
             this.y_ = 0
             this.width_ = 0
@@ -2464,7 +2448,6 @@ namespace microcode {
             for (let i = 0; i < this.controls_.length; i++) {
                 const control = this.controls_[i]
                 if (
-                    control.value.kind == "static" ||
                     !_uiControls.isVisible(control) ||
                     !_uiControls.isFocusable(control)
                 )
@@ -2490,20 +2473,6 @@ namespace microcode {
                 })
             }
             return result
-        }
-
-        private ruleControl(
-            rule: RuleDefn,
-            ruleIndex: number,
-        ): ui.UiControl<RuleControlValue> {
-            return {
-                id: ruleControlId(ruleIndex),
-                value: {
-                    kind: "rule",
-                    rule,
-                    ruleIndex,
-                },
-            }
         }
 
         private addRuleControls(ruleRep: RuleRep): void {
@@ -2600,10 +2569,7 @@ namespace microcode {
                     ruleTargetControlId(this.ruleIndex, "static") +
                     "/" +
                     bitmapId,
-                value: {
-                    kind: "static",
-                    ruleIndex: this.ruleIndex,
-                },
+                value: <RuleTargetControlValue>undefined,
                 bitmap,
                 width: bitmap.width,
                 height: bitmap.height,
@@ -3102,7 +3068,6 @@ namespace microcode {
     }
 
     interface PageLayout {
-        control: ui.UiControl<PageControlValue>
         viewport: ui.Rect
         content: ui.Rect
         contentWidth: number

@@ -1,9 +1,8 @@
 namespace microcode {
     const HOST_INPUT_PRIORITY = 10
     const HOST_FRAME_PRIORITY = 30
-    export const UI_SCREEN_WIDTH = ui.STANDARD_DISPLAY_WIDTH
-    export const UI_SCREEN_HEIGHT = ui.STANDARD_DISPLAY_HEIGHT
-    export const UI_DISPLAY_PROFILE = ui.UiDisplayProfileId.Standard
+    export const UI_SCREEN_WIDTH = 160
+    export const UI_SCREEN_HEIGHT = 120
 
     class AppAssetResolver implements ui.UiAssetResolver {
         public getBitmap(
@@ -70,6 +69,7 @@ namespace microcode {
         private runtime_: ui.UiRuntime
         private frameCallback_: context.FrameCallback
         private inputCallback_: context.FrameCallback
+        private frameContext_: context.EventContext
 
         constructor(app: App) {
             this.app_ = app
@@ -133,6 +133,9 @@ namespace microcode {
             if (!this.runtime_) return
             while (this.runtime_.depth()) this.runtime_.pop()
             this.runtime_ = undefined
+            this.inputCallback_ = undefined
+            this.frameCallback_ = undefined
+            this.frameContext_ = undefined
         }
 
         public currentEditorProgram(): ProgramDefn {
@@ -144,10 +147,7 @@ namespace microcode {
 
         private createRuntime(): ui.UiRuntime {
             return new ui.UiRuntime({
-                display: new ui.DisplayShieldFrameAdapter({
-                    scaleMode: "cover",
-                    displayProfile: UI_DISPLAY_PROFILE,
-                }),
+                display: new ui.DisplayShieldFrameAdapter(),
                 assets: new AppAssetResolver(),
                 clearColor: 0,
             })
@@ -156,6 +156,13 @@ namespace microcode {
         private bindFramePump(): void {
             const ctx = context.eventContext()
             if (!ctx) return
+            if (
+                this.frameContext_ == ctx &&
+                this.inputCallback_ &&
+                this.frameCallback_
+            )
+                return
+            this.frameContext_ = ctx
             this.inputCallback_ = ctx.registerFrameHandler(
                 HOST_INPUT_PRIORITY,
                 () => this.updateControllerButtons(),
