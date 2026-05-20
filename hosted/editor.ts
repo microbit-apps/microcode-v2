@@ -670,9 +670,6 @@ namespace microcode {
                 rowGap: EDITOR_FIELD_MODAL_GRID_GAP,
                 columnGap: EDITOR_FIELD_MODAL_GRID_GAP,
                 controlStyle: EDITOR_TILE_SUGGESTION_MODAL_STYLE,
-                titleControlWidth: AppStyles.ModalItemSize,
-                titleControlHeight: AppStyles.ModalItemSize,
-                titleControlStyle: EDITOR_TILE_SUGGESTION_MODAL_STYLE,
                 modalStyle: titleId
                     ? EDITOR_TILE_SUGGESTION_MODAL_PANEL_STYLE
                     : EDITOR_TILE_SUGGESTION_TITLELESS_MODAL_PANEL_STYLE,

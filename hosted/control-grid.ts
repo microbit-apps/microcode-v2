@@ -15,6 +15,114 @@ namespace microcode {
         kind: "activated"
     }
 
+    function arrangeGridControls<T>(
+        controls: ui.UiControl<T>[],
+        rects: ui.Rect[],
+        x: number,
+        y: number,
+        columnCount: number,
+        controlWidth: number,
+        controlHeight: number,
+        rowGap: number,
+        columnGap: number,
+    ): void {
+        ensureGridRects(controls, rects)
+        for (let i = 0; i < controls.length; i++) {
+            const row = Math.idiv(i, columnCount)
+            const column = i % columnCount
+            rects[i].set(
+                x + column * (controlWidth + columnGap),
+                y + row * (controlHeight + rowGap),
+                controlWidth,
+                controlHeight,
+            )
+        }
+    }
+
+    function ensureGridRects<T>(
+        controls: ui.UiControl<T>[],
+        rects: ui.Rect[],
+    ): void {
+        while (rects.length < controls.length) rects.push(new ui.Rect())
+        while (rects.length > controls.length) rects.pop()
+    }
+
+    function registerGridTargets<T>(
+        focus: ui.UiFocusState,
+        scopeId: ui.UiFocusScopeId,
+        controls: ui.UiControl<T>[],
+        rects: ui.Rect[],
+    ): void {
+        for (let i = 0; i < controls.length; i++) {
+            const control = controls[i]
+            if (
+                !_uiControls.isVisible(control) ||
+                !_uiControls.isFocusable(control)
+            )
+                continue
+            focus.setTarget({
+                id: _uiControls.targetId(scopeId, control.id),
+                scopeId,
+                rect: rects[i],
+                activatable: true,
+            })
+        }
+    }
+
+    function appendGridNavigationRows<T>(
+        rows: ui.UiFocusNavigationTarget[][],
+        scopeId: ui.UiFocusScopeId,
+        controls: ui.UiControl<T>[],
+        rects: ui.Rect[],
+        columnCount: number,
+    ): void {
+        let index = 0
+        const rowCount = Math.idiv(
+            controls.length + columnCount - 1,
+            columnCount,
+        )
+        for (let row = 0; row < rowCount; row++) {
+            const targets: ui.UiFocusNavigationTarget[] = []
+            for (
+                let column = 0;
+                column < columnCount && index < controls.length;
+                column++
+            ) {
+                const control = controls[index]
+                if (
+                    _uiControls.isVisible(control) &&
+                    _uiControls.isFocusable(control)
+                )
+                    targets.push({
+                        id: _uiControls.targetId(scopeId, control.id),
+                        rect: rects[index],
+                    })
+                index++
+            }
+            if (targets.length) rows.push(targets)
+        }
+    }
+
+    function gridContentWidth(
+        controlCount: number,
+        columnCount: number,
+        controlWidth: number,
+        columnGap: number,
+    ): number {
+        columnCount = Math.min(columnCount, controlCount)
+        return columnCount * controlWidth + (columnCount - 1) * columnGap
+    }
+
+    function gridContentHeight(
+        controlCount: number,
+        columnCount: number,
+        controlHeight: number,
+        rowGap: number,
+    ): number {
+        const rowCount = Math.idiv(controlCount + columnCount - 1, columnCount)
+        return rowCount * controlHeight + (rowCount - 1) * rowGap
+    }
+
     export class HostedGrid<T>
         implements
             ui.UiFocusableView<HostedGridResult>,
@@ -61,28 +169,35 @@ namespace microcode {
             constraints: ui.UiLayoutConstraints,
             output: ui.UiMeasuredSize,
         ): void {
-            output.set(
-                this.contentWidth(),
-                this.contentHeight(),
-                this.contentWidth(),
-                this.contentHeight(),
+            const width = gridContentWidth(
+                this.controls_.length,
+                this.columnCount_,
+                this.controlWidth_,
+                this.columnGap_,
             )
+            const height = gridContentHeight(
+                this.controls_.length,
+                this.columnCount_,
+                this.controlHeight_,
+                this.rowGap_,
+            )
+            output.set(width, height, width, height)
             this.clearLayoutInvalidation()
         }
 
         public arrange(rect: ui.Rect): void {
             this.finalRect.copyFrom(rect)
-            this.ensureRects()
-            for (let i = 0; i < this.controls_.length; i++) {
-                const row = Math.idiv(i, this.columnCount_)
-                const column = i % this.columnCount_
-                this.controlRects_[i].set(
-                    rect.x + column * (this.controlWidth_ + this.columnGap_),
-                    rect.y + row * (this.controlHeight_ + this.rowGap_),
-                    this.controlWidth_,
-                    this.controlHeight_,
-                )
-            }
+            arrangeGridControls(
+                this.controls_,
+                this.controlRects_,
+                rect.x,
+                rect.y,
+                this.columnCount_,
+                this.controlWidth_,
+                this.controlHeight_,
+                this.rowGap_,
+                this.columnGap_,
+            )
             this.clearLayoutInvalidation()
         }
 
@@ -103,20 +218,12 @@ namespace microcode {
                     undefined,
                 ),
             })
-            for (let i = 0; i < this.controls_.length; i++) {
-                const control = this.controls_[i]
-                if (
-                    !_uiControls.isVisible(control) ||
-                    !_uiControls.isFocusable(control)
-                )
-                    continue
-                focus.setTarget({
-                    id: _uiControls.targetId(this.scopeId_, control.id),
-                    scopeId: this.scopeId_,
-                    rect: this.controlRects_[i],
-                    activatable: true,
-                })
-            }
+            registerGridTargets(
+                focus,
+                this.scopeId_,
+                this.controls_,
+                this.controlRects_,
+            )
         }
 
         public registerNavigation(controller: ui.UiFocusInputController): void {
@@ -205,68 +312,20 @@ namespace microcode {
 
         private navigationRows(): ui.UiFocusNavigationTarget[][] {
             const rows: ui.UiFocusNavigationTarget[][] = []
-            let index = 0
-            const rowCount = Math.idiv(
-                this.controls_.length + this.columnCount_ - 1,
+            appendGridNavigationRows(
+                rows,
+                this.scopeId_,
+                this.controls_,
+                this.controlRects_,
                 this.columnCount_,
             )
-            for (let row = 0; row < rowCount; row++) {
-                const targets: ui.UiFocusNavigationTarget[] = []
-                for (
-                    let column = 0;
-                    column < this.columnCount_ && index < this.controls_.length;
-                    column++
-                ) {
-                    const control = this.controls_[index]
-                    if (
-                        _uiControls.isVisible(control) &&
-                        _uiControls.isFocusable(control)
-                    )
-                        targets.push({
-                            id: _uiControls.targetId(this.scopeId_, control.id),
-                            rect: this.controlRects_[index],
-                            hidden: !_uiControls.isVisible(control),
-                        })
-                    index++
-                }
-                if (targets.length) rows.push(targets)
-            }
             return rows
-        }
-
-        private ensureRects(): void {
-            while (this.controlRects_.length < this.controls_.length)
-                this.controlRects_.push(new ui.Rect())
-            while (this.controlRects_.length > this.controls_.length)
-                this.controlRects_.pop()
-        }
-
-        private contentWidth(): number {
-            const columnCount = Math.min(
-                this.columnCount_,
-                this.controls_.length,
-            )
-            return (
-                columnCount * this.controlWidth_ +
-                (columnCount - 1) * this.columnGap_
-            )
-        }
-
-        private contentHeight(): number {
-            const rowCount = Math.idiv(
-                this.controls_.length + this.columnCount_ - 1,
-                this.columnCount_,
-            )
-            return (
-                rowCount * this.controlHeight_ + (rowCount - 1) * this.rowGap_
-            )
         }
     }
 
     export interface HostedPickerOptions<T> {
         modalScopeId: ui.UiFocusScopeId
         controls: ui.UiControl<T>[]
-        title?: string
         titleId?: string
         titleBitmap?: Bitmap | string
         titleControls?: ui.UiControl<T>[]
@@ -278,13 +337,8 @@ namespace microcode {
         rowGap?: number
         columnGap?: number
         controlStyle?: ui.UiButtonStyle
-        titleControlWidth?: number
-        titleControlHeight?: number
-        titleControlGap?: number
-        titleControlStyle?: ui.UiButtonStyle
         modalStyle: ui.UiModalStyle
         onActivate?: ui.UiControlActivateHandler<T>
-        onCancel?: (modalScopeId: ui.UiFocusScopeId) => void
     }
 
     export type HostedPickerResult<T> =
@@ -303,7 +357,6 @@ namespace microcode {
         private modalScopeId_: ui.UiFocusScopeId
         private controls_: ui.UiControl<T>[]
         private titleControls_: ui.UiControl<T>[]
-        private title_: string
         private titleId_: string
         private titleBitmap_: Bitmap | string
         private defaultControlId_: string
@@ -314,10 +367,6 @@ namespace microcode {
         private rowGap_: number
         private columnGap_: number
         private controlStyle_: ui.UiButtonStyle
-        private titleControlWidth_: number
-        private titleControlHeight_: number
-        private titleControlGap_: number
-        private titleControlStyle_: ui.UiButtonStyle
         private panelColor_: number
         private titleColor_: number
         private contentMargin_: number
@@ -326,15 +375,12 @@ namespace microcode {
         private controlRects_: ui.Rect[]
         private titleControlRects_: ui.Rect[]
         private controlView_: ui.UiButtonView
-        private titleControlView_: ui.UiButtonView
         private onActivate_: ui.UiControlActivateHandler<T>
-        private onCancel_: (modalScopeId: ui.UiFocusScopeId) => void
 
         constructor(options: HostedPickerOptions<T>) {
             this.modalScopeId_ = options.modalScopeId
             this.controls_ = options.controls
-            this.titleControls_ = options.titleControls
-            this.title_ = options.title
+            this.titleControls_ = options.titleControls || []
             this.titleId_ = options.titleId
             this.titleBitmap_ = options.titleBitmap
             this.defaultControlId_ = options.defaultControlId
@@ -351,16 +397,6 @@ namespace microcode {
                     ? options.columnGap
                     : AppStyles.ModalControlGap
             this.controlStyle_ = options.controlStyle
-            this.titleControlWidth_ =
-                options.titleControlWidth || options.controlWidth
-            this.titleControlHeight_ =
-                options.titleControlHeight || options.controlHeight
-            this.titleControlGap_ =
-                options.titleControlGap !== undefined
-                    ? options.titleControlGap
-                    : AppStyles.ModalControlGap
-            this.titleControlStyle_ =
-                options.titleControlStyle || options.controlStyle
             const modalStyle = options.modalStyle
             this.panelColor_ = modalStyle.panelColor
             this.titleColor_ = modalStyle.titleColor
@@ -372,11 +408,7 @@ namespace microcode {
             this.controlView_ = new ui.UiButtonView({
                 style: this.controlStyle_,
             })
-            this.titleControlView_ = new ui.UiButtonView({
-                style: this.titleControlStyle_,
-            })
             this.onActivate_ = options.onActivate
-            this.onCancel_ = options.onCancel
             this.layoutSpec = {
                 width: { mode: "content" },
                 height: { mode: "content" },
@@ -393,12 +425,24 @@ namespace microcode {
             constraints: ui.UiLayoutConstraints,
             output: ui.UiMeasuredSize,
         ): void {
+            const contentWidth = gridContentWidth(
+                this.controls_.length,
+                this.columnCount_,
+                this.controlWidth_,
+                this.columnGap_,
+            )
+            const contentHeight = gridContentHeight(
+                this.controls_.length,
+                this.columnCount_,
+                this.controlHeight_,
+                this.rowGap_,
+            )
             const width = Math.max(
-                this.contentWidth(),
+                contentWidth,
                 this.titleControlContentWidth(),
             )
             const height =
-                this.contentHeight() + this.titleHeight() + this.contentMargin_
+                contentHeight + this.titleHeight() + this.contentMargin_
             output.set(
                 width + this.contentMargin_ * 2,
                 height,
@@ -410,9 +454,16 @@ namespace microcode {
 
         public arrange(rect: ui.Rect): void {
             this.finalRect.copyFrom(rect)
-            this.arrangeControls(
+            arrangeGridControls(
+                this.controls_,
+                this.controlRects_,
                 rect.x + this.contentMargin_,
                 rect.y + this.titleHeight(),
+                this.columnCount_,
+                this.controlWidth_,
+                this.controlHeight_,
+                this.rowGap_,
+                this.columnGap_,
             )
             this.arrangeTitleControls(rect, this.contentMargin_)
             this.clearLayoutInvalidation()
@@ -476,7 +527,6 @@ namespace microcode {
                 return pickerResult
             }
             if (result.kind == "cancelled") {
-                if (this.onCancel_) this.onCancel_(this.modalScopeId_)
                 return {
                     kind: "cancelled",
                     modalScopeId: this.modalScopeId_,
@@ -510,16 +560,12 @@ namespace microcode {
                 assets,
                 this.controls_,
                 this.controlRects_,
-                this.controlView_,
-                this.controlStyle_,
             )
             this.renderControls(
                 surface,
                 assets,
                 this.titleControls_,
                 this.titleControlRects_,
-                this.titleControlView_,
-                this.titleControlStyle_,
             )
             this.renderFocus(
                 surface,
@@ -527,8 +573,6 @@ namespace microcode {
                 focus,
                 this.controls_,
                 this.controlRects_,
-                this.controlView_,
-                this.controlStyle_,
             )
             this.renderFocus(
                 surface,
@@ -536,8 +580,6 @@ namespace microcode {
                 focus,
                 this.titleControls_,
                 this.titleControlRects_,
-                this.titleControlView_,
-                this.titleControlStyle_,
             )
         }
 
@@ -559,7 +601,6 @@ namespace microcode {
         }
 
         private resolveTitleText(assets: ui.UiAssetResolver): string {
-            if (this.title_ !== undefined) return this.title_
             if (this.titleId_ !== undefined)
                 return assets.getText(this.titleId_)
             return ""
@@ -572,20 +613,6 @@ namespace microcode {
             return this.titleBitmap_
         }
 
-        private arrangeControls(x: number, y: number): void {
-            this.ensureRects(this.controls_, this.controlRects_)
-            for (let i = 0; i < this.controls_.length; i++) {
-                const row = Math.idiv(i, this.columnCount_)
-                const column = i % this.columnCount_
-                this.controlRects_[i].set(
-                    x + column * (this.controlWidth_ + this.columnGap_),
-                    y + row * (this.controlHeight_ + this.rowGap_),
-                    this.controlWidth_,
-                    this.controlHeight_,
-                )
-            }
-        }
-
         private arrangeTitleControls(rect: ui.Rect, margin: number): void {
             if (!this.hasTitleControls()) return
             this.ensureRects(this.titleControls_, this.titleControlRects_)
@@ -595,10 +622,10 @@ namespace microcode {
                 this.titleControlRects_[i].set(
                     x,
                     rect.y + margin,
-                    this.titleControlWidth_,
-                    this.titleControlHeight_,
+                    this.controlWidth_,
+                    this.controlHeight_,
                 )
-                x += this.titleControlWidth_ + this.titleControlGap_
+                x += this.controlWidth_ + AppStyles.ModalControlGap
             }
         }
 
@@ -607,83 +634,27 @@ namespace microcode {
             controls: ui.UiControl<T>[],
             rects: ui.Rect[],
         ): void {
-            if (!controls) return
-            for (let i = 0; i < controls.length; i++) {
-                const control = controls[i]
-                if (
-                    !_uiControls.isVisible(control) ||
-                    !_uiControls.isFocusable(control)
-                )
-                    continue
-                focus.setTarget({
-                    id: _uiControls.targetId(this.modalScopeId_, control.id),
-                    scopeId: this.modalScopeId_,
-                    rect: rects[i],
-                    hidden: !_uiControls.isVisible(control),
-                    activatable: true,
-                })
-            }
+            registerGridTargets(focus, this.modalScopeId_, controls, rects)
         }
 
         private navigationRows(): ui.UiFocusNavigationTarget[][] {
             const rows: ui.UiFocusNavigationTarget[][] = []
-            this.addNavigationRow(
+            if (this.hasTitleControls())
+                appendGridNavigationRows(
+                    rows,
+                    this.modalScopeId_,
+                    this.titleControls_,
+                    this.titleControlRects_,
+                    this.titleControls_.length,
+                )
+            appendGridNavigationRows(
                 rows,
-                this.titleControls_,
-                this.titleControlRects_,
-            )
-            let index = 0
-            const rowCount = Math.idiv(
-                this.controls_.length + this.columnCount_ - 1,
+                this.modalScopeId_,
+                this.controls_,
+                this.controlRects_,
                 this.columnCount_,
             )
-            for (let row = 0; row < rowCount; row++) {
-                const targets: ui.UiFocusNavigationTarget[] = []
-                for (
-                    let column = 0;
-                    column < this.columnCount_ && index < this.controls_.length;
-                    column++
-                ) {
-                    this.addNavigationTarget(
-                        targets,
-                        this.controls_[index],
-                        this.controlRects_[index],
-                    )
-                    index++
-                }
-                if (targets.length) rows.push(targets)
-            }
             return rows
-        }
-
-        private addNavigationRow(
-            rows: ui.UiFocusNavigationTarget[][],
-            controls: ui.UiControl<T>[],
-            rects: ui.Rect[],
-        ): void {
-            if (!controls) return
-            const targets: ui.UiFocusNavigationTarget[] = []
-            for (let i = 0; i < controls.length; i++)
-                this.addNavigationTarget(targets, controls[i], rects[i])
-            if (targets.length) rows.push(targets)
-        }
-
-        private addNavigationTarget(
-            targets: ui.UiFocusNavigationTarget[],
-            control: ui.UiControl<T>,
-            rect: ui.Rect,
-        ): void {
-            if (
-                !control ||
-                !_uiControls.isVisible(control) ||
-                !_uiControls.isFocusable(control)
-            )
-                return
-            targets.push({
-                id: _uiControls.targetId(this.modalScopeId_, control.id),
-                rect,
-                hidden: !_uiControls.isVisible(control),
-            })
         }
 
         private activatedControl(
@@ -710,10 +681,7 @@ namespace microcode {
             assets: ui.UiAssetResolver,
             controls: ui.UiControl<T>[],
             rects: ui.Rect[],
-            buttonView: ui.UiButtonView,
-            style: ui.UiButtonStyle,
         ): void {
-            if (!controls) return
             for (let i = 0; i < controls.length; i++) {
                 const control = controls[i]
                 if (!_uiControls.isVisible(control)) continue
@@ -722,8 +690,8 @@ namespace microcode {
                     assets,
                     control,
                     rects[i],
-                    buttonView,
-                    style,
+                    this.controlView_,
+                    this.controlStyle_,
                 )
             }
         }
@@ -734,10 +702,7 @@ namespace microcode {
             focus: ui.UiFocusState,
             controls: ui.UiControl<T>[],
             rects: ui.Rect[],
-            buttonView: ui.UiButtonView,
-            style: ui.UiButtonStyle,
         ): void {
-            if (!controls) return
             const index = _uiControls.focusedControlOverlayIndex(
                 this.modalScopeId_,
                 controls,
@@ -749,8 +714,8 @@ namespace microcode {
                 assets,
                 controls[index],
                 rects[index],
-                buttonView,
-                style,
+                this.controlView_,
+                this.controlStyle_,
                 undefined,
                 true,
             )
@@ -775,46 +740,23 @@ namespace microcode {
             controls: ui.UiControl<T>[],
             rects: ui.Rect[],
         ): void {
-            if (!controls) return
             while (rects.length < controls.length) rects.push(new ui.Rect())
             while (rects.length > controls.length) rects.pop()
         }
 
         private hasTitleControls(): boolean {
-            return !!this.titleControls_ && !!this.titleControls_.length
-        }
-
-        private contentWidth(): number {
-            const columnCount = Math.min(
-                this.columnCount_,
-                this.controls_.length,
-            )
-            return (
-                columnCount * this.controlWidth_ +
-                (columnCount - 1) * this.columnGap_
-            )
-        }
-
-        private contentHeight(): number {
-            const rowCount = Math.idiv(
-                this.controls_.length + this.columnCount_ - 1,
-                this.columnCount_,
-            )
-            return (
-                rowCount * this.controlHeight_ + (rowCount - 1) * this.rowGap_
-            )
+            return !!this.titleControls_.length
         }
 
         private titleHeight(): number {
             if (this.hasTitleControls())
                 return (
                     this.contentMargin_ +
-                    this.titleControlHeight_ +
+                    this.controlHeight_ +
                     this.titleGap_
                 )
             if (
                 !this.showTitleBar_ &&
-                this.title_ === undefined &&
                 this.titleId_ === undefined &&
                 this.titleBitmap_ === undefined
             )
@@ -825,8 +767,8 @@ namespace microcode {
         private titleControlContentWidth(): number {
             if (!this.hasTitleControls()) return 0
             return (
-                this.titleControls_.length * this.titleControlWidth_ +
-                (this.titleControls_.length - 1) * this.titleControlGap_
+                this.titleControls_.length * this.controlWidth_ +
+                (this.titleControls_.length - 1) * AppStyles.ModalControlGap
             )
         }
     }
