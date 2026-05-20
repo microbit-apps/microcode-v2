@@ -525,50 +525,34 @@ namespace microcode {
             let focusIndex: number = undefined
             const virtualRule = this.isVirtualRule(value)
             const running = isProgramRunning()
-            let stoppedForEdit = false
-            let changed = false
 
             if (!virtualRule) {
                 if (action == "add") {
-                    if (running) {
-                        stopProgram()
-                        stoppedForEdit = true
-                    }
-                    changed = !!page.insertRuleAt(value.ruleIndex, undefined)
+                    this.applyHostedEdit(running, () =>
+                        !!page.insertRuleAt(value.ruleIndex, undefined)
+                    )
                     focusKind = "insert"
                     focusSection = "sensors"
                     focusIndex = 0
                 } else if (action == "delete") {
-                    if (running) {
-                        stopProgram()
-                        stoppedForEdit = true
-                    }
-                    changed = !!page.deleteRuleAt(value.ruleIndex)
+                    this.applyHostedEdit(running, () =>
+                        !!page.deleteRuleAt(value.ruleIndex)
+                    )
                 } else if (action == "moveUp" && value.ruleIndex > 0) {
-                    if (running) {
-                        stopProgram()
-                        stoppedForEdit = true
-                    }
-                    changed = this.moveRule(page, value.ruleIndex, -1)
+                    this.applyHostedEdit(running, () =>
+                        this.moveRule(page, value.ruleIndex, -1)
+                    )
                     focusRuleIndex = value.ruleIndex - 1
                 } else if (
                     action == "moveDown" &&
                     value.ruleIndex < this.realRuleCount(page) - 1
                 ) {
-                    if (running) {
-                        stopProgram()
-                        stoppedForEdit = true
-                    }
-                    changed = this.moveRule(page, value.ruleIndex, 1)
+                    this.applyHostedEdit(running, () =>
+                        this.moveRule(page, value.ruleIndex, 1)
+                    )
                     focusRuleIndex = value.ruleIndex + 1
                 }
             }
-
-            if (changed) {
-                this.app_.save(SAVESLOT_AUTO, this.progdef_.toBuffer())
-                this.pageView_.pageChanged()
-            }
-            if (stoppedForEdit) runProgram(this.progdef_)
 
             this.closeModal()
             if (
@@ -871,10 +855,11 @@ namespace microcode {
             const inserting = value.kind == "insert"
             this.applyHostedEdit(wasRunning, () => {
                 rule = this.committedTileSuggestionRule(value)
-                if (!rule) return
+                if (!rule) return false
                 if (inserting) added = rule.push(tile, value.section)
                 else rule.updateAt(value.section, value.index, tile)
                 Language.ensureValid(rule)
+                return true
             })
             this.closeModal()
             if (inserting && !focusInsertedTile)
@@ -904,12 +889,7 @@ namespace microcode {
             }
             const wasRunning = isProgramRunning()
             const fallback = this.deleteFocusTarget(value)
-            this.applyHostedEdit(wasRunning, () => {
-                const rule = this.targetRule(value)
-                if (!rule) return
-                rule.deleteAt(value.section, value.index)
-                Language.ensureValid(rule)
-            })
+            this.deleteTileAt(value, wasRunning)
             this.closeModal()
             this.focusRuleTargetOrHandle(
                 fallback.ruleIndex,
@@ -1081,14 +1061,13 @@ namespace microcode {
             const value = target.value
             const text = (<any>result).text
             if (this.numericEntryResultChanged(value, text))
-                this.applyHostedEdit(wasRunning, () => {
+                this.applyTargetRuleEdit(value, wasRunning, rule => {
                     this.writeNumericEntryResult(value, text)
-                    const rule = this.targetRule(value)
-                    if (rule) Language.ensureValid(rule)
+                    Language.ensureValid(rule)
+                    return true
                 })
             this.closeModal()
-            this.pageView_.focusRuleTarget(
-                this.focus,
+            this.focusRuleTargetOrHandle(
                 value.ruleIndex,
                 value.kind,
                 value.section,
@@ -1454,9 +1433,10 @@ namespace microcode {
             if (changed)
                 this.applyHostedEdit(wasRunning, () => {
                     tile.field = field.clone()
+                    return true
                 })
             this.closeModal()
-            this.focusEditedRuleTarget(target.value)
+            this.focusTargetValue(target.value)
         }
 
         private commitMelodyFieldEditor(
@@ -1487,9 +1467,10 @@ namespace microcode {
             if (changed)
                 this.applyHostedEdit(wasRunning, () => {
                     tile.field = nextField
+                    return true
                 })
             this.closeModal()
-            this.focusEditedRuleTarget(target.value)
+            this.focusTargetValue(target.value)
         }
 
         private deleteEditedTile(
@@ -1506,27 +1487,14 @@ namespace microcode {
                 return
             }
             const fallback = this.deleteFocusTarget(value)
-            this.applyHostedEdit(wasRunning, () => {
-                const rule = this.targetRule(value)
-                if (!rule) return
-                rule.deleteAt(value.section, value.index)
-                Language.ensureValid(rule)
-            })
+            this.deleteTileAt(value, wasRunning)
             this.closeModal()
-            if (
-                !this.pageView_.focusRuleTarget(
-                    this.focus,
-                    fallback.ruleIndex,
-                    fallback.kind,
-                    fallback.section,
-                    fallback.index,
-                )
+            this.focusRuleTargetOrHandle(
+                fallback.ruleIndex,
+                fallback.kind,
+                fallback.section,
+                fallback.index,
             )
-                this.pageView_.focusRuleTarget(
-                    this.focus,
-                    value.ruleIndex,
-                    "handle",
-                )
         }
 
         private deleteFocusTarget(
@@ -1548,32 +1516,53 @@ namespace microcode {
             return this.pageView_.previousRuleTarget(value)
         }
 
-        private focusEditedRuleTarget(value: RuleTargetControlValue): void {
-            if (
-                !this.pageView_.focusRuleTarget(
-                    this.focus,
-                    value.ruleIndex,
-                    value.kind,
-                    value.section,
-                    value.index,
-                )
+        private focusTargetValue(value: RuleTargetControlValue): void {
+            this.focusRuleTargetOrHandle(
+                value.ruleIndex,
+                value.kind,
+                value.section,
+                value.index,
             )
-                this.pageView_.focusRuleTarget(
-                    this.focus,
-                    value.ruleIndex,
-                    "handle",
-                )
+        }
+
+        private deleteTileAt(
+            value: RuleTargetControlValue,
+            wasRunning: boolean,
+        ): void {
+            this.applyTargetRuleEdit(value, wasRunning, rule => {
+                rule.deleteAt(value.section, value.index)
+                Language.ensureValid(rule)
+                return true
+            })
+        }
+
+        private applyTargetRuleEdit(
+            value: RuleTargetControlValue,
+            wasRunning: boolean,
+            mutate: (rule: RuleDefn) => boolean,
+        ): boolean {
+            let changed = false
+            this.applyHostedEdit(wasRunning, () => {
+                const rule = this.targetRule(value)
+                if (!rule) return false
+                changed = mutate(rule)
+                return changed
+            })
+            return changed
         }
 
         private applyHostedEdit(
             wasRunning: boolean,
-            mutate: () => void,
-        ): void {
+            mutate: () => boolean,
+        ): boolean {
             if (wasRunning) stopProgram()
-            mutate()
-            this.app_.save(SAVESLOT_AUTO, this.progdef_.toBuffer())
-            this.pageView_.pageChanged()
+            const changed = mutate()
+            if (changed) {
+                this.app_.save(SAVESLOT_AUTO, this.progdef_.toBuffer())
+                this.pageView_.pageChanged()
+            }
             if (wasRunning) runProgram(this.progdef_)
+            return changed
         }
 
     }
