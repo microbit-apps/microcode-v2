@@ -330,21 +330,23 @@ namespace microcode {
         titleBitmap?: Bitmap | string
         titleControls?: ui.UiControl<T>[]
         defaultControlId?: string
-        closeOnActivate?: boolean
         columnCount: number
         controlWidth: number
         controlHeight: number
         rowGap?: number
         columnGap?: number
         controlStyle?: ui.UiButtonStyle
-        modalStyle: ui.UiModalStyle
+        panelColor?: number
+        titleColor?: number
+        contentMargin?: number
+        titleGap?: number
+        showTitleBar?: boolean
         onActivate?: ui.UiControlActivateHandler<T>
     }
 
     export type HostedPickerResult<T> =
         | { kind: "activated" }
-        | { kind: "keepOpen" }
-        | { kind: "cancelled"; modalScopeId: ui.UiFocusScopeId }
+        | { kind: "cancelled" }
 
     export class HostedPicker<T>
         implements
@@ -360,7 +362,6 @@ namespace microcode {
         private titleId_: string
         private titleBitmap_: Bitmap | string
         private defaultControlId_: string
-        private closeOnActivate_: boolean
         private columnCount_: number
         private controlWidth_: number
         private controlHeight_: number
@@ -384,7 +385,6 @@ namespace microcode {
             this.titleId_ = options.titleId
             this.titleBitmap_ = options.titleBitmap
             this.defaultControlId_ = options.defaultControlId
-            this.closeOnActivate_ = options.closeOnActivate !== false
             this.columnCount_ = Math.max(1, options.columnCount)
             this.controlWidth_ = options.controlWidth
             this.controlHeight_ = options.controlHeight
@@ -397,12 +397,23 @@ namespace microcode {
                     ? options.columnGap
                     : AppStyles.ModalControlGap
             this.controlStyle_ = options.controlStyle
-            const modalStyle = options.modalStyle
-            this.panelColor_ = modalStyle.panelColor
-            this.titleColor_ = modalStyle.titleColor
-            this.contentMargin_ = modalStyle.contentMargin
-            this.titleGap_ = modalStyle.titleGap
-            this.showTitleBar_ = modalStyle.showTitleBar !== false
+            this.panelColor_ =
+                options.panelColor === undefined
+                    ? AppStyles.DefaultModalPanelColor
+                    : options.panelColor
+            this.titleColor_ =
+                options.titleColor === undefined
+                    ? AppStyles.ModalTitleColor
+                    : options.titleColor
+            this.contentMargin_ =
+                options.contentMargin === undefined
+                    ? AppStyles.ModalMargin
+                    : options.contentMargin
+            this.titleGap_ =
+                options.titleGap === undefined
+                    ? AppStyles.ModalTitleGap
+                    : options.titleGap
+            this.showTitleBar_ = options.showTitleBar !== false
             this.controlRects_ = []
             this.titleControlRects_ = []
             this.controlView_ = new ui.UiButtonView({
@@ -511,25 +522,17 @@ namespace microcode {
                     result.targetId,
                 )
                 if (!control) return undefined
-                const pickerResult = this.closeOnActivate_
-                    ? <HostedPickerResult<T>>{
-                          kind: "activated",
-                      }
-                    : <HostedPickerResult<T>>{
-                          kind: "keepOpen",
-                      }
                 _uiControls.emitControlActivate(
                     control.value,
                     control,
                     control.id,
                     this.onActivate_,
                 )
-                return pickerResult
+                return <HostedPickerResult<T>>{ kind: "activated" }
             }
             if (result.kind == "cancelled") {
                 return {
                     kind: "cancelled",
-                    modalScopeId: this.modalScopeId_,
                 }
             }
             return undefined

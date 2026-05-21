@@ -107,7 +107,7 @@ namespace microcode {
                 controlWidth: AppStyles.ModalItemSize,
                 controlHeight: AppStyles.ModalItemSize,
                 controlStyle: AppStyles.ModalButton,
-                modalStyle: AppStyles.modal(this.backgroundColor),
+                panelColor: this.backgroundColor,
             })
         }
 

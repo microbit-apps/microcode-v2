@@ -89,20 +89,6 @@ namespace microcode {
     const EDITOR_TILE_SUGGESTION_MODAL_STYLE = EDITOR_RULE_HANDLE_MODAL_STYLE
     const EDITOR_TILE_SUGGESTION_MAX_COLUMNS = 5
     const EDITOR_TILE_SUGGESTION_TITLE_GAP = EDITOR_FIELD_MODAL_GRID_GAP + 1
-    const EDITOR_TILE_SUGGESTION_MODAL_PANEL_STYLE: ui.UiModalStyle = {
-        panelColor: AppStyles.DefaultModalPanelColor,
-        titleColor: AppStyles.ModalTitleColor,
-        contentMargin: AppStyles.ModalMargin,
-        titleGap: EDITOR_TILE_SUGGESTION_TITLE_GAP,
-    }
-    const EDITOR_TILE_SUGGESTION_TITLELESS_MODAL_PANEL_STYLE: ui.UiModalStyle =
-        {
-            panelColor: AppStyles.DefaultModalPanelColor,
-            titleColor: AppStyles.ModalTitleColor,
-            contentMargin: AppStyles.ModalMargin,
-            titleGap: EDITOR_TILE_SUGGESTION_TITLE_GAP,
-            showTitleBar: false,
-        }
     const EDITOR_FIELD_DELETE_STYLE = ui.buttonStyle(
         ui.UiButtonStyles.RedBorderedWhite,
         ui.UiButtonStyles.RoundedFrame,
@@ -111,18 +97,6 @@ namespace microcode {
         ui.UiButtonStyles.GreenBorderedWhite,
         ui.UiButtonStyles.RoundedFrame,
     )
-    const EDITOR_FIELD_MODAL_STYLE: ui.UiModalStyle = {
-        panelColor: AppStyles.DefaultModalPanelColor,
-        titleColor: AppStyles.ModalTitleColor,
-        contentMargin: AppStyles.ModalMargin,
-        titleGap: EDITOR_FIELD_MODAL_GRID_GAP,
-    }
-    const EDITOR_ICON_FIELD_MODAL_STYLE: ui.UiModalStyle = {
-        panelColor: 0,
-        titleColor: AppStyles.ModalTitleColor,
-        contentMargin: AppStyles.ModalMargin,
-        titleGap: EDITOR_FIELD_MODAL_GRID_GAP,
-    }
 
     function ruleTargetControlId(
         ruleIndex: number,
@@ -348,7 +322,6 @@ namespace microcode {
                 controlWidth: AppStyles.ModalItemSize,
                 controlHeight: AppStyles.ModalItemSize,
                 controlStyle: AppStyles.ModalButton,
-                modalStyle: AppStyles.Modal,
                 onActivate: slot => this.saveDiskSlot(slot),
             })
         }
@@ -378,7 +351,7 @@ namespace microcode {
                 controlWidth: AppStyles.ModalItemSize,
                 controlHeight: AppStyles.ModalItemSize,
                 controlStyle: AppStyles.ModalButton,
-                modalStyle: AppStyles.TitlelessModal,
+                showTitleBar: false,
                 onActivate: pageIndex => this.switchToPage(pageIndex),
             })
         }
@@ -433,7 +406,7 @@ namespace microcode {
                 controlWidth: AppStyles.ModalItemSize,
                 controlHeight: AppStyles.ModalItemSize,
                 controlStyle: EDITOR_RULE_HANDLE_MODAL_STYLE,
-                modalStyle: AppStyles.TitlelessModal,
+                showTitleBar: false,
                 onActivate: action => this.applyRuleHandleAction(action, value),
             })
         }
@@ -629,9 +602,8 @@ namespace microcode {
                 rowGap: EDITOR_FIELD_MODAL_GRID_GAP,
                 columnGap: EDITOR_FIELD_MODAL_GRID_GAP,
                 controlStyle: EDITOR_TILE_SUGGESTION_MODAL_STYLE,
-                modalStyle: titleId
-                    ? EDITOR_TILE_SUGGESTION_MODAL_PANEL_STYLE
-                    : EDITOR_TILE_SUGGESTION_TITLELESS_MODAL_PANEL_STYLE,
+                titleGap: EDITOR_TILE_SUGGESTION_TITLE_GAP,
+                showTitleBar: titleId !== undefined,
                 onActivate: controlValue =>
                     this.applyTileSuggestionValue(value, controlValue),
             })
@@ -988,7 +960,8 @@ namespace microcode {
                 maxLength: 8,
                 deleteEnabled: !pending,
                 deleteIcon: "delete",
-                modalStyle: AppStyles.NumericModal,
+                panelColor: AppStyles.DefaultModalPanelColor,
+                contentMargin: AppStyles.NumericModalMargin,
                 keyStyle: AppStyles.ModalButton,
                 onResult: result =>
                     this.applyNumericEntryResult(
@@ -1149,7 +1122,7 @@ namespace microcode {
             const wasRunning = isProgramRunning()
             return this.createFieldEditorPicker(
                 icons.get(Tid.TID_ACTUATOR_PAINT),
-                EDITOR_ICON_FIELD_MODAL_STYLE,
+                0,
                 controls,
                 5,
                 EDITOR_FIELD_MODAL_GRID_GAP,
@@ -1172,7 +1145,7 @@ namespace microcode {
 
         private createFieldEditorPicker(
             titleBitmap: Bitmap,
-            modalStyle: ui.UiModalStyle,
+            panelColor: number,
             controls: ui.UiControl<FieldEditorModalValue>[],
             columnCount: number,
             rowGap: number,
@@ -1186,13 +1159,13 @@ namespace microcode {
                 titleBitmap,
                 defaultControlId:
                     "cell-" + (2 * columnCount + Math.min(2, columnCount - 1)),
-                closeOnActivate: false,
                 columnCount,
                 controlWidth: EDITOR_FIELD_MODAL_CELL_SIZE,
                 controlHeight: EDITOR_FIELD_MODAL_CELL_SIZE,
                 rowGap,
                 columnGap: EDITOR_FIELD_MODAL_GRID_GAP,
-                modalStyle,
+                panelColor,
+                titleGap: EDITOR_FIELD_MODAL_GRID_GAP,
                 onActivate,
             })
         }
@@ -1253,7 +1226,7 @@ namespace microcode {
             const wasRunning = isProgramRunning()
             return this.createFieldEditorPicker(
                 icons.get(Tid.TID_ACTUATOR_MUSIC),
-                EDITOR_FIELD_MODAL_STYLE,
+                AppStyles.DefaultModalPanelColor,
                 controls,
                 MELODY_LENGTH,
                 EDITOR_MELODY_FIELD_MODAL_ROW_GAP,
@@ -3268,7 +3241,7 @@ namespace microcode {
         viewportRect: ui.Rect
     }
 
-    class RulePageTarget {
+    interface RulePageTarget {
         id: string
         kind: RuleTargetKind
         ruleIndex: number

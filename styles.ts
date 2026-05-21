@@ -54,53 +54,6 @@ namespace microcode {
         )
 
         /**
-         * Default modal style for app-owned modal panels.
-         */
-        export const Modal: ui.UiModalStyle = {
-            panelColor: DefaultModalPanelColor,
-            titleColor: ModalTitleColor,
-            contentMargin: ModalMargin,
-            titleGap: ModalTitleGap,
-        }
-
-        /**
-         * Modal style for panels that do not render a title.
-         */
-        export const TitlelessModal: ui.UiModalStyle = {
-            panelColor: DefaultModalPanelColor,
-            titleColor: ModalTitleColor,
-            contentMargin: ModalMargin,
-            titleGap: ModalTitleGap,
-            showTitleBar: false,
-        }
-
-        /**
-         * Modal style for numeric entry.
-         */
-        export const NumericModal: ui.UiModalStyle = {
-            panelColor: DefaultModalPanelColor,
-            titleColor: ModalTitleColor,
-            contentMargin: NumericModalMargin,
-            titleGap: ModalTitleGap,
-            showTitleBar: false,
-        }
-
-        /**
-         * Creates the standard modal style with an optional panel color.
-         */
-        export function modal(panelColor?: number): ui.UiModalStyle {
-            return {
-                panelColor:
-                    panelColor === undefined
-                        ? DefaultModalPanelColor
-                        : panelColor,
-                titleColor: ModalTitleColor,
-                contentMargin: ModalMargin,
-                titleGap: ModalTitleGap,
-            }
-        }
-
-        /**
          * Creates the shared icon-button style used by screen controls.
          */
         export function iconButton(): ui.UiButtonStyle {
