@@ -1521,6 +1521,7 @@ namespace microcode {
         private contentRect_: ui.Rect
         private measuredContentWidth_: number
         private measuredContentHeight_: number
+        private focusTargetsDirty_: boolean
 
         constructor(
             getProgram: () => ProgramDefn,
@@ -1545,6 +1546,7 @@ namespace microcode {
             this.contentRect_ = new ui.Rect()
             this.measuredContentWidth_ = 0
             this.measuredContentHeight_ = 0
+            this.focusTargetsDirty_ = true
             this.toolbar_ = undefined
             this.focus_ = undefined
             this.layout_ = undefined
@@ -1569,11 +1571,13 @@ namespace microcode {
             this.finalRect.copyFrom(rect)
             this.updateViewportRect()
             this.rebuildLayout(true)
+            this.focusTargetsDirty_ = true
             this.clearLayoutInvalidation()
         }
 
         public invalidateLayout(): void {
             this.layoutDirty = true
+            this.focusTargetsDirty_ = true
         }
 
         public clearLayoutInvalidation(): void {
@@ -1581,6 +1585,7 @@ namespace microcode {
         }
 
         public registerFocusTargets(focus: ui.UiFocusState): void {
+            if (this.focus_ != focus) this.focusTargetsDirty_ = true
             this.focus_ = focus
             // The page view owns one focus scope backed by rule-row controls.
             // Its targets are rebuilt whenever layout changes because scrolling
@@ -1976,12 +1981,14 @@ namespace microcode {
         private refreshScrollLayout(): void {
             if (!this.layout_) {
                 this.rebuildLayout(true)
+                this.focusTargetsDirty_ = true
                 return
             }
             this.updateContentRect()
             this.layout_.viewport.copyFrom(this.viewportRect_)
             this.layout_.content.copyFrom(this.contentRect_)
             this.rebuildNavigationCache()
+            this.focusTargetsDirty_ = true
         }
 
         private updateViewportRect(): void {
@@ -2070,6 +2077,7 @@ namespace microcode {
 
         private refreshFocusTargets(): void {
             if (!this.focus_) return
+            if (!this.focusTargetsDirty_) return
             this.rebuildLayout()
             // Focus registration is split from drawing. The focus state stores
             // target ids, viewport rectangles for hit testing, and content
@@ -2092,6 +2100,7 @@ namespace microcode {
                     scrollRect: target.scrollRect,
                 })
             }
+            this.focusTargetsDirty_ = false
         }
 
         private allNavigationTargets(): PageNavigationTarget[] {
@@ -2624,10 +2633,7 @@ namespace microcode {
 
         private targetBitmap(tile: Tile): Bitmap {
             if (isNumericEntryTile(tile)) return undefined
-            if (isIconEditor(tile))
-                return icondb.renderMicrobitLEDs((tile as IconEditor).field)
-            if (isMelodyEditor(tile))
-                return icondb.melodyToImage((tile as MelodyEditor).field)
+            if (isIconEditor(tile) || isMelodyEditor(tile)) return undefined
             return this.bitmap(getIcon(tile))
         }
 
@@ -2975,6 +2981,7 @@ namespace microcode {
             for (let i = 0; i < this.controls_.length; i++) {
                 const control = this.controls_[i]
                 if (!_uiControls.isVisible(control)) continue
+                this.prepareControlBitmap(control)
                 _uiControls.renderControl(
                     surface,
                     assets,
@@ -3011,6 +3018,35 @@ namespace microcode {
                 undefined,
                 true,
             )
+        }
+
+        private prepareControlBitmap(
+            control: ui.UiControl<RuleTargetControlValue>,
+        ): void {
+            if (control.bitmap) return
+            const tile = this.controlTile(control)
+            if (isIconEditor(tile))
+                control.bitmap = icondb.renderMicrobitLEDs(
+                    (tile as IconEditor).field,
+                )
+            else if (isMelodyEditor(tile))
+                control.bitmap = icondb.melodyToImage(
+                    (tile as MelodyEditor).field,
+                )
+        }
+
+        private controlTile(
+            control: ui.UiControl<RuleTargetControlValue>,
+        ): Tile {
+            const value = control.value
+            if (
+                !value ||
+                value.kind != "tile" ||
+                !value.section ||
+                value.index === undefined
+            )
+                return undefined
+            return this.rule.getRuleRep()[value.section][value.index]
         }
 
         private ensureControlRects(): void {
