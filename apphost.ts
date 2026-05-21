@@ -115,7 +115,6 @@ namespace microcode {
         }
 
         public launchEditor(): void {
-            stopProgramIfRunning()
             const screen = new EditorScreen(this, this.app_)
             if (this.runtime_) this.replace(screen)
             else this.open(screen)

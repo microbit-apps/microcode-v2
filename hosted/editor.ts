@@ -224,6 +224,8 @@ namespace microcode {
         private currPage_: number
         private pageView_: PageView
         private toolbar_: EditorToolbar
+        private pendingSave_: Buffer
+        private saving_: boolean
 
         constructor(navigation: AppNavigation, app: App) {
             super()
@@ -231,6 +233,8 @@ namespace microcode {
             this.navigation_ = navigation
             this.app_ = app
             this.currPage_ = 0
+            this.pendingSave_ = undefined
+            this.saving_ = false
             this.loadProgram()
             this.pageView_ = new PageView(
                 () => this.progdef_,
@@ -803,14 +807,18 @@ namespace microcode {
             let added = 0
             let rule: RuleDefn = undefined
             const inserting = value.kind == "insert"
-            this.applyHostedEdit(wasRunning, () => {
-                rule = this.committedTileSuggestionRule(value)
-                if (!rule) return false
-                if (inserting) added = rule.push(tile, value.section)
-                else rule.updateAt(value.section, value.index, tile)
-                Language.ensureValid(rule)
-                return true
-            })
+            this.applyHostedEdit(
+                wasRunning,
+                () => {
+                    rule = this.committedTileSuggestionRule(value)
+                    if (!rule) return false
+                    if (inserting) added = rule.push(tile, value.section)
+                    else rule.updateAt(value.section, value.index, tile)
+                    Language.ensureValid(rule)
+                    return true
+                },
+                value.ruleIndex,
+            )
             this.closeModal()
             if (inserting && !focusInsertedTile)
                 this.focusAfterInsertion(value, rule, added)
@@ -1370,10 +1378,14 @@ namespace microcode {
                 return
             }
             if (changed)
-                this.applyHostedEdit(wasRunning, () => {
-                    tile.field = field.clone()
-                    return true
-                })
+                this.applyHostedEdit(
+                    wasRunning,
+                    () => {
+                        tile.field = field.clone()
+                        return true
+                    },
+                    value.ruleIndex,
+                )
             this.closeModal()
             this.focusTargetValue(value)
         }
@@ -1400,10 +1412,14 @@ namespace microcode {
                 return
             }
             if (changed)
-                this.applyHostedEdit(wasRunning, () => {
-                    tile.field = nextField
-                    return true
-                })
+                this.applyHostedEdit(
+                    wasRunning,
+                    () => {
+                        tile.field = nextField
+                        return true
+                    },
+                    value.ruleIndex,
+                )
             this.closeModal()
             this.focusTargetValue(value)
         }
@@ -1477,27 +1493,50 @@ namespace microcode {
             mutate: (rule: RuleDefn) => boolean,
         ): boolean {
             let changed = false
-            this.applyHostedEdit(wasRunning, () => {
-                const rule = this.targetRule(value)
-                if (!rule) return false
-                changed = mutate(rule)
-                return changed
-            })
+            this.applyHostedEdit(
+                wasRunning,
+                () => {
+                    const rule = this.targetRule(value)
+                    if (!rule) return false
+                    changed = mutate(rule)
+                    return changed
+                },
+                value.ruleIndex,
+            )
             return changed
         }
 
         private applyHostedEdit(
             wasRunning: boolean,
             mutate: () => boolean,
+            changedRuleIndex?: number,
         ): boolean {
             if (wasRunning) stopProgram()
             const changed = mutate()
             if (changed) {
-                this.app_.save(SAVESLOT_AUTO, this.progdef_.toBuffer())
-                this.pageView_.pageChanged()
+                this.pageView_.pageChanged(changedRuleIndex)
+                const buffer = this.progdef_.toBuffer()
+                this.queueAutosave(buffer)
             }
             if (wasRunning) runProgram(this.progdef_)
             return changed
+        }
+
+        private queueAutosave(buffer: Buffer): void {
+            this.pendingSave_ = buffer
+            if (this.saving_) return
+            this.saving_ = true
+            control.runInParallel(() => this.flushAutosave())
+        }
+
+        private flushAutosave(): void {
+            while (this.pendingSave_) {
+                const buffer = this.pendingSave_
+                this.pendingSave_ = undefined
+                this.app_.save(SAVESLOT_AUTO, buffer)
+            }
+            this.saving_ = false
+            if (this.pendingSave_) this.queueAutosave(this.pendingSave_)
         }
     }
 
@@ -1608,10 +1647,15 @@ namespace microcode {
             return result
         }
 
-        public pageChanged(): void {
+        public pageChanged(ruleIndex?: number): void {
             this.invalidateLayout()
-            if (this.finalRect.width || this.finalRect.height)
-                this.rebuildLayout(true)
+            if (this.finalRect.width || this.finalRect.height) {
+                if (
+                    ruleIndex === undefined ||
+                    !this.rebuildChangedRuleLayout(ruleIndex)
+                )
+                    this.rebuildLayout(true)
+            }
             this.refreshFocusTargets()
         }
 
@@ -1907,12 +1951,23 @@ namespace microcode {
 
         private layoutRules(page: PageDefn): RuleView[] {
             const rules: RuleView[] = []
-            let lastRule = page.rules.length - 1
-            while (lastRule >= 0 && page.rules[lastRule].isEmpty()) lastRule--
+            const lastRule = this.lastNonEmptyRuleIndex(page)
             for (let i = 0; i <= lastRule; i++)
-                rules.push(new RuleView(page.rules[i], rules.length, false))
+                rules.push(this.createRuleView(page, rules.length))
             rules.push(new RuleView(new RuleDefn(), rules.length, true))
             return rules
+        }
+
+        private createRuleView(page: PageDefn, ruleIndex: number): RuleView {
+            if (ruleIndex >= 0 && ruleIndex < page.rules.length)
+                return new RuleView(page.rules[ruleIndex], ruleIndex, false)
+            return new RuleView(new RuleDefn(), ruleIndex, true)
+        }
+
+        private lastNonEmptyRuleIndex(page: PageDefn): number {
+            let lastRule = page.rules.length - 1
+            while (lastRule >= 0 && page.rules[lastRule].isEmpty()) lastRule--
+            return lastRule
         }
 
         private arrangeRules(rules: RuleView[]): ui.Size {
@@ -1928,7 +1983,7 @@ namespace microcode {
                     top += EDITOR_RULE_MARGIN
                 }
                 rule.setPosition(EDITOR_PAGE_MARGIN, top)
-                maxTrayWidth = Math.max(maxTrayWidth, rule.width)
+                maxTrayWidth = Math.max(maxTrayWidth, rule.naturalWidth)
             }
 
             for (let i = 0; i < rules.length; i++)
@@ -1976,6 +2031,42 @@ namespace microcode {
             if (!force && !this.layoutDirty && this.layout_) return
             this.layout_ = this.pageLayout()
             this.rebuildNavigationCache()
+            this.clearLayoutInvalidation()
+        }
+
+        private rebuildChangedRuleLayout(ruleIndex: number): boolean {
+            if (!this.layout_ || ruleIndex < 0) return false
+            const page = this.currentPage()
+            if (!page) return false
+            const rules = this.layout_.rules
+            const lastRule = this.lastNonEmptyRuleIndex(page)
+            const expectedRuleViews = lastRule + 2
+            if (ruleIndex > lastRule && ruleIndex != expectedRuleViews - 1)
+                return false
+
+            if (rules.length == expectedRuleViews) {
+                rules[ruleIndex] = this.createRuleView(page, ruleIndex)
+            } else if (
+                rules.length + 1 == expectedRuleViews &&
+                ruleIndex == rules.length - 1
+            ) {
+                rules[ruleIndex] = this.createRuleView(page, ruleIndex)
+                rules.push(new RuleView(new RuleDefn(), ruleIndex + 1, true))
+            } else {
+                return false
+            }
+
+            const content = this.arrangeRules(rules)
+            this.measuredContentWidth_ = content.width
+            this.measuredContentHeight_ = content.height
+            this.updateContentRect()
+            this.layout_.viewport.copyFrom(this.viewportRect_)
+            this.layout_.content.copyFrom(this.contentRect_)
+            this.layout_.contentWidth = content.width
+            this.layout_.contentHeight = content.height
+            this.rebuildNavigationCache()
+            this.clearLayoutInvalidation()
+            return true
         }
 
         private refreshScrollLayout(): void {
@@ -2351,6 +2442,7 @@ namespace microcode {
         private x_: number
         private y_: number
         private width_: number
+        private naturalWidth_: number
         private height_: number
         private tray_: ui.Rect
         private when_: ui.Rect
@@ -2375,6 +2467,7 @@ namespace microcode {
             this.x_ = 0
             this.y_ = 0
             this.width_ = 0
+            this.naturalWidth_ = 0
             this.height_ = 0
             const ruleRep = ruledef.getRuleRep()
             this.tray_ = new ui.Rect()
@@ -2396,6 +2489,10 @@ namespace microcode {
             return this.width_
         }
 
+        public get naturalWidth(): number {
+            return this.naturalWidth_
+        }
+
         public get height(): number {
             return this.height_
         }
@@ -2406,8 +2503,9 @@ namespace microcode {
         }
 
         public setWidth(width: number): void {
-            this.tray_.width = width
-            this.width_ = Math.max(width, this.width_)
+            const resolved = Math.max(width, this.naturalWidth_)
+            this.tray_.width = resolved
+            this.width_ = resolved
         }
 
         public contentBounds(): ui.Rect {
@@ -2831,6 +2929,7 @@ namespace microcode {
                 tray.height,
             )
             this.width_ = this.tray_.width
+            this.naturalWidth_ = this.width_
             this.height_ = this.tray_.height
         }
 
