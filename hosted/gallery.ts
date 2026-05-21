@@ -52,7 +52,7 @@ namespace microcode {
         }
 
         private openSample(sample: Sample): void {
-            settings.writeBuffer(SAVESLOT_AUTO, sample.source)
+            replaceAutoProgram(sample.source)
             this.navigation_.launchEditor()
         }
     }

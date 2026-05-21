@@ -114,7 +114,7 @@ namespace microcode {
         private loadDiskSlot(slot: HomeDiskSlot): void {
             let buf = settings.readBuffer(slot)
             if (!buf) buf = new ProgramDefn().toBuffer()
-            settings.writeBuffer(SAVESLOT_AUTO, buf)
+            replaceAutoProgram(buf)
             this.closeDiskModal()
             this.navigation_.launchEditor()
         }

@@ -68,6 +68,13 @@ namespace microcode {
         return true
     }
 
+    export function replaceAutoProgram(buf: Buffer): void {
+        const wasRunning = isProgramRunning()
+        if (wasRunning) stopProgram()
+        settings.writeBuffer(SAVESLOT_AUTO, buf)
+        if (wasRunning) runProgram(ProgramDefn.fromBuffer(new BufferReader(buf)))
+    }
+
     export function stopProgram() {
         if (theInterpreter) theInterpreter.stop()
         theInterpreter = undefined

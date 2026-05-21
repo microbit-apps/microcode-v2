@@ -226,6 +226,7 @@ namespace microcode {
         private toolbar_: EditorToolbar
         private pendingSave_: Buffer
         private saving_: boolean
+        private rendered_: boolean
 
         constructor(navigation: AppNavigation, app: App) {
             super()
@@ -235,6 +236,7 @@ namespace microcode {
             this.currPage_ = 0
             this.pendingSave_ = undefined
             this.saving_ = false
+            this.rendered_ = false
             this.loadProgram()
             this.pageView_ = new PageView(
                 () => this.progdef_,
@@ -267,12 +269,18 @@ namespace microcode {
             })
         }
 
+        public update(): void {
+            if (this.rendered_ && this.pageView_.ensureLayoutReady())
+                this.pageView_.focusDefault(this.focus)
+        }
+
         public render(surface: ui.DrawSurface): void {
             surface.clear(this.backgroundColor)
             this.drawBackground(surface)
             // Background drawing happens before registered roots so controls
             // and their focus affordances appear above the editor backdrop.
             super.render(surface)
+            this.rendered_ = true
         }
 
         public handleScreenInput(event: ui.UiInputEvent): boolean | undefined {
@@ -1609,9 +1617,7 @@ namespace microcode {
         public arrange(rect: ui.Rect): void {
             this.finalRect.copyFrom(rect)
             this.updateViewportRect()
-            this.rebuildLayout(true)
             this.focusTargetsDirty_ = true
-            this.clearLayoutInvalidation()
         }
 
         public invalidateLayout(): void {
@@ -1629,7 +1635,8 @@ namespace microcode {
             // The page view owns one focus scope backed by rule-row controls.
             // Its targets are rebuilt whenever layout changes because scrolling
             // can change viewport-space target rectangles.
-            this.refreshFocusTargets()
+            if (this.layout_) this.refreshFocusTargets()
+            else this.focus_.setScope({ id: EDITOR_PAGE_SCOPE })
         }
 
         public registerNavigation(controller: ui.UiFocusInputController): void {
@@ -1641,10 +1648,18 @@ namespace microcode {
         }
 
         public focusDefault(focus: ui.UiFocusState): ui.UiFocusSetResult {
-            this.refreshFocusTargets()
+            if (this.layout_) this.refreshFocusTargets()
             const result = focus.setActiveScope(EDITOR_PAGE_SCOPE)
             this.handleFocusScrollResult(result)
             return result
+        }
+
+        public ensureLayoutReady(): boolean {
+            if (this.layout_) return false
+            if (!this.finalRect.width && !this.finalRect.height) return false
+            this.rebuildLayout(true)
+            this.refreshFocusTargets()
+            return true
         }
 
         public pageChanged(ruleIndex?: number): void {
@@ -1719,6 +1734,10 @@ namespace microcode {
             assets: ui.UiAssetResolver,
             focus?: ui.UiFocusState,
         ): void {
+            if (!this.layout_) {
+                this.drawLoadingIcon(surface, assets)
+                return
+            }
             this.rebuildLayout()
             const page = this.layout_
             if (!page) return
@@ -2025,6 +2044,18 @@ namespace microcode {
                 if (!rule.isVisible(page)) continue
                 rule.drawFocusOverlay(surface, assets, focus, page)
             }
+        }
+
+        private drawLoadingIcon(
+            surface: ui.DrawSurface,
+            assets: ui.UiAssetResolver,
+        ): void {
+            const icon = assets.getBitmap(Tid.TID_SENSOR_TIMER)
+            surface.drawBitmap(
+                icon,
+                Math.idiv(UI_SCREEN_WIDTH - icon.width, 2),
+                Math.idiv(UI_SCREEN_HEIGHT - icon.height, 2),
+            )
         }
 
         private rebuildLayout(force?: boolean): void {
