@@ -1708,8 +1708,8 @@ namespace microcode {
                 for (let column = 0; column < rows[row].length; column++) {
                     if (rows[row][column].id != targetId) continue
                     if (column > 0)
-                        return this.focusTargetFromValue(
-                            rows[row][column - 1].control.value,
+                        return this.focusTargetFromTarget(
+                            rows[row][column - 1].ruleTarget,
                         )
                     return { ruleIndex: value.ruleIndex, kind: "handle" }
                 }
@@ -1722,7 +1722,9 @@ namespace microcode {
                 if (result.scopeId == EDITOR_PAGE_SCOPE) {
                     const target = this.targetByFocusId(result.targetId)
                     if (target && this.onActivateTarget_)
-                        this.onActivateTarget_(target.control.value)
+                        this.onActivateTarget_(
+                            this.ruleTargetValue(target.ruleTarget),
+                        )
                 }
             } else if (result.kind == "moved" && result.scrollRequest) {
                 this.handleScrollRequest(result.scrollRequest)
@@ -1791,7 +1793,7 @@ namespace microcode {
             for (let row = 0; row < rows.length; row++) {
                 for (let column = 0; column < rows[row].length; column++) {
                     const target = rows[row][column]
-                    if (this.isDefaultRuleTarget(target.control.value))
+                    if (this.isDefaultRuleTarget(target.ruleTarget))
                         return target
                 }
             }
@@ -2275,18 +2277,27 @@ namespace microcode {
             return target ? target.id : undefined
         }
 
-        private isDefaultRuleTarget(value: RuleTargetControlValue): boolean {
-            return value.section == "sensors" || value.section == "filters"
+        private isDefaultRuleTarget(target: RulePageTarget): boolean {
+            return target.section == "sensors" || target.section == "filters"
         }
 
-        private focusTargetFromValue(
-            value: RuleTargetControlValue,
+        private focusTargetFromTarget(
+            target: RulePageTarget,
         ): RuleTargetFocus {
             return {
-                ruleIndex: value.ruleIndex,
-                kind: value.kind,
-                section: value.section,
-                index: value.index,
+                ruleIndex: target.ruleIndex,
+                kind: target.kind,
+                section: target.section,
+                index: target.index,
+            }
+        }
+
+        private ruleTargetValue(target: RulePageTarget): RuleTargetControlValue {
+            return {
+                kind: target.kind,
+                ruleIndex: target.ruleIndex,
+                section: target.section,
+                index: target.index,
             }
         }
 
@@ -2477,7 +2488,7 @@ namespace microcode {
         private height_: number
         private tray_: ui.Rect
         private when_: ui.Rect
-        private controls_: ui.UiControl<RuleTargetControlValue>[]
+        private targets_: RulePageTarget[]
         private whenControlIds_: string[]
         private doControlIds_: string[]
         private stripOffsetX_: number
@@ -2486,6 +2497,7 @@ namespace microcode {
         private controlRectScratch_: ui.Rect
         private controlRects_: ui.Rect[]
         private buttonView_: ui.UiButtonView
+        private content_: ui.UiButtonContent
 
         constructor(
             ruledef: RuleDefn,
@@ -2503,13 +2515,14 @@ namespace microcode {
             const ruleRep = ruledef.getRuleRep()
             this.tray_ = new ui.Rect()
             this.when_ = new ui.Rect()
-            this.controls_ = []
+            this.targets_ = []
             this.whenControlIds_ = []
             this.doControlIds_ = []
             this.stripRect_ = new ui.Rect()
             this.controlRectScratch_ = new ui.Rect()
             this.controlRects_ = []
             this.buttonView_ = new ui.UiButtonView({})
+            this.content_ = {}
             this.addRuleControls(ruleRep)
             this.stripOffsetX_ = 0
             this.stripOffsetY_ = 0
@@ -2583,13 +2596,9 @@ namespace microcode {
         public navigationTargets(page: PageLayout): PageNavigationTarget[] {
             this.arrangeStrip(page.content)
             const result: PageNavigationTarget[] = []
-            for (let i = 0; i < this.controls_.length; i++) {
-                const control = this.controls_[i]
-                if (
-                    !_uiControls.isVisible(control) ||
-                    !_uiControls.isFocusable(control)
-                )
-                    continue
+            for (let i = 0; i < this.targets_.length; i++) {
+                const target = this.targets_[i]
+                if (target.focusable === false) continue
                 const contentRect = this.targetContentRect(
                     this.controlRects_[i],
                 )
@@ -2598,14 +2607,14 @@ namespace microcode {
                     viewportRect.width < contentRect.width ||
                     viewportRect.height < contentRect.height
                 result.push({
-                    id: this.targetFocusId(control.id),
+                    id: this.targetFocusId(target.id),
                     rect: viewportRect,
                     scrollOwnerId: scrollNeeded
                         ? EDITOR_PAGE_SCROLL_OWNER
                         : undefined,
                     scrollRect: scrollNeeded ? contentRect : undefined,
                     hidden: viewportRect.width == 0 || viewportRect.height == 0,
-                    control,
+                    ruleTarget: target,
                     contentRect,
                     viewportRect,
                 })
@@ -2614,8 +2623,8 @@ namespace microcode {
         }
 
         private addRuleControls(ruleRep: RuleRep): void {
-            this.controls_.push(this.iconTarget("handle", "rule_handle", 0))
-            const firstRuleGap = (this.controls_[0].width >> 1) + 2
+            this.targets_.push(this.iconTarget("handle", "rule_handle", 0))
+            const firstRuleGap = (this.targets_[0].width >> 1) + 2
             this.addTileTargets(
                 "sensors",
                 ruleRep.sensors,
@@ -2633,11 +2642,11 @@ namespace microcode {
                 whenInsert.gapBefore = this.whenControlIds_.length
                     ? undefined
                     : firstRuleGap
-                this.controls_.push(whenInsert)
+                this.targets_.push(whenInsert)
                 this.whenControlIds_.push(whenInsert.id)
             }
 
-            this.controls_.push(this.staticIcon("rule_arrow", 1, 0))
+            this.targets_.push(this.staticIcon("rule_arrow", 1, 0))
             this.addTileTargets(
                 "actuators",
                 ruleRep.actuators,
@@ -2653,7 +2662,7 @@ namespace microcode {
             const doInsert = this.doInsertionTarget(this.rule)
             if (doInsert) {
                 if (!this.doControlIds_.length) doInsert.gapBefore = 0
-                this.controls_.push(doInsert)
+                this.targets_.push(doInsert)
                 this.doControlIds_.push(doInsert.id)
             }
         }
@@ -2666,7 +2675,7 @@ namespace microcode {
         ): void {
             for (let i = 0; i < tiles.length; i++) {
                 const tile = tiles[i]
-                const control = this.targetControl(
+                const target = this.targetControl(
                     "tile",
                     this.targetBitmap(tile),
                     section,
@@ -2674,9 +2683,9 @@ namespace microcode {
                     tile,
                 )
                 if (firstGap !== undefined && ids.length == 0)
-                    control.gapBefore = firstGap
-                this.controls_.push(control)
-                ids.push(control.id)
+                    target.gapBefore = firstGap
+                this.targets_.push(target)
+                ids.push(target.id)
             }
         }
 
@@ -2684,7 +2693,7 @@ namespace microcode {
             kind: RuleTargetKind,
             bitmapId: string,
             gapBefore?: number,
-        ): ui.UiControl<RuleTargetControlValue> {
+        ): RulePageTarget {
             const bitmap = this.bitmap(bitmapId)
             return this.targetControl(
                 kind,
@@ -2700,14 +2709,15 @@ namespace microcode {
             bitmapId: string,
             gapBefore?: number,
             gapAfter?: number,
-        ): ui.UiControl<RuleTargetControlValue> {
+        ): RulePageTarget {
             const bitmap = this.bitmap(bitmapId)
             return {
                 id:
                     ruleTargetControlId(this.ruleIndex, "static") +
                     "/" +
                     bitmapId,
-                value: <RuleTargetControlValue>undefined,
+                kind: "static",
+                ruleIndex: this.ruleIndex,
                 bitmap,
                 width: bitmap.width,
                 height: bitmap.height,
@@ -2725,7 +2735,7 @@ namespace microcode {
             index?: number,
             tile?: Tile,
             gapBefore?: number,
-        ): ui.UiControl<RuleTargetControlValue> {
+        ): RulePageTarget {
             const generated =
                 kind == "tile" && tile && isGeneratedRuleTile(tile)
             const generatedText = this.targetText(kind, tile)
@@ -2737,12 +2747,10 @@ namespace microcode {
                 !isConstant(getTid(tile))
             return {
                 id: this.targetId(kind, section, index),
-                value: {
-                    kind,
-                    ruleIndex: this.ruleIndex,
-                    section,
-                    index,
-                },
+                kind,
+                ruleIndex: this.ruleIndex,
+                section,
+                index,
                 bitmap,
                 width: this.targetWidth(
                     bitmap,
@@ -2878,7 +2886,12 @@ namespace microcode {
             section?: RuleSection,
             index?: number,
         ): string {
-            return ruleTargetControlId(this.ruleIndex, kind, section, index)
+            return ruleTargetControlId(
+                this.ruleIndex,
+                kind,
+                section,
+                index,
+            )
         }
 
         private bitmap(icon: string | number | Bitmap): Bitmap {
@@ -2889,7 +2902,7 @@ namespace microcode {
 
         private whenInsertionTarget(
             rule: RuleDefn,
-        ): ui.UiControl<RuleTargetControlValue> {
+        ): RulePageTarget {
             if (rule.sensors.length == 0)
                 return this.targetControl(
                     "insert",
@@ -2915,7 +2928,7 @@ namespace microcode {
 
         private doInsertionTarget(
             rule: RuleDefn,
-        ): ui.UiControl<RuleTargetControlValue> {
+        ): RulePageTarget {
             if (rule.actuators.length == 0)
                 return this.targetControl(
                     "insert",
@@ -2942,7 +2955,7 @@ namespace microcode {
         private placeControls(): void {
             this.width_ = this.stripContentWidth()
             this.height_ = this.stripContentHeight()
-            this.stripOffsetX_ = -(this.controls_[0].width >> 1)
+            this.stripOffsetX_ = -(this.targets_[0].width >> 1)
             this.stripOffsetY_ = -(this.height_ >> 1)
             this.arrangeStrip(new ui.Rect(0, 0, this.width_, this.height_))
 
@@ -3027,18 +3040,28 @@ namespace microcode {
             )
             this.ensureControlRects()
             let x = this.stripRect_.x
-            for (let i = 0; i < this.controls_.length; i++) {
-                const control = this.controls_[i]
-                const width = this.controlWidth(control)
-                const height = this.controlHeight(control)
-                x += this.controlGapBefore(control, i)
+            for (let i = 0; i < this.targets_.length; i++) {
+                const target = this.targets_[i]
+                const width = Math.max(target.width, 1)
+                const height = Math.max(target.height, 1)
+                const gapBefore = target.gapBefore
+                x +=
+                    gapBefore !== undefined
+                        ? Math.max(gapBefore, 0)
+                        : i
+                          ? 1
+                          : 0
                 this.controlRects_[i].set(
                     x,
                     this.stripRect_.y + Math.idiv(this.height_ - height, 2),
                     width,
                     height,
                 )
-                x += width + this.controlGapAfter(control)
+                x +=
+                    width +
+                    (target.gapAfter !== undefined
+                        ? Math.max(target.gapAfter, 0)
+                        : 0)
             }
         }
 
@@ -3061,8 +3084,8 @@ namespace microcode {
         }
 
         private copyControlRect(controlId: string, output: ui.Rect): void {
-            for (let i = 0; i < this.controls_.length; i++) {
-                if (this.controls_[i].id == controlId) {
+            for (let i = 0; i < this.targets_.length; i++) {
+                if (this.targets_[i].id == controlId) {
                     output.copyFrom(this.controlRects_[i])
                     return
                 }
@@ -3108,17 +3131,21 @@ namespace microcode {
             surface: ui.DrawSurface,
             assets: ui.UiAssetResolver,
         ): void {
-            for (let i = 0; i < this.controls_.length; i++) {
-                const control = this.controls_[i]
-                if (!_uiControls.isVisible(control)) continue
-                this.prepareControlBitmap(control)
-                _uiControls.renderControl(
+            for (let i = 0; i < this.targets_.length; i++) {
+                const target = this.targets_[i]
+                this.prepareTargetBitmap(target)
+                this.content_.bitmap = target.bitmap
+                this.content_.text =
+                    target.text !== undefined
+                        ? target.text
+                        : target.textId !== undefined
+                          ? assets.getText(target.textId)
+                          : ""
+                this.buttonView_.render(
                     surface,
-                    assets,
-                    control,
                     this.controlRects_[i],
-                    this.buttonView_,
-                    undefined,
+                    this.content_,
+                    target.style,
                 )
             }
         }
@@ -3128,108 +3155,102 @@ namespace microcode {
             assets: ui.UiAssetResolver,
             focus: ui.UiFocusState,
         ): void {
-            const activeTargetId = _uiControls.activeTargetIdForScope(
-                focus,
-                EDITOR_PAGE_SCOPE,
-            )
-            const index = _uiControls.focusedControlOverlayIndex(
-                EDITOR_PAGE_SCOPE,
-                this.controls_,
-                activeTargetId,
-            )
-            if (index < 0) return
-            _uiControls.renderControl(
-                surface,
-                assets,
-                this.controls_[index],
-                this.controlRects_[index],
-                this.buttonView_,
-                undefined,
-                undefined,
-                true,
-            )
+            const activeTargetId =
+                focus && focus.getActiveScopeId() == EDITOR_PAGE_SCOPE
+                    ? focus.getActiveTargetId(EDITOR_PAGE_SCOPE)
+                    : undefined
+            for (let i = 0; i < this.targets_.length; i++) {
+                const target = this.targets_[i]
+                if (activeTargetId == this.targetFocusId(target.id)) {
+                    this.content_.bitmap = target.bitmap
+                    this.content_.text =
+                        target.text !== undefined
+                            ? target.text
+                            : target.textId !== undefined
+                              ? assets.getText(target.textId)
+                              : ""
+                    let focusLabel = target.focusLabel
+                    if (
+                        focusLabel === undefined &&
+                        target.focusLabelId !== undefined
+                    )
+                        focusLabel = assets.getText(target.focusLabelId)
+                    this.buttonView_.renderFocus(
+                        surface,
+                        this.controlRects_[i],
+                        this.content_,
+                        target.style,
+                        undefined,
+                        focusLabel,
+                    )
+                    return
+                }
+            }
         }
 
-        private prepareControlBitmap(
-            control: ui.UiControl<RuleTargetControlValue>,
-        ): void {
-            if (control.bitmap) return
-            const tile = this.controlTile(control)
+        private prepareTargetBitmap(target: RulePageTarget): void {
+            if (target.bitmap) return
+            const tile = this.targetTile(target)
             if (isIconEditor(tile))
-                control.bitmap = icondb.renderMicrobitLEDs(
+                target.bitmap = icondb.renderMicrobitLEDs(
                     (tile as IconEditor).field,
                 )
             else if (isMelodyEditor(tile))
-                control.bitmap = icondb.melodyToImage(
+                target.bitmap = icondb.melodyToImage(
                     (tile as MelodyEditor).field,
                 )
         }
 
-        private controlTile(
-            control: ui.UiControl<RuleTargetControlValue>,
-        ): Tile {
-            const value = control.value
+        private targetTile(target: RulePageTarget): Tile {
             if (
-                !value ||
-                value.kind != "tile" ||
-                !value.section ||
-                value.index === undefined
+                target.kind != "tile" ||
+                !target.section ||
+                target.index === undefined
             )
                 return undefined
-            return this.rule.getRuleRep()[value.section][value.index]
+            const ruleRep = this.rule.getRuleRep()
+            const index: number = target.index
+            if (target.section == "filters")
+                return ruleRep.filters[index]
+            if (target.section == "actuators")
+                return ruleRep.actuators[index]
+            if (target.section == "modifiers")
+                return ruleRep.modifiers[index]
+            return ruleRep.sensors[index]
         }
 
         private ensureControlRects(): void {
-            while (this.controlRects_.length < this.controls_.length)
+            while (this.controlRects_.length < this.targets_.length)
                 this.controlRects_.push(new ui.Rect())
-            while (this.controlRects_.length > this.controls_.length)
+            while (this.controlRects_.length > this.targets_.length)
                 this.controlRects_.pop()
         }
 
         private stripContentWidth(): number {
             let width = 0
-            for (let i = 0; i < this.controls_.length; i++) {
-                const control = this.controls_[i]
-                width += this.controlGapBefore(control, i)
-                width += this.controlWidth(control)
-                width += this.controlGapAfter(control)
+            for (let i = 0; i < this.targets_.length; i++) {
+                const target = this.targets_[i]
+                const gapBefore = target.gapBefore
+                width +=
+                    gapBefore !== undefined
+                        ? Math.max(gapBefore, 0)
+                        : i
+                          ? 1
+                          : 0
+                width += Math.max(target.width, 1)
+                width +=
+                    target.gapAfter !== undefined
+                        ? Math.max(target.gapAfter, 0)
+                        : 0
             }
             return width
         }
 
         private stripContentHeight(): number {
             let height = 0
-            for (let i = 0; i < this.controls_.length; i++)
-                height = Math.max(height, this.controlHeight(this.controls_[i]))
+            for (let i = 0; i < this.targets_.length; i++)
+                height = Math.max(height, Math.max(this.targets_[i].height, 1))
             return height
-        }
-
-        private controlWidth(
-            control: ui.UiControl<RuleTargetControlValue>,
-        ): number {
-            return _uiControls.sanitizeDimension(control.width, 1)
-        }
-
-        private controlHeight(
-            control: ui.UiControl<RuleTargetControlValue>,
-        ): number {
-            return _uiControls.sanitizeDimension(control.height, 1)
-        }
-
-        private controlGapBefore(
-            control: ui.UiControl<RuleTargetControlValue>,
-            index: number,
-        ): number {
-            return _uiControls.sanitizeDimension(
-                control.gapBefore,
-                index ? 1 : 0,
-            )
-        }
-
-        private controlGapAfter(
-            control: ui.UiControl<RuleTargetControlValue>,
-        ): number {
-            return _uiControls.sanitizeDimension(control.gapAfter, 0)
         }
     }
 
@@ -3242,9 +3263,28 @@ namespace microcode {
     }
 
     interface PageNavigationTarget extends ui.UiFocusNavigationTarget {
-        control: ui.UiControl<RuleTargetControlValue>
+        ruleTarget: RulePageTarget
         contentRect: ui.Rect
         viewportRect: ui.Rect
+    }
+
+    class RulePageTarget {
+        id: string
+        kind: RuleTargetKind
+        ruleIndex: number
+        section?: RuleSection
+        index?: number
+        bitmap?: Bitmap
+        width: number
+        height: number
+        gapBefore?: number
+        gapAfter?: number
+        text?: string
+        textId?: string
+        focusLabel?: string
+        focusLabelId?: string
+        style?: ui.UiButtonStyle
+        focusable?: boolean
     }
 
     interface PageTargetPosition {
