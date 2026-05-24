@@ -8,7 +8,7 @@
         "microphone": "*",
         "datalogger": "*",
         "settings": "*",
-        "user-interface-base": "github:humanapp/user-interface-base#v0.0.41"
+        "user-interface-base": "github:humanapp/user-interface-base#v0.0.43"
     },
     "files": [
         "config.ts",
