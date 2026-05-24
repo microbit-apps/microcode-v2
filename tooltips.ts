@@ -5,314 +5,309 @@ namespace microcode {
     export function resolveTooltip(id: string) {
         let res: string = ""
         if (!id) return id
-        else if (id === "tagline") res = "for micro:bit V2";
-        else if (id === "sensors") res = "when...";
-        else if (id === "actuators") res = "do...";
-        else if (id === "when") res = "when";
-        else if (id === "do") res = "do";
-        else if (id === "connect") res = "connect";
-        else if (id === "rule") res = "rule";
-        else if (id === "add_rule") res = "add rule";
-        else if (id === "delete_rule") res = "delete rule";
-        else if (id === "rule_up") res = "move rule up";
-        else if (id === "rule_down") res = "move rule down";
-        else if (id === "disk") res = "save";
-        else if (id === "load") res = "load";
-        else if (id === "settings") res = "settings";
-        else if (id === "run") res = "run program";
-        else if (id === "stop") res = "stop program";
-        else if (id === "SR_LED") res = "LED {x} {y} {state}";
-        else if (id === "SR_NOTE") res = "note {index} {state}";
-        else if (id === "SR_ON") res = "on";
-        else if (id === "SR_OFF") res = "off";
-        else if (id === "C0") res = "edit";
-        else if (id === "C1") res = "samples";
-        else if (id === "T10") res = "start page";
-        else if (id === "T11") res = "press";
-        else if (id === "T12") res = "release";
-        else if (id === "T13") res = "move";
-        else if (id === "T14") res = "timer";
-        else if (id === "T15") res = "light (external)";
-        else if (id === "T16") res = "temperature";
-        else if (id === "T17") res = "radio receive";
-        else if (id === "T18") res = "sound";
-        else if (id === "T19") res = "variable X set";
-        else if (id === "T20") res = "variable Y set";
-        else if (id === "T21") res = "variable Z set";
-        else if (id === "T22") res = "magnet";
-        else if (id === "T23") res = "slider";
-        else if (id === "T24") res = "dial";
-        else if (id === "T25") res = "wall";
-        else if (id === "T26") res = "line";
-        else if (id === "T27") res = "light";
-        else if (id === "T28") res = "moisture";
-        else if (id === "T29") res = "distance";
-        else if (id === "T30") res = "reflected light";
-        else if (id === "T40") res = "switch page";
-        else if (id === "T41") res = "play sound";
-        else if (id === "T43") res = "music";
-        else if (id === "T44") res = "show image";
-        else if (id === "T45") res = "radio send";
-        else if (id === "T46") res = "radio set group";
-        else if (id === "T47") res = "LED";
-        else if (id === "T48") res = "set variable X";
-        else if (id === "T49") res = "set variable Y";
-        else if (id === "T50") res = "set variable Z";
-        else if (id === "T51") res = "show number";
-        else if (id === "T52") res = "robot";
-        else if (id === "T53") res = "servo set angle";
-        else if (id === "T54") res = "relay";
-        else if (id === "T55") res = "servo power";
-        else if (id === "T70") res = "touch pin 0";
-        else if (id === "T71") res = "touch pin 1";
-        else if (id === "T72") res = "touch pin 2";
-        else if (id === "T73") res = "button A";
-        else if (id === "T74") res = "button B";
-        else if (id === "T75") res = "key 1";
-        else if (id === "T76") res = "key 2";
-        else if (id === "T77") res = "logo";
-        else if (id === "T78") res = "1";
-        else if (id === "T79") res = "2";
-        else if (id === "T80") res = "3";
-        else if (id === "T81") res = "4";
-        else if (id === "T82") res = "5";
-        else if (id === "T83") res = "1/4 second";
-        else if (id === "T84") res = "1 second";
-        else if (id === "T85") res = "1 random second";
-        else if (id === "T86") res = "5 seconds";
-        else if (id === "T87") res = "loud";
-        else if (id === "T88") res = "quiet";
-        else if (id === "T89") res = "NA1";
-        else if (id === "T90") res = "shake";
-        else if (id === "T91") res = "tilt up";
-        else if (id === "T92") res = "tilt down";
-        else if (id === "T93") res = "tilt left";
-        else if (id === "T94") res = "tilt right";
-        else if (id === "T95") res = "variable X";
-        else if (id === "T96") res = "variable Y";
-        else if (id === "T97") res = "variable Z";
-        else if (id === "T98") res = "turn left";
-        else if (id === "T99") res = "turn right";
-        else if (id === "T100") res = "up";
-        else if (id === "T101") res = "down";
-        else if (id === "T103") res = "right";
-        else if (id === "T104") res = "both";
-        else if (id === "T105") res = "none";
-        else if (id === "T106") res = "lost left";
-        else if (id === "T107") res = "lost right";
-        else if (id === "T108") res = "face up";
-        else if (id === "T109") res = "face down";
-        else if (id === "T110") res = "active";
-        else if (id === "T111") res = "unactive";
-        else if (id === "T150") res = "page 1";
-        else if (id === "T151") res = "page 2";
-        else if (id === "T152") res = "page 3";
-        else if (id === "T153") res = "page 4";
-        else if (id === "T154") res = "page 5";
-        else if (id === "T160") res = "image";
-        else if (id === "T161") res = "NA5";
-        else if (id === "T162") res = "NA6";
-        else if (id === "T163") res = "giggle";
-        else if (id === "T164") res = "happy";
-        else if (id === "T165") res = "hello";
-        else if (id === "T166") res = "mysterious";
-        else if (id === "T167") res = "sad";
-        else if (id === "T168") res = "slide";
-        else if (id === "T169") res = "soaring";
-        else if (id === "T170") res = "spring";
-        else if (id === "T171") res = "twinkle";
-        else if (id === "T172") res = "yawn";
-        else if (id === "T176") res = "radio value";
-        else if (id === "T177") res = "random number";
-        else if (id === "T178") res = "repeat";
-        else if (id === "T179") res = "melody";
-        else if (id === "T180") res = "temp.";
-        else if (id === "T181") res = "NA2";
-        else if (id === "T182") res = "red";
-        else if (id === "T183") res = "green";
-        else if (id === "T184") res = "blue";
-        else if (id === "T185") res = "purple";
-        else if (id === "T186") res = "yellow";
-        else if (id === "T187") res = "black";
-        else if (id === "T188") res = "rainbow";
-        else if (id === "T189") res = "sparkle";
-        else if (id === "T190") res = "forward";
-        else if (id === "T191") res = "reverse";
-        else if (id === "T192") res = "NA3";
-        else if (id === "T193") res = "NA4";
-        else if (id === "T194") res = "stop";
-        else if (id === "T195") res = "fast forward";
-        else if (id === "T196") res = "spin left";
-        else if (id === "T197") res = "spin right";
-        else if (id === "T198") res = "LED red";
-        else if (id === "T199") res = "LED green";
-        else if (id === "T200") res = "LED blue";
-        else if (id === "T201") res = "LED OFF";
-        else if (id === "T202") res = "arm open";
-        else if (id === "T203") res = "arm close";
-        else if (id === "T204") res = "on";
-        else if (id === "T205") res = "off";
-        else if (id === "T206") res = "light value";
-        else if (id === "T207") res = "magnet value";
-        else if (id === "T208") res = "sound value";
-        else if (id === "T210") res = "add";
-        else if (id === "T211") res = "subtract";
-        else if (id === "T212") res = "multiply";
-        else if (id === "T213") res = "divide";
-        else if (id === "T220") res = "equals";
-        else if (id === "T221") res = "not equals";
-        else if (id === "T222") res = "less than";
-        else if (id === "T223") res = "less than or equals";
-        else if (id === "T224") res = "greater than";
-        else if (id === "T225") res = "greater than or equals";
-        else if (id === "T255") res = "enter number";        
+        else if (id === "tagline") res = "for micro:bit V2"
+        else if (id === "sensors") res = "when..."
+        else if (id === "actuators") res = "do..."
+        else if (id === "when") res = "when"
+        else if (id === "do") res = "do"
+        else if (id === "connect") res = "connect"
+        else if (id === "rule") res = "rule"
+        else if (id === "add_rule") res = "add rule"
+        else if (id === "delete_rule") res = "delete rule"
+        else if (id === "rule_up") res = "move rule up"
+        else if (id === "rule_down") res = "move rule down"
+        else if (id === "disk") res = "save"
+        else if (id === "load") res = "load"
+        else if (id === "settings") res = "settings"
+        else if (id === "page") res = "page"
+        else if (id === "run") res = "run program"
+        else if (id === "stop") res = "stop program"
+        else if (id === "C0") res = "edit"
+        else if (id === "C1") res = "samples"
+        else if (id === "T10") res = "start page"
+        else if (id === "T11") res = "press"
+        else if (id === "T12") res = "release"
+        else if (id === "T13") res = "move"
+        else if (id === "T14") res = "timer"
+        else if (id === "T15") res = "light (external)"
+        else if (id === "T16") res = "temperature"
+        else if (id === "T17") res = "radio receive"
+        else if (id === "T18") res = "sound"
+        else if (id === "T19") res = "variable X set"
+        else if (id === "T20") res = "variable Y set"
+        else if (id === "T21") res = "variable Z set"
+        else if (id === "T22") res = "magnet"
+        else if (id === "T23") res = "slider"
+        else if (id === "T24") res = "dial"
+        else if (id === "T25") res = "wall"
+        else if (id === "T26") res = "line"
+        else if (id === "T27") res = "light"
+        else if (id === "T28") res = "moisture"
+        else if (id === "T29") res = "distance"
+        else if (id === "T30") res = "reflected light"
+        else if (id === "T40") res = "switch page"
+        else if (id === "T41") res = "play sound"
+        else if (id === "T43") res = "music"
+        else if (id === "T44") res = "show image"
+        else if (id === "T45") res = "radio send"
+        else if (id === "T46") res = "radio set group"
+        else if (id === "T47") res = "LED"
+        else if (id === "T48") res = "set variable X"
+        else if (id === "T49") res = "set variable Y"
+        else if (id === "T50") res = "set variable Z"
+        else if (id === "T51") res = "show number"
+        else if (id === "T52") res = "robot"
+        else if (id === "T53") res = "servo set angle"
+        else if (id === "T54") res = "relay"
+        else if (id === "T55") res = "servo power"
+        else if (id === "T70") res = "touch pin 0"
+        else if (id === "T71") res = "touch pin 1"
+        else if (id === "T72") res = "touch pin 2"
+        else if (id === "T73") res = "button A"
+        else if (id === "T74") res = "button B"
+        else if (id === "T75") res = "key 1"
+        else if (id === "T76") res = "key 2"
+        else if (id === "T77") res = "logo"
+        else if (id === "T78") res = "1"
+        else if (id === "T79") res = "2"
+        else if (id === "T80") res = "3"
+        else if (id === "T81") res = "4"
+        else if (id === "T82") res = "5"
+        else if (id === "T83") res = "1/4 second"
+        else if (id === "T84") res = "1 second"
+        else if (id === "T85") res = "1 random second"
+        else if (id === "T86") res = "5 seconds"
+        else if (id === "T87") res = "loud"
+        else if (id === "T88") res = "quiet"
+        else if (id === "T89") res = "NA1"
+        else if (id === "T90") res = "shake"
+        else if (id === "T91") res = "tilt up"
+        else if (id === "T92") res = "tilt down"
+        else if (id === "T93") res = "tilt left"
+        else if (id === "T94") res = "tilt right"
+        else if (id === "T95") res = "variable X"
+        else if (id === "T96") res = "variable Y"
+        else if (id === "T97") res = "variable Z"
+        else if (id === "T98") res = "turn left"
+        else if (id === "T99") res = "turn right"
+        else if (id === "T100") res = "up"
+        else if (id === "T101") res = "down"
+        else if (id === "T103") res = "right"
+        else if (id === "T104") res = "both"
+        else if (id === "T105") res = "none"
+        else if (id === "T106") res = "lost left"
+        else if (id === "T107") res = "lost right"
+        else if (id === "T108") res = "face up"
+        else if (id === "T109") res = "face down"
+        else if (id === "T110") res = "active"
+        else if (id === "T111") res = "unactive"
+        else if (id === "T150") res = "page 1"
+        else if (id === "T151") res = "page 2"
+        else if (id === "T152") res = "page 3"
+        else if (id === "T153") res = "page 4"
+        else if (id === "T154") res = "page 5"
+        else if (id === "T160") res = "image"
+        else if (id === "T161") res = "NA5"
+        else if (id === "T162") res = "NA6"
+        else if (id === "T163") res = "giggle"
+        else if (id === "T164") res = "happy"
+        else if (id === "T165") res = "hello"
+        else if (id === "T166") res = "mysterious"
+        else if (id === "T167") res = "sad"
+        else if (id === "T168") res = "slide"
+        else if (id === "T169") res = "soaring"
+        else if (id === "T170") res = "spring"
+        else if (id === "T171") res = "twinkle"
+        else if (id === "T172") res = "yawn"
+        else if (id === "T176") res = "radio value"
+        else if (id === "T177") res = "random number"
+        else if (id === "T178") res = "repeat"
+        else if (id === "T179") res = "melody"
+        else if (id === "T180") res = "temp."
+        else if (id === "T181") res = "NA2"
+        else if (id === "T182") res = "red"
+        else if (id === "T183") res = "green"
+        else if (id === "T184") res = "blue"
+        else if (id === "T185") res = "purple"
+        else if (id === "T186") res = "yellow"
+        else if (id === "T187") res = "black"
+        else if (id === "T188") res = "rainbow"
+        else if (id === "T189") res = "sparkle"
+        else if (id === "T190") res = "forward"
+        else if (id === "T191") res = "reverse"
+        else if (id === "T192") res = "NA3"
+        else if (id === "T193") res = "NA4"
+        else if (id === "T194") res = "stop"
+        else if (id === "T195") res = "fast forward"
+        else if (id === "T196") res = "spin left"
+        else if (id === "T197") res = "spin right"
+        else if (id === "T198") res = "LED red"
+        else if (id === "T199") res = "LED green"
+        else if (id === "T200") res = "LED blue"
+        else if (id === "T201") res = "LED OFF"
+        else if (id === "T202") res = "arm open"
+        else if (id === "T203") res = "arm close"
+        else if (id === "T204") res = "on"
+        else if (id === "T205") res = "off"
+        else if (id === "T206") res = "light value"
+        else if (id === "T207") res = "magnet value"
+        else if (id === "T208") res = "sound value"
+        else if (id === "T210") res = "add"
+        else if (id === "T211") res = "subtract"
+        else if (id === "T212") res = "multiply"
+        else if (id === "T213") res = "divide"
+        else if (id === "T220") res = "equals"
+        else if (id === "T221") res = "not equals"
+        else if (id === "T222") res = "less than"
+        else if (id === "T223") res = "less than or equals"
+        else if (id === "T224") res = "greater than"
+        else if (id === "T225") res = "greater than or equals"
+        else if (id === "T255") res = "enter number"
         return res
     }
-    
-    
-        export function tooltip2tid(id: string): number {
-           let tid: number = undefined
-           if (!id) return tid
-                    else if (id === "start page") tid = 10;
-        else if (id === "press") tid = 11;
-        else if (id === "release") tid = 12;
-        else if (id === "move") tid = 13;
-        else if (id === "timer") tid = 14;
-        else if (id === "light (external)") tid = 15;
-        else if (id === "temperature") tid = 16;
-        else if (id === "radio receive") tid = 17;
-        else if (id === "sound") tid = 18;
-        else if (id === "variable X set") tid = 19;
-        else if (id === "variable Y set") tid = 20;
-        else if (id === "variable Z set") tid = 21;
-        else if (id === "magnet") tid = 22;
-        else if (id === "slider") tid = 23;
-        else if (id === "dial") tid = 24;
-        else if (id === "wall") tid = 25;
-        else if (id === "line") tid = 26;
-        else if (id === "light") tid = 27;
-        else if (id === "moisture") tid = 28;
-        else if (id === "distance") tid = 29;
-        else if (id === "reflected light") tid = 30;
-        else if (id === "switch page") tid = 40;
-        else if (id === "play sound") tid = 41;
-        else if (id === "music") tid = 43;
-        else if (id === "show image") tid = 44;
-        else if (id === "radio send") tid = 45;
-        else if (id === "radio set group") tid = 46;
-        else if (id === "LED") tid = 47;
-        else if (id === "set variable X") tid = 48;
-        else if (id === "set variable Y") tid = 49;
-        else if (id === "set variable Z") tid = 50;
-        else if (id === "show number") tid = 51;
-        else if (id === "robot") tid = 52;
-        else if (id === "servo set angle") tid = 53;
-        else if (id === "relay") tid = 54;
-        else if (id === "servo power") tid = 55;
-        else if (id === "touch pin 0") tid = 70;
-        else if (id === "touch pin 1") tid = 71;
-        else if (id === "touch pin 2") tid = 72;
-        else if (id === "button A") tid = 73;
-        else if (id === "button B") tid = 74;
-        else if (id === "key 1") tid = 75;
-        else if (id === "key 2") tid = 76;
-        else if (id === "logo") tid = 77;
-        else if (id === "1") tid = 78;
-        else if (id === "2") tid = 79;
-        else if (id === "3") tid = 80;
-        else if (id === "4") tid = 81;
-        else if (id === "5") tid = 82;
-        else if (id === "1/4 second") tid = 83;
-        else if (id === "1 second") tid = 84;
-        else if (id === "1 random second") tid = 85;
-        else if (id === "5 seconds") tid = 86;
-        else if (id === "loud") tid = 87;
-        else if (id === "quiet") tid = 88;
-        else if (id === "NA1") tid = 89;
-        else if (id === "shake") tid = 90;
-        else if (id === "tilt up") tid = 91;
-        else if (id === "tilt down") tid = 92;
-        else if (id === "tilt left") tid = 93;
-        else if (id === "tilt right") tid = 94;
-        else if (id === "variable X") tid = 95;
-        else if (id === "variable Y") tid = 96;
-        else if (id === "variable Z") tid = 97;
-        else if (id === "turn left") tid = 98;
-        else if (id === "turn right") tid = 99;
-        else if (id === "up") tid = 100;
-        else if (id === "down") tid = 101;
-        else if (id === "right") tid = 103;
-        else if (id === "both") tid = 104;
-        else if (id === "none") tid = 105;
-        else if (id === "lost left") tid = 106;
-        else if (id === "lost right") tid = 107;
-        else if (id === "face up") tid = 108;
-        else if (id === "face down") tid = 109;
-        else if (id === "active") tid = 110;
-        else if (id === "unactive") tid = 111;
-        else if (id === "page 1") tid = 150;
-        else if (id === "page 2") tid = 151;
-        else if (id === "page 3") tid = 152;
-        else if (id === "page 4") tid = 153;
-        else if (id === "page 5") tid = 154;
-        else if (id === "image") tid = 160;
-        else if (id === "NA5") tid = 161;
-        else if (id === "NA6") tid = 162;
-        else if (id === "giggle") tid = 163;
-        else if (id === "happy") tid = 164;
-        else if (id === "hello") tid = 165;
-        else if (id === "mysterious") tid = 166;
-        else if (id === "sad") tid = 167;
-        else if (id === "slide") tid = 168;
-        else if (id === "soaring") tid = 169;
-        else if (id === "spring") tid = 170;
-        else if (id === "twinkle") tid = 171;
-        else if (id === "yawn") tid = 172;
-        else if (id === "radio value") tid = 176;
-        else if (id === "random number") tid = 177;
-        else if (id === "repeat") tid = 178;
-        else if (id === "melody") tid = 179;
-        else if (id === "temp.") tid = 180;
-        else if (id === "NA2") tid = 181;
-        else if (id === "red") tid = 182;
-        else if (id === "green") tid = 183;
-        else if (id === "blue") tid = 184;
-        else if (id === "purple") tid = 185;
-        else if (id === "yellow") tid = 186;
-        else if (id === "black") tid = 187;
-        else if (id === "rainbow") tid = 188;
-        else if (id === "sparkle") tid = 189;
-        else if (id === "forward") tid = 190;
-        else if (id === "reverse") tid = 191;
-        else if (id === "NA3") tid = 192;
-        else if (id === "NA4") tid = 193;
-        else if (id === "stop") tid = 194;
-        else if (id === "fast forward") tid = 195;
-        else if (id === "spin left") tid = 196;
-        else if (id === "spin right") tid = 197;
-        else if (id === "LED red") tid = 198;
-        else if (id === "LED green") tid = 199;
-        else if (id === "LED blue") tid = 200;
-        else if (id === "LED OFF") tid = 201;
-        else if (id === "arm open") tid = 202;
-        else if (id === "arm close") tid = 203;
-        else if (id === "on") tid = 204;
-        else if (id === "off") tid = 205;
-        else if (id === "light value") tid = 206;
-        else if (id === "magnet value") tid = 207;
-        else if (id === "sound value") tid = 208;
-        else if (id === "add") tid = 210;
-        else if (id === "subtract") tid = 211;
-        else if (id === "multiply") tid = 212;
-        else if (id === "divide") tid = 213;
-        else if (id === "equals") tid = 220;
-        else if (id === "not equals") tid = 221;
-        else if (id === "less than") tid = 222;
-        else if (id === "less than or equals") tid = 223;
-        else if (id === "greater than") tid = 224;
-        else if (id === "greater than or equals") tid = 225;
-        else if (id === "enter number") tid = 255;        
-          return tid
-        }
-    
+
+    export function tooltip2tid(id: string): number {
+        let tid: number = undefined
+        if (!id) return tid
+        else if (id === "start page") tid = 10
+        else if (id === "press") tid = 11
+        else if (id === "release") tid = 12
+        else if (id === "move") tid = 13
+        else if (id === "timer") tid = 14
+        else if (id === "light (external)") tid = 15
+        else if (id === "temperature") tid = 16
+        else if (id === "radio receive") tid = 17
+        else if (id === "sound") tid = 18
+        else if (id === "variable X set") tid = 19
+        else if (id === "variable Y set") tid = 20
+        else if (id === "variable Z set") tid = 21
+        else if (id === "magnet") tid = 22
+        else if (id === "slider") tid = 23
+        else if (id === "dial") tid = 24
+        else if (id === "wall") tid = 25
+        else if (id === "line") tid = 26
+        else if (id === "light") tid = 27
+        else if (id === "moisture") tid = 28
+        else if (id === "distance") tid = 29
+        else if (id === "reflected light") tid = 30
+        else if (id === "switch page") tid = 40
+        else if (id === "play sound") tid = 41
+        else if (id === "music") tid = 43
+        else if (id === "show image") tid = 44
+        else if (id === "radio send") tid = 45
+        else if (id === "radio set group") tid = 46
+        else if (id === "LED") tid = 47
+        else if (id === "set variable X") tid = 48
+        else if (id === "set variable Y") tid = 49
+        else if (id === "set variable Z") tid = 50
+        else if (id === "show number") tid = 51
+        else if (id === "robot") tid = 52
+        else if (id === "servo set angle") tid = 53
+        else if (id === "relay") tid = 54
+        else if (id === "servo power") tid = 55
+        else if (id === "touch pin 0") tid = 70
+        else if (id === "touch pin 1") tid = 71
+        else if (id === "touch pin 2") tid = 72
+        else if (id === "button A") tid = 73
+        else if (id === "button B") tid = 74
+        else if (id === "key 1") tid = 75
+        else if (id === "key 2") tid = 76
+        else if (id === "logo") tid = 77
+        else if (id === "1") tid = 78
+        else if (id === "2") tid = 79
+        else if (id === "3") tid = 80
+        else if (id === "4") tid = 81
+        else if (id === "5") tid = 82
+        else if (id === "1/4 second") tid = 83
+        else if (id === "1 second") tid = 84
+        else if (id === "1 random second") tid = 85
+        else if (id === "5 seconds") tid = 86
+        else if (id === "loud") tid = 87
+        else if (id === "quiet") tid = 88
+        else if (id === "NA1") tid = 89
+        else if (id === "shake") tid = 90
+        else if (id === "tilt up") tid = 91
+        else if (id === "tilt down") tid = 92
+        else if (id === "tilt left") tid = 93
+        else if (id === "tilt right") tid = 94
+        else if (id === "variable X") tid = 95
+        else if (id === "variable Y") tid = 96
+        else if (id === "variable Z") tid = 97
+        else if (id === "turn left") tid = 98
+        else if (id === "turn right") tid = 99
+        else if (id === "up") tid = 100
+        else if (id === "down") tid = 101
+        else if (id === "right") tid = 103
+        else if (id === "both") tid = 104
+        else if (id === "none") tid = 105
+        else if (id === "lost left") tid = 106
+        else if (id === "lost right") tid = 107
+        else if (id === "face up") tid = 108
+        else if (id === "face down") tid = 109
+        else if (id === "active") tid = 110
+        else if (id === "unactive") tid = 111
+        else if (id === "page 1") tid = 150
+        else if (id === "page 2") tid = 151
+        else if (id === "page 3") tid = 152
+        else if (id === "page 4") tid = 153
+        else if (id === "page 5") tid = 154
+        else if (id === "image") tid = 160
+        else if (id === "NA5") tid = 161
+        else if (id === "NA6") tid = 162
+        else if (id === "giggle") tid = 163
+        else if (id === "happy") tid = 164
+        else if (id === "hello") tid = 165
+        else if (id === "mysterious") tid = 166
+        else if (id === "sad") tid = 167
+        else if (id === "slide") tid = 168
+        else if (id === "soaring") tid = 169
+        else if (id === "spring") tid = 170
+        else if (id === "twinkle") tid = 171
+        else if (id === "yawn") tid = 172
+        else if (id === "radio value") tid = 176
+        else if (id === "random number") tid = 177
+        else if (id === "repeat") tid = 178
+        else if (id === "melody") tid = 179
+        else if (id === "temp.") tid = 180
+        else if (id === "NA2") tid = 181
+        else if (id === "red") tid = 182
+        else if (id === "green") tid = 183
+        else if (id === "blue") tid = 184
+        else if (id === "purple") tid = 185
+        else if (id === "yellow") tid = 186
+        else if (id === "black") tid = 187
+        else if (id === "rainbow") tid = 188
+        else if (id === "sparkle") tid = 189
+        else if (id === "forward") tid = 190
+        else if (id === "reverse") tid = 191
+        else if (id === "NA3") tid = 192
+        else if (id === "NA4") tid = 193
+        else if (id === "stop") tid = 194
+        else if (id === "fast forward") tid = 195
+        else if (id === "spin left") tid = 196
+        else if (id === "spin right") tid = 197
+        else if (id === "LED red") tid = 198
+        else if (id === "LED green") tid = 199
+        else if (id === "LED blue") tid = 200
+        else if (id === "LED OFF") tid = 201
+        else if (id === "arm open") tid = 202
+        else if (id === "arm close") tid = 203
+        else if (id === "on") tid = 204
+        else if (id === "off") tid = 205
+        else if (id === "light value") tid = 206
+        else if (id === "magnet value") tid = 207
+        else if (id === "sound value") tid = 208
+        else if (id === "add") tid = 210
+        else if (id === "subtract") tid = 211
+        else if (id === "multiply") tid = 212
+        else if (id === "divide") tid = 213
+        else if (id === "equals") tid = 220
+        else if (id === "not equals") tid = 221
+        else if (id === "less than") tid = 222
+        else if (id === "less than or equals") tid = 223
+        else if (id === "greater than") tid = 224
+        else if (id === "greater than or equals") tid = 225
+        else if (id === "enter number") tid = 255
+        return tid
+    }
 }

@@ -1,5 +1,3 @@
-import font = user_interface_base.font
-
 namespace microcode {
     let extraImage: Bitmap = null
 
@@ -62,7 +60,7 @@ namespace microcode {
     export class icons {
         public static get(
             name: string | number,
-            nullIfMissing = false
+            nullIfMissing = false,
         ): Bitmap {
             // editor icons
             if (name == "delete") return icondb.btn_delete
@@ -77,6 +75,7 @@ namespace microcode {
             if (name == "rule_up") return icondb.temp_warmer
             if (name == "rule_down") return icondb.temp_colder
             if (name == "edit_program") return icondb.largeEditIcon
+            if (name == "largeSettingsGear") return icondb.largeSettingsGear
             if (name == "new_program") return icondb.largeNewProgramIcon
             if (name == "MISSING") return icondb.MISSING
             if (name == "disk") return icondb.disk
@@ -87,16 +86,14 @@ namespace microcode {
 
             // basic colors led editor
             if (name == "solid_red") return icondb.solid_red
-            if (name == "solid_black") return icondb.solid_black
+            if (name == "led_off") return icondb.led_off
             if (name == "note_on") return icondb.note_on
             if (name == "note_off") return icondb.note_off
 
             // sample icons
             if (name == "smiley_buttons") return icondb.sampleSmileyButtons
 
-            //TODO: I think this is actually the Jacdac logo?
-            // user-interface-base/coreAssets.ts has the real microbitLogo
-            // Use "microbitLogo" and at the end of this function it will check user-interface-base and fetch it.
+            if (name == "microbitLogo") return icondb.microbitLogo
             if (name == "microbit_logo") return icondb.microbit_logo
             if (name == "microbitLogoBtn") return icondb.microbit_logo_btn
 
@@ -242,8 +239,6 @@ namespace microcode {
             extraSamples(name) // only for web app
             if (extraImage) return extraImage
             if (nullIfMissing) return null
-            if (typeof name === "string")
-                return user_interface_base.icons.get(name, nullIfMissing)
             return icondb.MISSING
         }
     }
@@ -294,6 +289,286 @@ namespace microcode {
 }
 
 namespace icondb {
+    export const microbitLogo = bmp`
+        ............................
+        ......5555555555555555......
+        ....55555555555555555555....
+        ...5554444444444444444555...
+        ..5554.................555..
+        ..554...................554.
+        .554....55........55.....554
+        .55....5555......5555....554
+        .55....55554.....55554...554
+        .55.....5544......5544...554
+        ..55.....44........44...5544
+        ..555..................5554.
+        ...555................55544.
+        ....5555555555555555555544..
+        .....45555555555555555444...
+        .......4444444444444444.....
+    `
+
+    export const microbit_logo_btn = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . f f f f f f f f . . . .
+        . . . f 1 1 1 1 1 1 1 1 f . . .
+        . . f 1 1 1 1 1 1 1 1 1 1 f . .
+        . . f 1 f f 1 1 1 1 f f 1 f . .
+        . . f 1 f f 1 1 1 1 f f 1 f . .
+        . . f 1 1 1 1 1 1 1 1 1 1 f . .
+        . . . f 1 1 1 1 1 1 1 1 f . . .
+        . . . . f f f f f f f f . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    export const MISSING = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . 2 2 2 2 2 2 2 2 2 2 . . .
+        . . . 2 2 . . . . . . 2 2 . . .
+        . . . 2 . 2 . . . . 2 . 2 . . .
+        . . . 2 . . 2 . . 2 . . 2 . . .
+        . . . 2 . . . 2 2 . . . 2 . . .
+        . . . 2 . . . 2 2 . . . 2 . . .
+        . . . 2 . . 2 . . 2 . . 2 . . .
+        . . . 2 . 2 . . . . 2 . 2 . . .
+        . . . 2 2 . . . . . . 2 2 . . .
+        . . . 2 2 2 2 2 2 2 2 2 2 . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    export const tile_button_a = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . 8 . . .
+        . . . . . . . . . . . 8 8 d . .
+        . . . . . . . . . . 8 8 8 d . .
+        . . . . . . . . . 8 8 8 8 d . .
+        . . . . . . . . 8 8 8 8 8 d . .
+        . . . . . . . 8 8 8 1 8 8 d . .
+        . . . . . . 8 8 8 1 8 1 8 d . .
+        . . . . . 8 8 8 8 1 1 1 8 d . .
+        . . . . 8 8 8 8 8 1 8 1 8 d . .
+        . . . 8 8 8 8 8 8 1 8 1 8 d . .
+        . . 8 8 8 8 8 8 8 8 8 8 8 d . .
+        . . . d d d d d d d d d d d . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    export const tile_button_b = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . 8 8 8 8 8 8 8 8 8 8 8 . . .
+        . . 8 1 1 8 8 8 8 8 8 8 d d . .
+        . . 8 1 8 1 8 8 8 8 8 d d . . .
+        . . 8 1 1 8 8 8 8 8 d d . . . .
+        . . 8 1 8 1 8 8 8 d d . . . . .
+        . . 8 1 1 8 8 8 d d . . . . . .
+        . . 8 8 8 8 8 d d . . . . . . .
+        . . 8 8 8 8 d d . . . . . . . .
+        . . 8 8 8 d d . . . . . . . . .
+        . . 8 8 d d . . . . . . . . . .
+        . . 8 d d . . . . . . . . . . .
+        . . . d . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    export const finger_press = bmp`
+        1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+        1 1 1 1 1 1 1 f 1 1 1 1 1 1 1 1
+        1 1 1 1 1 1 1 f 1 1 1 1 1 1 1 1
+        1 1 1 1 1 1 1 f 1 1 1 1 1 1 1 1
+        1 1 1 1 1 f 1 f 1 f 1 1 1 1 1 1
+        1 1 1 1 1 1 f f f 1 1 1 1 1 1 1
+        1 1 1 1 1 1 1 f 1 1 1 1 1 1 1 1
+        1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+        1 1 1 1 1 4 4 4 4 4 1 1 1 1 1 1
+        1 1 1 1 4 4 4 4 4 4 4 d 1 1 1 1
+        1 1 1 e 4 4 4 4 4 4 4 e d 1 1 1
+        1 1 1 e 2 4 4 4 4 4 2 e d 1 1 1
+        1 1 1 e e 2 2 2 2 2 e e d 1 1 1
+        1 1 1 1 e e e e e e e d 1 1 1 1
+        1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+        1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+    `
+
+    export const magnet = bmp`
+        1 1 1 1 1 1 1 1 1 1 1 1 6 1 1 1
+        1 1 1 1 1 1 1 1 1 1 6 1 1 1 6 1
+        1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+        1 1 1 8 8 8 8 8 f f 1 1 6 1 1 1
+        1 1 8 8 8 8 8 8 f f 1 1 1 1 1 6
+        1 8 8 8 b b b b b b 1 1 6 1 1 1
+        1 8 8 b 1 1 1 1 1 1 1 1 1 1 6 1
+        1 8 8 1 1 1 1 1 1 1 1 6 1 1 1 1
+        1 2 2 1 1 1 1 1 1 1 1 1 1 6 1 1
+        1 2 2 1 1 1 1 1 1 1 1 6 1 1 1 1
+        1 2 2 2 1 1 1 1 1 1 1 1 1 1 6 1
+        1 b 2 2 2 2 2 2 f f 1 1 6 1 1 1
+        1 1 b 2 2 2 2 2 f f 1 1 1 1 1 1
+        1 1 1 b b b b b b b 1 1 6 1 1 1
+        1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+        1 1 1 1 1 1 1 1 1 1 6 1 1 1 1 1
+    `
+
+    export const thermometer = bmp`
+        1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+        1 1 1 1 1 1 1 f 1 1 1 1 1 1 1 1
+        1 1 1 1 1 1 f d f 1 1 1 1 1 1 1
+        1 1 1 1 1 1 f d f 1 1 1 1 1 1 1
+        1 1 1 1 1 1 f d f 1 1 1 1 1 1 1
+        1 1 1 1 1 1 f d f 1 1 1 1 1 1 1
+        1 1 1 1 1 1 f 2 f 1 1 1 1 1 1 1
+        1 1 1 1 1 1 f 2 f 1 1 1 1 1 1 1
+        1 1 1 1 1 1 f 2 f 1 1 1 1 1 1 1
+        1 1 1 1 1 1 f 2 f 1 1 1 1 1 1 1
+        1 1 1 1 1 f 2 2 2 f 1 1 1 1 1 1
+        1 1 1 1 f 2 2 2 2 2 f 1 1 1 1 1
+        1 1 1 1 f 2 2 2 2 2 f 1 1 1 1 1
+        1 1 1 1 1 f 2 2 2 f 1 1 1 1 1 1
+        1 1 1 1 1 1 f f f 1 1 1 1 1 1 1
+        1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+    `
+
+    export const led_light_sensor = bmp`
+        1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+        1 1 8 8 8 8 5 5 5 8 8 8 8 1 1 1
+        1 1 8 8 8 5 4 4 4 5 8 8 8 1 1 1
+        1 1 8 8 8 5 4 4 4 5 8 8 8 1 1 1
+        1 1 8 8 8 5 4 4 4 5 8 8 8 1 1 1
+        1 1 8 8 8 8 5 5 5 8 8 8 8 1 1 1
+        1 1 8 8 5 8 8 8 8 8 5 8 8 1 1 1
+        1 1 8 5 8 8 8 5 8 8 8 5 8 1 1 1
+        1 1 8 8 8 5 8 8 8 5 8 8 8 1 1 1
+        1 1 8 8 5 8 8 5 8 8 5 8 8 1 1 1
+        1 1 8 5 8 8 8 8 8 8 8 5 8 1 1 1
+        1 1 8 8 8 8 8 5 8 8 8 8 8 1 1 1
+        1 1 8 8 8 8 8 8 8 8 8 8 8 1 1 1
+        1 1 8 8 8 2 2 2 2 2 8 8 8 1 1 1
+        1 1 8 f f f f f f f f f 8 1 1 1
+        1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+    `
+
+    export const microphone = bmp`
+        1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+        1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+        1 1 1 1 1 1 b c 1 1 1 1 1 1 1 1
+        1 1 1 1 1 1 b c c c 1 1 1 1 1 1
+        1 1 1 1 1 1 b c c c 1 1 1 1 1 1
+        1 1 1 1 1 1 b c c c 1 1 1 1 1 1
+        1 1 1 1 1 1 b c c c 1 1 1 1 1 1
+        1 1 1 1 f 1 c c c c 1 f 1 1 1 1
+        1 1 1 1 f 1 c c c c 1 f 1 1 1 1
+        1 1 1 1 f 1 1 c c 1 1 f 1 1 1 1
+        1 1 1 1 1 f 1 1 1 1 f 1 1 1 1 1
+        1 1 1 1 1 1 f f f f 1 1 1 1 1 1
+        1 1 1 1 1 1 1 f f 1 1 1 1 1 1 1
+        1 1 1 1 1 1 1 f f 1 1 1 1 1 1 1
+        1 1 1 1 1 f f f f f f 1 1 1 1 1
+        1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+    `
+
+    export const accelerometer = bmp`
+        1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+        1 1 1 1 1 1 1 1 8 1 1 1 1 1 1 1
+        1 1 1 1 1 1 1 8 8 8 1 1 1 1 1 1
+        1 1 1 1 1 1 8 8 8 8 8 1 1 1 1 1
+        1 1 1 1 1 1 6 6 8 6 6 1 1 1 1 1
+        1 1 1 1 1 1 1 1 8 1 1 1 1 1 1 1
+        1 1 8 6 1 1 f f f f f 1 1 1 1 1
+        1 8 8 6 1 f 1 1 1 1 1 f 1 1 1 1
+        8 8 8 8 8 f 1 f 1 f 1 f 1 1 1 1
+        1 8 8 6 1 f 1 1 1 1 1 f 1 1 1 1
+        1 1 8 6 1 1 f f f f f 8 1 1 6 1
+        1 1 1 1 1 1 1 1 1 1 1 1 8 6 8 1
+        1 1 1 1 1 1 1 1 1 1 1 1 6 8 8 1
+        1 1 1 1 1 1 1 1 1 1 1 6 8 8 8 1
+        1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+        1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+    `
+
+    export const largeEditIcon = bmp`
+        .666666666666666666666666666666.
+        66666666666666666666666666666666
+        66666666666666666666666666666666
+        666666666666666666666666ee666666
+        66666666666666666666666e44e66666
+        6666666666666666666666ee442e6666
+        666666666666666666666e15e222e666
+        66666666666666666666e155ee2ee666
+        6666666666666666666e155e44eee666
+        666666666666666666e155e44eee6666
+        ccccccccccccccccce155e44eeeccccc
+        bbbbbbbbbbbbbbbbe155e44eeebbbbbb
+        bbbbbbbbbbbbbbbe155e44eeebbbbbbb
+        111111bbb11111e155e44eeebcbcbcbb
+        1111111b11111e155e44eeebbbbbbbcb
+        1111111b1111ede5e44eeebbbbbbbbbb
+        1111111b1111edde44eeebbbbbbbbbcb
+        1111111b1111edddeeeebbbbb1bbbbbb
+        1111111b1111eedddeebcbbb111bbbcb
+        1111111b1111eeeeee1bbbbbc1cbbbbb
+        1111111b11111111111bcbbbbcbbbbcb
+        1111111b11111111111bbbbbbbbbbbbb
+        111111cbc111111111cbcbbbbbbbbbcb
+        ccccccbbbcccccccccbbbcbcbcbcbcbb
+        bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+        bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+        cccccccccccccccccccccccccccccccc
+        66666666666666666666666666666666
+        66666666666666666666666666666666
+        66666666666666666666666666666666
+        66666666666666666666666666666666
+        b666666666666666666666666666666b
+        .bbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.
+    `
+
+    export const largeSettingsGear = bmp`
+        66666666666666666666666666666666
+        66666666666666666666666666666666
+        666666666666666dd666666666666666
+        66666666666666dddd66666666666666
+        66666dddd666ddbbbbcc666dddd66666
+        66666dddd666ddbbbbcc666dddd66666
+        666dddbbbb66ddbbbbcc66dbbbccc666
+        666dddbbbbccddbbbbccdddbbbccc666
+        6666ddbbbbbbbbbbbbbbbbbbbbcc6666
+        66666dbbbbbbbbbbbbbbbbbbbbc66666
+        666666ccbbddbbccccbbddbbcc666666
+        666666ccbbddbbc66cbbddbbcc666666
+        66666dddbbbbcc6666ccbbbbdddd6666
+        6666ddddbbbbc666666cbbbbdddd6666
+        666dbbbbbbcc66666666ccbbbbbbc666
+        6dddbbbbbbc6666666666cbbbbbbccc6
+        6dddbbbbbbc6666666666cbbbbbbccc6
+        6dddbbbbbbcc66666666ccbbbbbbccc6
+        666cccccbbbbc6666666cbbbbcccc666
+        6666ccccbbbbcc66666ccbbbbccc6666
+        666666ddbbddbbc66cbbddbbcc666666
+        666666ddbbddbbccccbbddbbcc666666
+        66666dbbbbbbbbbbbbbbbbbbbbc66666
+        6666ddbbbbbbbbbbbbbbbbbbbbcc6666
+        6666ddbbbbccccbbbbccccbbbbcc6666
+        6666ddbbbb66ccbbbbcc66bbbbcc6666
+        66666cccc666ccbbbbcc666cccc66666
+        66666cccc666ccbbbbcc666cccc66666
+        66666666666666cccc66666666666666
+        666666666666666cc666666666666666
+        66666666666666666666666666666666
+        66666666666666666666666666666666
+    `
+
     export const lt = bitmaps.create(11, 11)
     lt.drawLine(2, 5, 8, 2, 15)
     lt.drawLine(2, 5, 8, 8, 15)
@@ -550,21 +825,21 @@ namespace icondb {
     . . . . . . . . . . . . . . . .
 `
 
-    export const solid_black = bmp`
+    export const led_off = bmp`
     . . . . . . . . . . . . . . . .
     . . . c c c c c c c c c c . . .
-    . . c c f f f f f f f f c c . .
-    . . c f f f f f f f f f f c . .
-    . . c f f f f f f f f f f c . .
-    . . c f f f f f f f f f f c . .
-    . . c f f f f f f f f f f c . .
-    . . c f f f f f f f f f f c . .
-    . . c f f f f f f f f f f c . .
-    . . c f f f f f f f f f f c . .
-    . . c f f f f f f f f f f c . .
-    . . c f f f f f f f f f f c . .
-    . . c f f f f f f f f f f c . .
-    . . c c f f f f f f f f c c . .
+    . . c c c c c c c c c c c c . .
+    . . c c c c c c c c c c c c . .
+    . . c c c c c c c c c c c c . .
+    . . c c c c c c c c c c c c . .
+    . . c c c c c c c c c c c c . .
+    . . c c c c c c c c c c c c . .
+    . . c c c c c c c c c c c c . .
+    . . c c c c c c c c c c c c . .
+    . . c c c c c c c c c c c c . .
+    . . c c c c c c c c c c c c . .
+    . . c c c c c c c c c c c c . .
+    . . c c c c c c c c c c c c . .
     . . . c c c c c c c c c c . . .
     . . . . . . . . . . . . . . . .
 `
@@ -630,13 +905,13 @@ namespace icondb {
 
     export const btn_delete = bmp`
         . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
         . . . . . . c f f . . . . . . .
         . . . . . c . . . f . . . . . .
         . . . . c c c f f f f . . . . .
         . . . c 1 1 d d d b b f . . . .
         . . c c c c c f f f f f f . . .
         . . . c b c b c b c c f . . . .
-        . . . c 1 c d c d c b f d . . .
         . . . c 1 c d c d c b f d . . .
         . . . c 1 c d c d c b f d . . .
         . . . c 1 c d c d c b f d . . .
@@ -705,7 +980,7 @@ namespace icondb {
     4 4 4 1 1 4 4 4 4 4 4 4 4 4 4 4 
     4 4 4 4 1 4 4 4 4 4 4 4 4 4 4 4 
     4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 
-    4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 
+    . . . . . . . . . . . . . . . .
         `
 
     export const btn_when_insertion_point = bmp`
@@ -1482,7 +1757,6 @@ namespace icondb {
     export const music = bmp`
     . . . . . . . . . . . . . . . . 
     . . . . . . . . . . . . . . . . 
-    . . . . . . . . . . . . . . . . 
     . . . . . . . . . . . f c . . . 
     . . . . . . . . . c c c c b . . 
     . . . . . . . c c c b b c b . . 
@@ -1495,6 +1769,7 @@ namespace icondb {
     . . f c c c b . . f c c b b . . 
     . . f c c b b . . . b b b . . . 
     . . . b b b . . . . . . . . . . 
+    . . . . . . . . . . . . . . . . 
     . . . . . . . . . . . . . . . . 
 `
     export const note_on = bmp`
@@ -1867,7 +2142,6 @@ f f f f f f f f f f f f f f f .
 . . . . . . . . . . . . . . . .
 . . . . . . . . . . . . . . . .
 . . . . . . . . . . . . . . . .
-. . . . . . . . . . . . . . . .
 . . . . c c c c c c c . . . . .
 . . . c f f f f f f f c . . . .
 . . c f f f 4 5 4 f f f c . . .
@@ -1880,9 +2154,9 @@ f f f f f f f f f f f f f f f .
 . . c d 1 d f d f d d b c . . .
 . . . d 1 d f d f d d b . . . .
 . . . . 1 d d d d d d . . . . .
+. . . . . . . . . . . . . . . .
 `
     export const cupYread = bmp`
-. . . . . . . . . . . . . . . .
 . . . . . . . . . . . . . . . .
 . . . . . . . . . . . . . . . .
 . . . . . . . . . . . . . . . .
@@ -1898,9 +2172,9 @@ f f f f f f f f f f f f f f f .
 . . c d 1 d d f d d d b c . . .
 . . . d 1 d d f d d d b . . . .
 . . . . 1 d d d d d d . . . . .
+. . . . . . . . . . . . . . . .
 `
     export const cupZread = bmp`
-. . . . . . . . . . . . . . . .
 . . . . . . . . . . . . . . . .
 . . . . . . . . . . . . . . . .
 . . . . . . . . . . . . . . . .
@@ -1916,6 +2190,7 @@ f f f f f f f f f f f f f f f .
 . . c d 1 d f d d d d b c . . .
 . . . d 1 d f f f d d b . . . .
 . . . . 1 d d d d d d . . . . .
+. . . . . . . . . . . . . . . .
 `
     export const cupXassign = bmp`
 . . . . . . . . . 4 4 4 4 4 4 4
@@ -2698,19 +2973,15 @@ bffffffffffffffffffffffffffffffb
 
     export function numberToDecimalImage(
         i: number | string,
-        transparent = true
+        transparent = true,
     ) {
         const str = typeof i == "number" ? i.toString() : i
-        const width = (str.length + 1) * font.charWidth
+        const width = (str.length + 1) * bitmaps.font8.charWidth
         const img = bitmaps.create(width, 18)
         if (!transparent) {
             img.fill(1)
-            img.setPixel(0, 0, 0)
-            img.setPixel(width - 1, 0, 0)
-            img.setPixel(0, 17, 0)
-            img.setPixel(width - 1, 17, 0)
         }
-        img.print(str, font.charWidth >> 1, 5, 15)
+        img.print(str, bitmaps.font8.charWidth >> 1, 5, 15)
         return img
     }
 
@@ -2720,7 +2991,7 @@ bffffffffffffffffffffffffffffffb
             if (index == i - 1 && index >= 0 && index < 5)
                 return num2image[index]
         }
-        return numberToDecimalImage(i)
+        return numberToDecimalImage(i, false)
     }
 
     export const kita_slider = bmp`

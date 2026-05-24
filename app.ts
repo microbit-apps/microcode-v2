@@ -1,8 +1,4 @@
 namespace microcode {
-    import AppInterface = user_interface_base.AppInterface
-    import Scene = user_interface_base.Scene
-    import SceneManager = user_interface_base.SceneManager
-
     // Auto-save slot
     export const SAVESLOT_AUTO = "sa"
 
@@ -11,17 +7,12 @@ namespace microcode {
         version?: string
     }
 
-    export class App implements AppInterface {
-        private sceneManager: SceneManager
+    export class App {
+        private uiHost: UiHost
 
         constructor() {
             // One interval delay to ensure all static constructors have executed.
             basic.pause(500)
-
-            // Application configuration
-            user_interface_base.getIcon = id => icons.get(id)
-            user_interface_base.resolveTooltip = (ariaId: string) =>
-                resolveTooltip(ariaId)
 
             const buf = this.load(SAVESLOT_AUTO)
             if (buf) {
@@ -29,13 +20,9 @@ namespace microcode {
                 runProgram(prog)
             }
 
-            controller.setRepeatDefault(250, 30)
-            // keymap.setupKeys()
+            this.uiHost = new UiHost(this)
 
-            this.sceneManager = new SceneManager()
-
-            const home = new Home(this)
-            this.pushScene(home)
+            this.openHome()
         }
 
         public save(slot: string, buf: Buffer) {
@@ -54,20 +41,14 @@ namespace microcode {
             return undefined
         }
 
-        public pushScene(scene: Scene) {
-            this.sceneManager.pushScene(scene)
-        }
-
-        public popScene() {
-            this.sceneManager.popScene()
+        public openHome() {
+            this.uiHost.launchHome()
         }
 
         public runFromEditor() {
-            const topIndex = this.sceneManager.scenes.length - 1
-            const topScene = this.sceneManager.scenes[topIndex]
-            if (topScene instanceof Editor) {
-                const editor: Editor = topScene
-                editor.runProgram()
+            const hostedProgram = this.uiHost.currentEditorProgram()
+            if (hostedProgram) {
+                runProgramIfStopped(hostedProgram)
             }
         }
     }
@@ -79,9 +60,31 @@ namespace microcode {
         theInterpreter = new Interpreter(prog, runtimeHost)
     }
 
+    export function runProgramIfStopped(prog: ProgramDefn): boolean {
+        if (isProgramRunning()) return false
+        runProgram(prog)
+        return true
+    }
+
+    export function replaceAutoProgram(buf: Buffer): void {
+        const wasRunning = isProgramRunning()
+        if (wasRunning) stopProgram()
+        settings.writeBuffer(SAVESLOT_AUTO, buf)
+        if (wasRunning)
+            runProgram(ProgramDefn.fromBuffer(new BufferReader(buf)))
+    }
+
     export function stopProgram() {
         if (theInterpreter) theInterpreter.stop()
         theInterpreter = undefined
+    }
+
+    export function stopProgramIfRunning(): boolean {
+        if (!isProgramRunning()) return false
+        stopProgram()
+        basic.showIcon(IconNames.No, 100)
+        basic.clearScreen()
+        return true
     }
 
     export function isProgramRunning() {

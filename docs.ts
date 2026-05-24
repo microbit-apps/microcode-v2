@@ -49,7 +49,7 @@ namespace docs {
             images,
             "image",
             "editor_background",
-            microcode.editorBackground
+            microcode.editorBackground,
         )
         control.simmessages.send(
             "docs",
@@ -57,13 +57,12 @@ namespace docs {
                 JSON.stringify({
                     type: "art",
                     samples: samples.map(s => ({
-                        label: s.label,
                         b64: s.b64,
                         icon: s.icon || "",
                     })),
                     images,
-                })
-            )
+                }),
+            ),
         )
     }
 
@@ -71,9 +70,10 @@ namespace docs {
         app.popScene()
         const samples = microcode.samples(false)
         for (const sample of samples) {
-            console.log(`render sample ${sample.label}`)
+            const sampleName = sample.icon || "sample"
+            console.log(`render sample ${sampleName}`)
             const icon = microcode.icons.get(sample.icon, true)
-            if (icon) appendImage(images, "icon_sample", sample.label, icon)
+            if (icon) appendImage(images, "icon_sample", sampleName, icon)
             app.save(microcode.SAVESLOT_AUTO, sample.source)
 
             const res = _renderProgram()
@@ -81,8 +81,8 @@ namespace docs {
                 appendImage(
                     images,
                     "sample",
-                    iname == "app" ? sample.label : `${sample.label}_${iname}`,
-                    res[iname]
+                    iname == "app" ? sampleName : `${sampleName}_${iname}`,
+                    res[iname],
                 )
             })
 
@@ -101,8 +101,8 @@ namespace docs {
                 images,
                 "program",
                 iname == "app" ? "current" : `current_${iname}`,
-                res[iname]
-            )
+                res[iname],
+            ),
         )
         Screen.resetScreenImage()
         control.simmessages.send(
@@ -111,8 +111,8 @@ namespace docs {
                 JSON.stringify({
                     type: "art",
                     images,
-                })
-            )
+                }),
+            ),
         )
     }
 
@@ -178,7 +178,7 @@ namespace docs {
                     bound.width,
                     bound.height,
                     true,
-                    false
+                    false,
                 )
                 r[`page_${p + 1}_rule_${ri + 1}`] = imgr
             })
@@ -203,7 +203,7 @@ namespace docs {
         images: RenderedImage[],
         type: "icon" | "sample" | "icon_sample" | "image" | "program",
         name: string,
-        img: Bitmap
+        img: Bitmap,
     ) {
         const msg: RenderedImage = {
             type,

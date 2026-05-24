@@ -101,7 +101,7 @@ namespace parser {
                     this.infixParser(token) || this.postfixParser(token)
                 if (!infixParser) {
                     throw new Error(
-                        `Unexpected infix or postfix token ${token}`
+                        `Unexpected infix or postfix token ${token}`,
                     )
                 }
                 lhs = infixParser(lhs, token)
