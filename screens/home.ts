@@ -151,7 +151,7 @@ namespace microcode {
                         dy -
                         font.charWidth * tagline.length,
                     offset + word.height + dy + this.logoOffset_ + 1,
-                    { color: 0xb, font, transparent: true },
+                    { color: 0xb, font },
                 )
             }
         }
@@ -162,7 +162,7 @@ namespace microcode {
                 microcode.VERSION,
                 UI_SCREEN_WIDTH - font.charWidth * microcode.VERSION.length,
                 UI_SCREEN_HEIGHT - font.charHeight - 1,
-                { color: 0xb, font, transparent: true },
+                { color: 0xb, font },
             )
         }
     }

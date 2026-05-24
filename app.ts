@@ -20,8 +20,6 @@ namespace microcode {
                 runProgram(prog)
             }
 
-            controller.setRepeatDefault(250, 30)
-
             this.uiHost = new UiHost(this)
 
             this.openHome()
@@ -72,7 +70,8 @@ namespace microcode {
         const wasRunning = isProgramRunning()
         if (wasRunning) stopProgram()
         settings.writeBuffer(SAVESLOT_AUTO, buf)
-        if (wasRunning) runProgram(ProgramDefn.fromBuffer(new BufferReader(buf)))
+        if (wasRunning)
+            runProgram(ProgramDefn.fromBuffer(new BufferReader(buf)))
     }
 
     export function stopProgram() {

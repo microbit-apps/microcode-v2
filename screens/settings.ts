@@ -122,7 +122,7 @@ namespace microcode {
                     2,
                 ),
                 SETTINGS_TITLE_Y,
-                { color: 1, font, transparent: true },
+                { color: 1, font },
             )
         }
     }

@@ -1,6 +1,4 @@
 namespace microcode {
-    const HOST_INPUT_PRIORITY = 10
-    const HOST_FRAME_PRIORITY = 30
     export const UI_SCREEN_WIDTH = 160
     export const UI_SCREEN_HEIGHT = 120
 
@@ -67,9 +65,6 @@ namespace microcode {
     export class UiHost implements AppNavigation {
         private app_: App
         private runtime_: ui.UiRuntime
-        private frameCallback_: context.FrameCallback
-        private inputCallback_: context.FrameCallback
-        private frameContext_: context.EventContext
 
         constructor(app: App) {
             this.app_ = app
@@ -82,7 +77,7 @@ namespace microcode {
             if (this.runtime_) return
             this.runtime_ = this.createRuntime()
             this.runtime_.push(root)
-            this.bindFramePump()
+            this.runtime_.start()
         }
 
         public push(screen: ui.UiScreen): void {
@@ -91,7 +86,6 @@ namespace microcode {
                 return
             }
             this.runtime_.push(screen)
-            this.bindFramePump()
         }
 
         public replace(screen: ui.UiScreen): void {
@@ -100,7 +94,6 @@ namespace microcode {
                 return
             }
             this.runtime_.replace(screen)
-            this.bindFramePump()
         }
 
         public pop(): void {
@@ -130,11 +123,9 @@ namespace microcode {
 
         public close(): void {
             if (!this.runtime_) return
+            this.runtime_.stop()
             while (this.runtime_.depth()) this.runtime_.pop()
             this.runtime_ = undefined
-            this.inputCallback_ = undefined
-            this.frameCallback_ = undefined
-            this.frameContext_ = undefined
         }
 
         public currentEditorProgram(): ProgramDefn {
@@ -150,36 +141,6 @@ namespace microcode {
                 assets: new AppAssetResolver(),
                 clearColor: 0,
             })
-        }
-
-        private bindFramePump(): void {
-            const ctx = context.eventContext()
-            if (!ctx) return
-            if (
-                this.frameContext_ == ctx &&
-                this.inputCallback_ &&
-                this.frameCallback_
-            )
-                return
-            this.frameContext_ = ctx
-            this.inputCallback_ = ctx.registerFrameHandler(
-                HOST_INPUT_PRIORITY,
-                () => this.updateControllerButtons(),
-            )
-            this.frameCallback_ = ctx.registerFrameHandler(
-                HOST_FRAME_PRIORITY,
-                () => {
-                    if (this.runtime_) this.runtime_.runFrame()
-                },
-            )
-        }
-
-        private updateControllerButtons(): void {
-            const dtms = (context.eventContext().deltaTime * 1000) | 0
-            controller.left.__update(dtms)
-            controller.right.__update(dtms)
-            controller.up.__update(dtms)
-            controller.down.__update(dtms)
         }
     }
 }
