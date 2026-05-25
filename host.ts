@@ -47,6 +47,9 @@ namespace microcode {
     ]
 
     export class MicrobitHost implements RuntimeHost {
+        /** Monotonic token that invalidates pending restart-display frames. */
+        private clearAnimationVersion = 0
+
         constructor() {
             this._handler = (s: number, f: number) => {}
 
@@ -147,37 +150,48 @@ namespace microcode {
         }
 
         emitClearScreen() {
-            const anim = hex`
-                0001000000
-                0000010000
-                0000000100
-                0000000002
-                0000000004
-                0000000008
-                0000001000
-                0000100000
-                0010000000
-                0800000000
-                0400000000
-                0200000000
-                0000000000
-            `
-            let pos = 0
-            while (pos < anim.length) {
-                for (let col = 0; col < 5; col++) {
-                    for (let row = 0; row < 5; row++) {
-                        const onOff =
-                            anim[pos + col + (row >> 3)] & (1 << (row & 7))
-                        if (onOff) led.plot(col, row)
-                        else led.unplot(col, row)
+            led.stopAnimation()
+            const animationVersion = ++this.clearAnimationVersion
+            control.inBackground(() => {
+                const anim = hex`
+                    0001000000
+                    0000010000
+                    0000000100
+                    0000000002
+                    0000000004
+                    0000000008
+                    0000001000
+                    0000100000
+                    0010000000
+                    0800000000
+                    0400000000
+                    0200000000
+                    0000000000
+                `
+                let pos = 0
+                while (
+                    animationVersion == this.clearAnimationVersion &&
+                    pos < anim.length
+                ) {
+                    for (let col = 0; col < 5; col++) {
+                        for (let row = 0; row < 5; row++) {
+                            if (animationVersion != this.clearAnimationVersion)
+                                return
+                            const onOff =
+                                anim[pos + col + (row >> 3)] &
+                                (1 << (row & 7))
+                            if (onOff) led.plot(col, row)
+                            else led.unplot(col, row)
+                        }
                     }
+                    basic.pause(20)
+                    pos = pos + 5
                 }
-                control.waitMicros(20000)
-                pos = pos + 5
-            }
+            })
         }
 
         public stopOngoingActions() {
+            this.cancelClearAnimation()
             music.stopAllSounds()
             led.stopAnimation()
             basic.clearScreen()
@@ -186,10 +200,12 @@ namespace microcode {
         public execute(action: ActionTid, param: any) {
             switch (action) {
                 case Tid.TID_ACTUATOR_PAINT:
+                    this.cancelClearAnimation()
                     led.stopAnimation()
                     this.showIcon(param)
                     return
                 case Tid.TID_ACTUATOR_SHOW_NUMBER:
+                    this.cancelClearAnimation()
                     led.stopAnimation()
                     basic.showNumber(param)
                     return
@@ -214,6 +230,10 @@ namespace microcode {
                     )
                     return
             }
+        }
+
+        private cancelClearAnimation() {
+            this.clearAnimationVersion++
         }
 
         private showIcon(img: Bitmap) {
