@@ -47,8 +47,8 @@ namespace microcode {
     ]
 
     export class MicrobitHost implements RuntimeHost {
-        /** Monotonic token that invalidates pending restart-display frames. */
-        private clearAnimationVersion = 0
+        /** Monotonic token observed by cancellable LED display work. */
+        private displayVersion = 0
 
         constructor() {
             this._handler = (s: number, f: number) => {}
@@ -151,7 +151,7 @@ namespace microcode {
 
         emitClearScreen() {
             led.stopAnimation()
-            const animationVersion = ++this.clearAnimationVersion
+            const displayVersion = this.beginDisplayOperation()
             control.inBackground(() => {
                 const anim = hex`
                     0001000000
@@ -170,13 +170,12 @@ namespace microcode {
                 `
                 let pos = 0
                 while (
-                    animationVersion == this.clearAnimationVersion &&
+                    displayVersion == this.displayVersion &&
                     pos < anim.length
                 ) {
                     for (let col = 0; col < 5; col++) {
                         for (let row = 0; row < 5; row++) {
-                            if (animationVersion != this.clearAnimationVersion)
-                                return
+                            if (displayVersion != this.displayVersion) return
                             const onOff =
                                 anim[pos + col + (row >> 3)] &
                                 (1 << (row & 7))
@@ -191,7 +190,7 @@ namespace microcode {
         }
 
         public stopOngoingActions() {
-            this.cancelClearAnimation()
+            this.cancelDisplayOperation()
             music.stopAllSounds()
             led.stopAnimation()
             basic.clearScreen()
@@ -200,12 +199,12 @@ namespace microcode {
         public execute(action: ActionTid, param: any) {
             switch (action) {
                 case Tid.TID_ACTUATOR_PAINT:
-                    this.cancelClearAnimation()
+                    const displayVersion = this.beginDisplayOperation()
                     led.stopAnimation()
-                    this.showIcon(param)
+                    this.showIcon(param, displayVersion)
                     return
                 case Tid.TID_ACTUATOR_SHOW_NUMBER:
-                    this.cancelClearAnimation()
+                    this.beginDisplayOperation()
                     led.stopAnimation()
                     basic.showNumber(param)
                     return
@@ -232,11 +231,26 @@ namespace microcode {
             }
         }
 
-        private cancelClearAnimation() {
-            this.clearAnimationVersion++
+        private beginDisplayOperation(): number {
+            this.displayVersion++
+            return this.displayVersion
         }
 
-        private showIcon(img: Bitmap) {
+        private cancelDisplayOperation() {
+            this.displayVersion++
+        }
+
+        private pauseDisplayOperation(durationMs: number, version: number) {
+            const stepMs = 25
+            let remaining = durationMs
+            while (version == this.displayVersion && remaining > 0) {
+                const pauseMs = Math.min(stepMs, remaining)
+                basic.pause(pauseMs)
+                remaining -= pauseMs
+            }
+        }
+
+        private showIcon(img: Bitmap, displayVersion: number) {
             let s: string[] = []
             for (let row = 0; row < 5; row++) {
                 for (let col = 0; col < 5; col++) {
@@ -245,7 +259,7 @@ namespace microcode {
                 }
             }
             // TODO: do want this here? do we really want to yield?
-            basic.pause(400)
+            this.pauseDisplayOperation(400, displayVersion)
         }
 
         private getSound(sound: Tid) {

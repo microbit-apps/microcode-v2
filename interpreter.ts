@@ -770,8 +770,8 @@ namespace microcode {
             while (this.startSensorsActive || this.eventQueueActive) {
                 basic.pause(1)
             }
-            this.stopAllRules()
             this.host.stopOngoingActions()
+            this.stopAllRules()
         }
 
         public error(msg: string) {
