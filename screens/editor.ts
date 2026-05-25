@@ -960,7 +960,7 @@ namespace microcode {
                 maxLength: 8,
                 deleteEnabled: !pending,
                 deleteIcon: "delete",
-                panelColor: AppStyles.DefaultModalPanelColor,
+                backgroundColor: AppStyles.DefaultModalPanelColor,
                 contentMargin: AppStyles.NumericModalMargin,
                 keyStyle: AppStyles.ModalButton,
                 onResult: result =>
