@@ -73,7 +73,7 @@ namespace microcode {
     )
     const EDITOR_RULE_GENERATED_TILE_SIZE = 18
     const EDITOR_RULE_GENERATED_TILE_CONTENT_STYLE: ui.UiButtonStyle = {
-        foregroundColor: 15,
+        color: 15,
         textPlacement: "content",
         font: bitmaps.font8,
     }
@@ -257,7 +257,7 @@ namespace microcode {
             this.rendered_ = true
         }
 
-        public handleScreenInput(event: ui.UiInputEvent): boolean | undefined {
+        public handleInput(event: ui.UiInputEvent): boolean | undefined {
             // Screen-level input owns commands outside an individual control's
             // local movement and activation contract.
             if (event.action == "cancel") {

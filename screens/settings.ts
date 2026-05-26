@@ -18,7 +18,7 @@ namespace microcode {
     const SETTINGS_BUTTON_STYLE = ui.buttonStyle(
         ui.UiButtonStyles.LightShadowedWhite,
         {
-            foregroundColor: 15,
+            color: 15,
             font: bitmaps.font8,
         },
     )
@@ -64,7 +64,7 @@ namespace microcode {
             super.render(surface)
         }
 
-        public handleScreenInput(event: ui.UiInputEvent): boolean | undefined {
+        public handleInput(event: ui.UiInputEvent): boolean | undefined {
             if (event.action == "cancel" && event.phase != "released") {
                 this.navigation_.pop()
                 return true
