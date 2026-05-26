@@ -748,10 +748,20 @@ namespace microcode {
                             )
                         }
                     })
-                    basic.pause(500)
+                    this.pauseWhileRunning(500)
                 }
                 this.startSensorsActive = false
             })
+        }
+
+        private pauseWhileRunning(durationMs: number) {
+            const stepMs = 25
+            let remaining = durationMs
+            while (this.running && remaining > 0) {
+                const pauseMs = Math.min(stepMs, remaining)
+                basic.pause(pauseMs)
+                remaining -= pauseMs
+            }
         }
 
         stop() {
@@ -760,8 +770,8 @@ namespace microcode {
             while (this.startSensorsActive || this.eventQueueActive) {
                 basic.pause(1)
             }
-            this.stopAllRules()
             this.host.stopOngoingActions()
+            this.stopAllRules()
         }
 
         public error(msg: string) {

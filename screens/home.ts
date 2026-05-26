@@ -87,7 +87,7 @@ namespace microcode {
             })
         }
 
-        public handleScreenInput(event: ui.UiInputEvent): boolean | undefined {
+        public handleInput(event: ui.UiInputEvent): boolean | undefined {
             if (event.action == "cancel" && event.phase != "released")
                 return true
             return undefined

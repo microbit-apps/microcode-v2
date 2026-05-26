@@ -47,6 +47,9 @@ namespace microcode {
     ]
 
     export class MicrobitHost implements RuntimeHost {
+        /** Monotonic token observed by cancellable LED display work. */
+        private displayVersion = 0
+
         constructor() {
             this._handler = (s: number, f: number) => {}
 
@@ -147,37 +150,47 @@ namespace microcode {
         }
 
         emitClearScreen() {
-            const anim = hex`
-                0001000000
-                0000010000
-                0000000100
-                0000000002
-                0000000004
-                0000000008
-                0000001000
-                0000100000
-                0010000000
-                0800000000
-                0400000000
-                0200000000
-                0000000000
-            `
-            let pos = 0
-            while (pos < anim.length) {
-                for (let col = 0; col < 5; col++) {
-                    for (let row = 0; row < 5; row++) {
-                        const onOff =
-                            anim[pos + col + (row >> 3)] & (1 << (row & 7))
-                        if (onOff) led.plot(col, row)
-                        else led.unplot(col, row)
+            led.stopAnimation()
+            const displayVersion = this.beginDisplayOperation()
+            control.inBackground(() => {
+                const anim = hex`
+                    0001000000
+                    0000010000
+                    0000000100
+                    0000000002
+                    0000000004
+                    0000000008
+                    0000001000
+                    0000100000
+                    0010000000
+                    0800000000
+                    0400000000
+                    0200000000
+                    0000000000
+                `
+                let pos = 0
+                while (
+                    displayVersion == this.displayVersion &&
+                    pos < anim.length
+                ) {
+                    for (let col = 0; col < 5; col++) {
+                        for (let row = 0; row < 5; row++) {
+                            if (displayVersion != this.displayVersion) return
+                            const onOff =
+                                anim[pos + col + (row >> 3)] &
+                                (1 << (row & 7))
+                            if (onOff) led.plot(col, row)
+                            else led.unplot(col, row)
+                        }
                     }
+                    basic.pause(20)
+                    pos = pos + 5
                 }
-                control.waitMicros(20000)
-                pos = pos + 5
-            }
+            })
         }
 
         public stopOngoingActions() {
+            this.cancelDisplayOperation()
             music.stopAllSounds()
             led.stopAnimation()
             basic.clearScreen()
@@ -186,10 +199,12 @@ namespace microcode {
         public execute(action: ActionTid, param: any) {
             switch (action) {
                 case Tid.TID_ACTUATOR_PAINT:
+                    const displayVersion = this.beginDisplayOperation()
                     led.stopAnimation()
-                    this.showIcon(param)
+                    this.showIcon(param, displayVersion)
                     return
                 case Tid.TID_ACTUATOR_SHOW_NUMBER:
+                    this.beginDisplayOperation()
                     led.stopAnimation()
                     basic.showNumber(param)
                     return
@@ -216,7 +231,26 @@ namespace microcode {
             }
         }
 
-        private showIcon(img: Bitmap) {
+        private beginDisplayOperation(): number {
+            this.displayVersion++
+            return this.displayVersion
+        }
+
+        private cancelDisplayOperation() {
+            this.displayVersion++
+        }
+
+        private pauseDisplayOperation(durationMs: number, version: number) {
+            const stepMs = 25
+            let remaining = durationMs
+            while (version == this.displayVersion && remaining > 0) {
+                const pauseMs = Math.min(stepMs, remaining)
+                basic.pause(pauseMs)
+                remaining -= pauseMs
+            }
+        }
+
+        private showIcon(img: Bitmap, displayVersion: number) {
             let s: string[] = []
             for (let row = 0; row < 5; row++) {
                 for (let col = 0; col < 5; col++) {
@@ -225,7 +259,7 @@ namespace microcode {
                 }
             }
             // TODO: do want this here? do we really want to yield?
-            basic.pause(400)
+            this.pauseDisplayOperation(400, displayVersion)
         }
 
         private getSound(sound: Tid) {

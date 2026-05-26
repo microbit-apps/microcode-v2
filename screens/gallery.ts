@@ -43,7 +43,7 @@ namespace microcode {
             })
         }
 
-        public handleScreenInput(event: ui.UiInputEvent): boolean | undefined {
+        public handleInput(event: ui.UiInputEvent): boolean | undefined {
             if (event.action == "cancel") {
                 if (event.phase != "released") this.navigation_.pop()
                 return true
