@@ -11,12 +11,12 @@ namespace microcode {
      * Screen that lets the user choose a sample program and open it in the editor.
      */
     export class SamplesGalleryScreen extends ui.UiScreen {
-        private navigation_: AppNavigation
+        private host_: AppHost
 
-        constructor(navigation: AppNavigation) {
-            super()
+        constructor(host: AppHost) {
+            super(host.runtime)
             this.backgroundColor = GALLERY_BACKGROUND_COLOR
-            this.navigation_ = navigation
+            this.host_ = host
             const controls = samples(true).map((sample, index) => {
                 return {
                     id: "sample-" + index,
@@ -26,7 +26,7 @@ namespace microcode {
                 }
             })
 
-            const galleryGrid = new HostedGrid<Sample>({
+            const galleryGrid = new ControlGrid<Sample>({
                 scopeId: GALLERY_SCOPE,
                 controls: controls,
                 columnCount: GALLERY_COLUMN_COUNT,
@@ -45,7 +45,7 @@ namespace microcode {
 
         public handleInput(event: ui.UiInputEvent): boolean | undefined {
             if (event.action == "cancel") {
-                if (event.phase != "released") this.navigation_.pop()
+                if (event.phase != "released") this.host_.pop()
                 return true
             }
             return undefined
@@ -53,7 +53,7 @@ namespace microcode {
 
         private openSample(sample: Sample): void {
             replaceAutoProgram(sample.source)
-            this.navigation_.launchEditor()
+            this.host_.launchEditor()
         }
     }
 }

@@ -14,7 +14,7 @@ namespace microcode {
     const FIELD_EDITOR_COMMIT = -1
     const FIELD_EDITOR_DELETE = -2
 
-    type TileSuggestionModalResult = HostedPickerResult<TileSuggestionValue>
+    type TileSuggestionModalResult = ControlPickerResult<TileSuggestionValue>
 
     interface RuleTargetControlValue {
         kind: RuleTargetKind
@@ -192,7 +192,7 @@ namespace microcode {
      * Brain editor screen.
      */
     export class EditorScreen extends ui.UiScreen {
-        private navigation_: AppNavigation
+        private host_: AppHost
         private app_: App
         private progdef_: ProgramDefn
         private currPage_: number
@@ -202,10 +202,10 @@ namespace microcode {
         private saving_: boolean
         private rendered_: boolean
 
-        constructor(navigation: AppNavigation, app: App) {
-            super()
+        constructor(host: AppHost, app: App) {
+            super(host.runtime)
             this.backgroundColor = EDITOR_BACKGROUND_COLOR
-            this.navigation_ = navigation
+            this.host_ = host
             this.app_ = app
             this.currPage_ = 0
             this.pendingSave_ = undefined
@@ -305,7 +305,7 @@ namespace microcode {
                 this.switchToPage(0)
                 return
             }
-            if (this.currPage_ == 0) this.navigation_.launchHome()
+            if (this.currPage_ == 0) this.host_.launchHome()
         }
 
         private openDiskModal(): void {
@@ -313,8 +313,8 @@ namespace microcode {
             this.openModal(this.createDiskModal())
         }
 
-        private createDiskModal(): HostedPicker<EditorDiskSlot> {
-            return new HostedPicker<EditorDiskSlot>({
+        private createDiskModal(): ControlPicker<EditorDiskSlot> {
+            return new ControlPicker<EditorDiskSlot>({
                 modalScopeId: EDITOR_DISK_MODAL_SCOPE,
                 controls: this.createDiskControls(),
                 titleId: "disk",
@@ -328,7 +328,7 @@ namespace microcode {
 
         private createDiskControls(): ui.UiControl<EditorDiskSlot>[] {
             return diskSlots().map(slot =>
-                ui.iconButton<EditorDiskSlot>(slot, slot),
+                ui.button<EditorDiskSlot>(slot, { bitmapId: slot }),
             )
         }
 
@@ -342,8 +342,8 @@ namespace microcode {
             this.openModal(this.createPageModal())
         }
 
-        private createPageModal(): HostedPicker<EditorPagePickerValue> {
-            return new HostedPicker<EditorPagePickerValue>({
+        private createPageModal(): ControlPicker<EditorPagePickerValue> {
+            return new ControlPicker<EditorPagePickerValue>({
                 modalScopeId: EDITOR_PAGE_MODAL_SCOPE,
                 controls: this.createPageControls(),
                 defaultControlId: "page-" + this.currPage_,
@@ -397,9 +397,9 @@ namespace microcode {
 
         private createRuleHandleModal(
             value: RuleTargetControlValue,
-        ): HostedPicker<RuleHandleAction> {
+        ): ControlPicker<RuleHandleAction> {
             const controls = this.createRuleHandleControls(value)
-            return new HostedPicker<RuleHandleAction>({
+            return new ControlPicker<RuleHandleAction>({
                 modalScopeId: EDITOR_RULE_HANDLE_MODAL_SCOPE,
                 controls,
                 columnCount: controls.length,
@@ -588,7 +588,7 @@ namespace microcode {
                 controls.length,
             )
             const titleId = this.tileSuggestionTitleId(value)
-            return new HostedPicker<TileSuggestionValue>({
+            return new ControlPicker<TileSuggestionValue>({
                 modalScopeId: EDITOR_TILE_SUGGESTION_MODAL_SCOPE,
                 controls,
                 titleControls: this.canDeleteFromSuggestionPicker(value)
@@ -959,7 +959,7 @@ namespace microcode {
                 initialText: numericEntryText(tile),
                 maxLength: 8,
                 deleteEnabled: !pending,
-                deleteIcon: "delete",
+                deleteContent: { bitmapId: "delete" },
                 backgroundColor: AppStyles.DefaultModalPanelColor,
                 contentMargin: AppStyles.NumericModalMargin,
                 keyStyle: AppStyles.ModalButton,
@@ -1010,7 +1010,12 @@ namespace microcode {
                     tile,
                     (<any>result).text,
                 )
-                this.commitTileSuggestion(value, completedTile, wasRunning, true)
+                this.commitTileSuggestion(
+                    value,
+                    completedTile,
+                    wasRunning,
+                    true,
+                )
                 return
             }
             const text = (<any>result).text
@@ -1096,7 +1101,7 @@ namespace microcode {
             value: RuleTargetControlValue,
             tile: Tile,
             pending: boolean,
-        ): HostedPicker<FieldEditorModalValue> {
+        ): ControlPicker<FieldEditorModalValue> {
             if (!tile || (!isIconEditor(tile) && !isMelodyEditor(tile)))
                 return undefined
             if (isIconEditor(tile))
@@ -1116,7 +1121,7 @@ namespace microcode {
             value: RuleTargetControlValue,
             tile: IconEditor,
             pending: boolean,
-        ): HostedPicker<FieldEditorModalValue> {
+        ): ControlPicker<FieldEditorModalValue> {
             const field = cloneIconField(tile)
             const controls = this.createIconFieldControls(field)
             const wasRunning = isProgramRunning()
@@ -1151,8 +1156,8 @@ namespace microcode {
             rowGap: number,
             deleteEnabled: boolean,
             onActivate: ui.UiControlActivateHandler<FieldEditorModalValue>,
-        ): HostedPicker<FieldEditorModalValue> {
-            return new HostedPicker<FieldEditorModalValue>({
+        ): ControlPicker<FieldEditorModalValue> {
+            return new ControlPicker<FieldEditorModalValue>({
                 modalScopeId: EDITOR_FIELD_MODAL_SCOPE,
                 controls,
                 titleControls: this.fieldTitleControls(deleteEnabled),
@@ -1220,7 +1225,7 @@ namespace microcode {
             value: RuleTargetControlValue,
             tile: MelodyEditor,
             pending: boolean,
-        ): HostedPicker<FieldEditorModalValue> {
+        ): ControlPicker<FieldEditorModalValue> {
             const field = cloneMelodyField(tile)
             const controls = this.createMelodyFieldControls(field)
             const wasRunning = isProgramRunning()
@@ -1331,13 +1336,12 @@ namespace microcode {
             const active = previous == note
             const next = active ? "." : note
             field.notes =
-                field.notes.slice(0, col) +
-                next +
-                field.notes.slice(col + 1)
+                field.notes.slice(0, col) + next + field.notes.slice(col + 1)
             control.bitmapId = active ? "note_off" : "note_on"
             if (!active && previous != ".") {
                 const previousRow = NUM_NOTES - 1 - parseInt(previous)
-                controls[previousRow * MELODY_LENGTH + col].bitmapId = "note_off"
+                controls[previousRow * MELODY_LENGTH + col].bitmapId =
+                    "note_off"
             }
         }
 
@@ -2254,9 +2258,7 @@ namespace microcode {
             return target.section == "sensors" || target.section == "filters"
         }
 
-        private focusTargetFromTarget(
-            target: RulePageTarget,
-        ): RuleTargetFocus {
+        private focusTargetFromTarget(target: RulePageTarget): RuleTargetFocus {
             return {
                 ruleIndex: target.ruleIndex,
                 kind: target.kind,
@@ -2265,7 +2267,9 @@ namespace microcode {
             }
         }
 
-        private ruleTargetValue(target: RulePageTarget): RuleTargetControlValue {
+        private ruleTargetValue(
+            target: RulePageTarget,
+        ): RuleTargetControlValue {
             return {
                 kind: target.kind,
                 ruleIndex: target.ruleIndex,
@@ -2470,7 +2474,7 @@ namespace microcode {
         private controlRectScratch_: ui.Rect
         private controlRects_: ui.Rect[]
         private buttonView_: ui.UiButtonView
-        private content_: ui.UiButtonContent
+        private content_: ui.UiControlContent
 
         constructor(
             ruledef: RuleDefn,
@@ -2859,12 +2863,7 @@ namespace microcode {
             section?: RuleSection,
             index?: number,
         ): string {
-            return ruleTargetControlId(
-                this.ruleIndex,
-                kind,
-                section,
-                index,
-            )
+            return ruleTargetControlId(this.ruleIndex, kind, section, index)
         }
 
         private bitmap(icon: string | number | Bitmap): Bitmap {
@@ -2873,9 +2872,7 @@ namespace microcode {
                 : icon
         }
 
-        private whenInsertionTarget(
-            rule: RuleDefn,
-        ): RulePageTarget {
+        private whenInsertionTarget(rule: RuleDefn): RulePageTarget {
             if (rule.sensors.length == 0)
                 return this.targetControl(
                     "insert",
@@ -2899,9 +2896,7 @@ namespace microcode {
             return undefined
         }
 
-        private doInsertionTarget(
-            rule: RuleDefn,
-        ): RulePageTarget {
+        private doInsertionTarget(rule: RuleDefn): RulePageTarget {
             if (rule.actuators.length == 0)
                 return this.targetControl(
                     "insert",
@@ -3019,11 +3014,7 @@ namespace microcode {
                 const height = Math.max(target.height, 1)
                 const gapBefore = target.gapBefore
                 x +=
-                    gapBefore !== undefined
-                        ? Math.max(gapBefore, 0)
-                        : i
-                          ? 1
-                          : 0
+                    gapBefore !== undefined ? Math.max(gapBefore, 0) : i ? 1 : 0
                 this.controlRects_[i].set(
                     x,
                     this.stripRect_.y + Math.idiv(this.height_ - height, 2),
@@ -3183,12 +3174,9 @@ namespace microcode {
                 return undefined
             const ruleRep = this.rule.getRuleRep()
             const index: number = target.index
-            if (target.section == "filters")
-                return ruleRep.filters[index]
-            if (target.section == "actuators")
-                return ruleRep.actuators[index]
-            if (target.section == "modifiers")
-                return ruleRep.modifiers[index]
+            if (target.section == "filters") return ruleRep.filters[index]
+            if (target.section == "actuators") return ruleRep.actuators[index]
+            if (target.section == "modifiers") return ruleRep.modifiers[index]
             return ruleRep.sensors[index]
         }
 
@@ -3205,11 +3193,7 @@ namespace microcode {
                 const target = this.targets_[i]
                 const gapBefore = target.gapBefore
                 width +=
-                    gapBefore !== undefined
-                        ? Math.max(gapBefore, 0)
-                        : i
-                          ? 1
-                          : 0
+                    gapBefore !== undefined ? Math.max(gapBefore, 0) : i ? 1 : 0
                 width += Math.max(target.width, 1)
                 width +=
                     target.gapAfter !== undefined
@@ -3344,9 +3328,7 @@ namespace microcode {
                 ui.UiButtonStyles.RoundedFrame,
             )
             this.toolbarRects_ = []
-            this.toolbarButtonView_ = new ui.UiButtonView({
-                style: this.toolbarStyle_,
-            })
+            this.toolbarButtonView_ = new ui.UiButtonView(this.toolbarStyle_)
             this.navigationScratch_ = []
         }
 
@@ -3626,11 +3608,13 @@ namespace microcode {
                 if (!_uiControls.isVisible(control)) continue
                 _uiControls.renderControl(
                     surface,
-                    assets,
                     control,
                     this.toolbarRects_[i],
                     this.toolbarButtonView_,
                     this.toolbarStyle_,
+                    undefined,
+                    undefined,
+                    assets,
                 )
             }
         }
@@ -3652,13 +3636,13 @@ namespace microcode {
             if (index < 0) return
             _uiControls.renderControl(
                 surface,
-                assets,
                 this.toolbarControls_[index],
                 this.toolbarRects_[index],
                 this.toolbarButtonView_,
                 this.toolbarStyle_,
                 undefined,
                 true,
+                assets,
             )
         }
     }

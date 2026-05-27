@@ -20,62 +20,28 @@ namespace microcode {
     }
 
     /**
-     * Navigation surface used by screens.
-     */
-    export interface AppNavigation {
-        /**
-         * Pushes a screen above the active screen.
-         */
-        push(screen: ui.UiScreen): void
-
-        /**
-         * Replaces the active screen.
-         */
-        replace(screen: ui.UiScreen): void
-
-        /**
-         * Pops the active screen when it is not the host root.
-         */
-        pop(): void
-
-        /**
-         * Opens the home screen.
-         */
-        launchHome(): void
-
-        /**
-         * Opens the editor.
-         */
-        launchEditor(): void
-
-        /**
-         * Opens the samples gallery.
-         */
-        launchSamples(): void
-
-        /**
-         * Opens the settings screen.
-         */
-        launchSettings(): void
-    }
-
-    /**
      * Owns the screen runtime and app-level navigation.
      */
-    export class UiHost implements AppNavigation {
+    export class AppHost {
         private app_: App
         private runtime_: ui.UiRuntime
 
+        get runtime() {
+            return this.runtime_
+        }
+
         constructor(app: App) {
             this.app_ = app
+            this.runtime_ = new ui.UiRuntime(
+                new ui.DisplayShieldFrameAdapter(),
+                new AppAssetResolver(),
+            )
         }
 
         /**
          * Opens the screen runtime with a root screen.
          */
         public open(root: ui.UiScreen): void {
-            if (this.runtime_) return
-            this.runtime_ = this.createRuntime()
             this.runtime_.push(root)
             this.runtime_.start()
         }
@@ -89,7 +55,7 @@ namespace microcode {
         }
 
         public replace(screen: ui.UiScreen): void {
-            if (!this.runtime_) {
+            if (!this.runtime_.depth()) {
                 this.open(screen)
                 return
             }
@@ -133,14 +99,6 @@ namespace microcode {
             return screen instanceof EditorScreen
                 ? screen.currentProgram()
                 : undefined
-        }
-
-        private createRuntime(): ui.UiRuntime {
-            return new ui.UiRuntime({
-                display: new ui.DisplayShieldFrameAdapter(),
-                assets: new AppAssetResolver(),
-                clearColor: 0,
-            })
         }
     }
 }

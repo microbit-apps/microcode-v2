@@ -27,17 +27,17 @@ namespace microcode {
      * Screen for choosing the numeric mode used by microcode tiles and sensors.
      */
     export class SettingsScreen extends ui.UiScreen {
-        private navigation_: AppNavigation
+        private host_: AppHost
         private controls_: ui.UiControl<SettingsMode>[]
 
-        constructor(navigation: AppNavigation) {
-            super()
+        constructor(host: AppHost) {
+            super(host.runtime)
             this.backgroundColor = SETTINGS_BACKGROUND
-            this.navigation_ = navigation
+            this.host_ = host
             this.controls_ = this.createControls()
 
             this.addCentered(
-                new HostedGrid<SettingsMode>({
+                new ControlGrid<SettingsMode>({
                     scopeId: SETTINGS_SCOPE,
                     controls: this.controls_,
                     columnCount: 1,
@@ -66,7 +66,7 @@ namespace microcode {
 
         public handleInput(event: ui.UiInputEvent): boolean | undefined {
             if (event.action == "cancel" && event.phase != "released") {
-                this.navigation_.pop()
+                this.host_.pop()
                 return true
             }
             return undefined

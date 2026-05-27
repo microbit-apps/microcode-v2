@@ -12,10 +12,8 @@ namespace microcode {
                 if (isModifierEditor(tile)) {
                     const mod = tile as ModifierEditor
                     const field = editorFieldToString(mod)
-                    if (isIconEditor(mod))
-                        return `${tok} \`\n${field}\`\n`
-                    else if (isMelodyEditor(mod))
-                        return `${tok} \`${field}\`\n`
+                    if (isIconEditor(mod)) return `${tok} \`\n${field}\`\n`
+                    else if (isMelodyEditor(mod)) return `${tok} \`${field}\`\n`
                     else return `${tok} ${field}`
                 }
                 return tok

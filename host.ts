@@ -177,8 +177,7 @@ namespace microcode {
                         for (let row = 0; row < 5; row++) {
                             if (displayVersion != this.displayVersion) return
                             const onOff =
-                                anim[pos + col + (row >> 3)] &
-                                (1 << (row & 7))
+                                anim[pos + col + (row >> 3)] & (1 << (row & 7))
                             if (onOff) led.plot(col, row)
                             else led.unplot(col, row)
                         }

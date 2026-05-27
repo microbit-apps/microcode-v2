@@ -8,7 +8,7 @@ namespace microcode {
     }
 
     export class App {
-        private uiHost: UiHost
+        private host_: AppHost
 
         constructor() {
             // One interval delay to ensure all static constructors have executed.
@@ -20,7 +20,7 @@ namespace microcode {
                 runProgram(prog)
             }
 
-            this.uiHost = new UiHost(this)
+            this.host_ = new AppHost(this)
 
             this.openHome()
         }
@@ -42,11 +42,11 @@ namespace microcode {
         }
 
         public openHome() {
-            this.uiHost.launchHome()
+            this.host_.launchHome()
         }
 
         public runFromEditor() {
-            const hostedProgram = this.uiHost.currentEditorProgram()
+            const hostedProgram = this.host_.currentEditorProgram()
             if (hostedProgram) {
                 runProgramIfStopped(hostedProgram)
             }

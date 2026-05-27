@@ -165,7 +165,10 @@ namespace microcode {
         if (tile.firstInstance) return tile.tid
         const tid = tile.tid
         if (tid == Tid.TID_DECIMAL_EDITOR || tid == Tid.TID_POS_INT_EDITOR)
-            return icondb.numberToDecimalImage((tile as DigitEditor).field, false)
+            return icondb.numberToDecimalImage(
+                (tile as DigitEditor).field,
+                false,
+            )
         if (tid == Tid.TID_MODIFIER_ICON_EDITOR)
             return icondb.renderMicrobitLEDs((tile as IconEditor).field)
         if (tid == Tid.TID_MODIFIER_MELODY_EDITOR)
@@ -230,7 +233,8 @@ namespace microcode {
         const tid = tile.tid
         if (tid == Tid.TID_DECIMAL_EDITOR || tid == Tid.TID_POS_INT_EDITOR)
             return tokens.length > 0 ? tokens[0] : "0"
-        if (tid == Tid.TID_MODIFIER_ICON_EDITOR) return iconFieldFromTokens(tokens)
+        if (tid == Tid.TID_MODIFIER_ICON_EDITOR)
+            return iconFieldFromTokens(tokens)
         if (tid == Tid.TID_MODIFIER_MELODY_EDITOR) return notesToMelody(tokens)
         return undefined
     }

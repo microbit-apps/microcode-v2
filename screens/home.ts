@@ -13,14 +13,15 @@ namespace microcode {
     const HOME_MARGIN = 2
 
     export class HomeScreen extends ui.UiScreen {
-        private navigation_: AppNavigation
+        private host_: AppHost
         private logoOffset_: number
 
-        constructor(navigation: AppNavigation) {
-            super()
+        constructor(host: AppHost) {
+            assert(!!host.runtime, "AppHost must have a runtime")
+            super(host.runtime)
             this.backgroundColor = 0xc
-            this.navigation_ = navigation
-            const actionRow = new HostedGrid<HomeAction>({
+            this.host_ = host
+            const actionRow = new ControlGrid<HomeAction>({
                 scopeId: HOME_ACTION_SCOPE,
                 controls: this.createActions(),
                 columnCount: HOME_ADD_SETTINGS ? 4 : 3,
@@ -56,23 +57,28 @@ namespace microcode {
 
         private createActions(): ui.UiControl<HomeAction>[] {
             const actions: ui.UiControl<HomeAction>[] = [
-                ui.button<HomeAction>("edit", "edit_program", "C0", () =>
-                    this.navigation_.launchEditor(),
+                ui.button<HomeAction>(
+                    "edit",
+                    { bitmapId: "edit_program", textId: "C0" },
+                    () => this.host_.launchEditor(),
                 ),
-                ui.button<HomeAction>("samples", "smiley_buttons", "C1", () =>
-                    this.navigation_.launchSamples(),
+                ui.button<HomeAction>(
+                    "samples",
+                    { bitmapId: "smiley_buttons", textId: "C1" },
+                    () => this.host_.launchSamples(),
                 ),
-                ui.button<HomeAction>("load", "largeDisk", "load", () =>
-                    this.openDiskModal(),
+                ui.button<HomeAction>(
+                    "load",
+                    { bitmapId: "largeDisk", textId: "load" },
+                    () => this.openDiskModal(),
                 ),
             ]
             if (HOME_ADD_SETTINGS) {
                 actions.push(
                     ui.button<HomeAction>(
                         "settings",
-                        "largeSettingsGear",
-                        "settings",
-                        () => this.navigation_.launchSettings(),
+                        { bitmapId: "largeSettingsGear", textId: "settings" },
+                        () => this.host_.launchSettings(),
                     ),
                 )
             }
@@ -81,7 +87,7 @@ namespace microcode {
 
         private createDiskControls(): ui.UiControl<HomeDiskSlot>[] {
             return diskSlots().map(slot => {
-                return ui.iconButton<HomeDiskSlot>(slot, slot, () =>
+                return ui.button<HomeDiskSlot>(slot, { bitmapId: slot }, () =>
                     this.loadDiskSlot(slot),
                 )
             })
@@ -98,8 +104,8 @@ namespace microcode {
             this.openModal(this.createDiskModal())
         }
 
-        private createDiskModal(): HostedPicker<HomeDiskSlot> {
-            return new HostedPicker<HomeDiskSlot>({
+        private createDiskModal(): ControlPicker<HomeDiskSlot> {
+            return new ControlPicker<HomeDiskSlot>({
                 modalScopeId: HOME_DISK_MODAL_SCOPE,
                 controls: this.createDiskControls(),
                 titleId: "load",
@@ -116,7 +122,7 @@ namespace microcode {
             if (!buf) buf = new ProgramDefn().toBuffer()
             replaceAutoProgram(buf)
             this.closeDiskModal()
-            this.navigation_.launchEditor()
+            this.host_.launchEditor()
         }
 
         private closeDiskModal(): void {

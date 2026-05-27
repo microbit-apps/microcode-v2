@@ -11,7 +11,7 @@ namespace microcode {
         labelBounds?: ui.Rect
     }
 
-    interface HostedGridResult {
+    interface ControlGridResult {
         kind: "activated"
     }
 
@@ -123,9 +123,9 @@ namespace microcode {
         return rowCount * controlHeight + (rowCount - 1) * rowGap
     }
 
-    export class HostedGrid<T>
+    export class ControlGrid<T>
         implements
-            ui.UiFocusableView<HostedGridResult>,
+            ui.UiFocusableView<ControlGridResult>,
             ui.UiFocusNavigationProvider
     {
         public readonly layoutSpec: ui.UiLayoutSpec
@@ -154,9 +154,7 @@ namespace microcode {
             this.controlStyle_ = options.controlStyle
             this.labelBounds_ = options.labelBounds
             this.controlRects_ = []
-            this.buttonView_ = new ui.UiButtonView({
-                style: options.controlStyle,
-            })
+            this.buttonView_ = new ui.UiButtonView(options.controlStyle)
             this.layoutSpec = {
                 width: { mode: "content" },
                 height: { mode: "content" },
@@ -236,7 +234,7 @@ namespace microcode {
 
         public handleFocusInput(
             result: ui.UiFocusInputResult,
-        ): HostedGridResult {
+        ): ControlGridResult {
             if (result.kind != "activated" || result.scopeId != this.scopeId_)
                 return undefined
             const control = _uiControls.findControlByTargetId(
@@ -280,12 +278,13 @@ namespace microcode {
                 if (!_uiControls.isVisible(control)) continue
                 _uiControls.renderControl(
                     surface,
-                    assets,
                     control,
                     this.controlRects_[i],
                     this.buttonView_,
                     this.controlStyle_,
                     labelBounds,
+                    undefined,
+                    assets,
                 )
             }
             const activeTargetId = _uiControls.activeTargetIdForScope(
@@ -300,13 +299,13 @@ namespace microcode {
             if (index < 0) return
             _uiControls.renderControl(
                 surface,
-                assets,
                 this.controls_[index],
                 this.controlRects_[index],
                 this.buttonView_,
                 this.controlStyle_,
                 labelBounds,
                 true,
+                assets,
             )
         }
 
@@ -323,7 +322,7 @@ namespace microcode {
         }
     }
 
-    export interface HostedPickerOptions<T> {
+    export interface ControlPickerOptions<T> {
         modalScopeId: ui.UiFocusScopeId
         controls: ui.UiControl<T>[]
         titleId?: string
@@ -344,13 +343,13 @@ namespace microcode {
         onActivate?: ui.UiControlActivateHandler<T>
     }
 
-    export type HostedPickerResult<T> =
+    export type ControlPickerResult<T> =
         | { kind: "activated" }
         | { kind: "cancelled" }
 
-    export class HostedPicker<T>
+    export class ControlPicker<T>
         implements
-            ui.UiModal<HostedPickerResult<T>>,
+            ui.UiModal<ControlPickerResult<T>>,
             ui.UiFocusNavigationProvider
     {
         public readonly layoutSpec: ui.UiLayoutSpec
@@ -378,7 +377,7 @@ namespace microcode {
         private controlView_: ui.UiButtonView
         private onActivate_: ui.UiControlActivateHandler<T>
 
-        constructor(options: HostedPickerOptions<T>) {
+        constructor(options: ControlPickerOptions<T>) {
             this.modalScopeId_ = options.modalScopeId
             this.controls_ = options.controls
             this.titleControls_ = options.titleControls || []
@@ -416,9 +415,7 @@ namespace microcode {
             this.showTitleBar_ = options.showTitleBar !== false
             this.controlRects_ = []
             this.titleControlRects_ = []
-            this.controlView_ = new ui.UiButtonView({
-                style: this.controlStyle_,
-            })
+            this.controlView_ = new ui.UiButtonView(this.controlStyle_)
             this.onActivate_ = options.onActivate
             this.layoutSpec = {
                 width: { mode: "content" },
@@ -515,7 +512,7 @@ namespace microcode {
 
         public handleFocusInput(
             result: ui.UiFocusInputResult,
-        ): HostedPickerResult<T> {
+        ): ControlPickerResult<T> {
             if (result.kind == "activated") {
                 const control = this.activatedControl(
                     result.scopeId,
@@ -528,7 +525,7 @@ namespace microcode {
                     control.id,
                     this.onActivate_,
                 )
-                return <HostedPickerResult<T>>{ kind: "activated" }
+                return <ControlPickerResult<T>>{ kind: "activated" }
             }
             if (result.kind == "cancelled") {
                 return {
@@ -690,11 +687,13 @@ namespace microcode {
                 if (!_uiControls.isVisible(control)) continue
                 _uiControls.renderControl(
                     surface,
-                    assets,
                     control,
                     rects[i],
                     this.controlView_,
                     this.controlStyle_,
+                    undefined,
+                    undefined,
+                    assets,
                 )
             }
         }
@@ -714,13 +713,13 @@ namespace microcode {
             if (index < 0) return
             _uiControls.renderControl(
                 surface,
-                assets,
                 controls[index],
                 rects[index],
                 this.controlView_,
                 this.controlStyle_,
                 undefined,
                 true,
+                assets,
             )
         }
 
@@ -754,9 +753,7 @@ namespace microcode {
         private titleHeight(): number {
             if (this.hasTitleControls())
                 return (
-                    this.contentMargin_ +
-                    this.controlHeight_ +
-                    this.titleGap_
+                    this.contentMargin_ + this.controlHeight_ + this.titleGap_
                 )
             if (
                 !this.showTitleBar_ &&
