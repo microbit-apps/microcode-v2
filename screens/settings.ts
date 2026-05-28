@@ -15,13 +15,18 @@ namespace microcode {
     const SETTINGS_ITEM_HEIGHT = 20
     const SETTINGS_ROW_GAP = 4
 
-    const SETTINGS_BUTTON_STYLE = ui.buttonStyle(
-        ui.UiButtonStyles.LightShadowedWhite,
-        {
-            color: 15,
-            font: bitmaps.font8,
-        },
-    )
+    const SETTINGS_UNSELECTED_BUTTON_STYLE: ui.UiButtonStyle = {
+        backgroundColor: 11,
+        borderColor: 11,
+        frame: "roundedRect",
+        font: bitmaps.font8,
+    }
+    const SETTINGS_SELECTED_BUTTON_STYLE: ui.UiButtonStyle = {
+        backgroundColor: 1,
+        borderColor: 1,
+        frame: "roundedRect",
+        font: bitmaps.font8,
+    }
 
     /**
      * Screen for choosing the numeric mode used by microcode tiles and sensors.
@@ -44,7 +49,7 @@ namespace microcode {
                     controlWidth: SETTINGS_ITEM_WIDTH,
                     controlHeight: SETTINGS_ITEM_HEIGHT,
                     rowGap: SETTINGS_ROW_GAP,
-                    controlStyle: SETTINGS_BUTTON_STYLE,
+                    controlStyle: SETTINGS_UNSELECTED_BUTTON_STYLE,
                     labelBounds: new ui.Rect(
                         0,
                         0,
@@ -92,7 +97,7 @@ namespace microcode {
                 id: mode,
                 value: mode,
                 text,
-                selected: this.isSelected(mode),
+                style: this.modeStyle(mode),
                 onActivate,
             }
         }
@@ -105,8 +110,14 @@ namespace microcode {
         private updateSelected(): void {
             for (let i = 0; i < this.controls_.length; i++) {
                 const control = this.controls_[i]
-                control.selected = this.isSelected(control.value)
+                control.style = this.modeStyle(control.value)
             }
+        }
+
+        private modeStyle(mode: SettingsMode): ui.UiButtonStyle {
+            return this.isSelected(mode)
+                ? SETTINGS_SELECTED_BUTTON_STYLE
+                : SETTINGS_UNSELECTED_BUTTON_STYLE
         }
 
         private isSelected(mode: SettingsMode): boolean {

@@ -1,6 +1,10 @@
 namespace microcode {
     type EditorToolbarAction = "disk" | "run" | "stop" | "page"
 
+    interface EditorToolbarControl extends ui.UiControl<EditorToolbarAction> {
+        gapBefore?: number
+    }
+
     interface EditorToolbarResult {
         kind: "activated"
     }
@@ -363,7 +367,6 @@ namespace microcode {
                     id: "page-" + index,
                     value: index,
                     bitmapId: pageId,
-                    selected: index == this.currPage_,
                 }
             })
         }
@@ -633,13 +636,10 @@ namespace microcode {
             tile: Tile,
             index: number,
         ): ui.UiControl<TileSuggestionValue> {
-            const selectedTid = this.selectedTileSuggestionTid(value)
             const control: ui.UiControl<TileSuggestionValue> = {
                 id: "suggestion-" + index,
                 value: tile,
                 textId: tidToString(getTid(tile)),
-                selected:
-                    selectedTid !== undefined && selectedTid == getTid(tile),
             }
             const icon = getIcon(tile)
             if (typeof icon == "string" || typeof icon == "number")
@@ -3264,10 +3264,10 @@ namespace microcode {
         private getProgram_: () => ProgramDefn
         private getPage_: () => number
         private pageView_: PageView
-        private runControl_: ui.UiControl<EditorToolbarAction>
-        private stopControl_: ui.UiControl<EditorToolbarAction>
-        private pageControl_: ui.UiControl<EditorToolbarAction>
-        private toolbarControls_: ui.UiControl<EditorToolbarAction>[]
+        private runControl_: EditorToolbarControl
+        private stopControl_: EditorToolbarControl
+        private pageControl_: EditorToolbarControl
+        private toolbarControls_: EditorToolbarControl[]
         private toolbarRects_: ui.Rect[]
         private toolbarButtonView_: ui.UiButtonView
         private toolbarStyle_: ui.UiButtonStyle
