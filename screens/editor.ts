@@ -2841,12 +2841,12 @@ namespace microcode {
         private generatedTileFrameStyle(tile?: Tile): ui.UiButtonStyle {
             if (tile && isIconEditor(tile))
                 return {
-                    edgeColor: 15,
+                    backgroundColor: 15,
                     shadowColor: 15,
                 }
             if (tile && isMelodyEditor(tile))
                 return {
-                    edgeColor: 1,
+                    backgroundColor: 1,
                     shadowColor: 1,
                 }
             return undefined
