@@ -1,5 +1,5 @@
 namespace microcode {
-    interface HostedGridOptions<T> {
+    interface ControlGridOptions<T> {
         scopeId: ui.UiFocusScopeId
         controls: ui.UiControl<T>[]
         columnCount: number
@@ -143,7 +143,7 @@ namespace microcode {
         private controlRects_: ui.Rect[]
         private buttonView_: ui.UiButtonView
 
-        constructor(options: HostedGridOptions<T>) {
+        constructor(options: ControlGridOptions<T>) {
             this.scopeId_ = options.scopeId
             this.controls_ = options.controls
             this.columnCount_ = Math.max(1, options.columnCount)
