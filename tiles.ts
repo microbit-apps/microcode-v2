@@ -1,7 +1,4 @@
 namespace microcode {
-    import ButtonStyles = user_interface_base.ButtonStyles
-    import ButtonStyle = user_interface_base.ButtonStyle
-
     // DO NOT CHANGE THESE NUMBERS
     export enum Tid {
         // we need markers to indicate the end of a program, page
@@ -439,11 +436,11 @@ namespace microcode {
             case Tid.TID_ACTUATOR_PAINT: {
                 const mod = getEditor(Tid.TID_MODIFIER_ICON_EDITOR)
                 const modEditor = mod as ModifierEditor
-                return modEditor.getField()
+                return modEditor.field
             }
             case Tid.TID_ACTUATOR_MUSIC: {
                 const mod = getEditor(
-                    Tid.TID_MODIFIER_MELODY_EDITOR
+                    Tid.TID_MODIFIER_MELODY_EDITOR,
                 ) as MelodyEditor
                 return melodyToNotes(mod.field)
             }
@@ -460,12 +457,6 @@ namespace microcode {
     export function filterModifierWithDelete(tile: Tile): boolean {
         const tid = getTid(tile)
         return !(isMathOperator(tid) || isComparisonOperator(tid))
-    }
-
-    export function buttonStyle(tile: Tile): ButtonStyle {
-        return getFieldEditor(tile)
-            ? ButtonStyles.Transparent
-            : ButtonStyles.FlatWhite
     }
 
     export function priority(tile: Tile): number {
@@ -604,6 +595,7 @@ namespace microcode {
     ]
 
     const filterMath: (string | number)[] = [
+        "constant",
         "variable",
         "comparison",
         "maths",
@@ -620,7 +612,8 @@ namespace microcode {
             return {
                 allow: getFilterMath(),
                 disallow: [
-                    (tid: number) => getKindTid(tid) == TileKind.EventCode,
+                    (tile: Tile) =>
+                        getKindTid(getTid(tile)) == TileKind.EventCode,
                 ],
             }
         }
@@ -699,7 +692,7 @@ namespace microcode {
                 return {
                     only: microcodeClassic
                         ? ["variable", "constant"]
-                        : ["variable", "maths", "decimal_editor"],
+                        : ["constant", "variable", "maths", "decimal_editor"],
                 }
             case Tid.TID_ACTUATOR_RGB_LED:
                 return { only: ["rgb_led", "loop"] }
@@ -734,6 +727,7 @@ namespace microcode {
         if (isEmoji(tid)) return "sound_emoji"
         if (isComparisonOperator(tid)) return "comparison"
         if (isMathOperator(tid)) return "maths"
+        if (isConstant(tid)) return "constant"
         if (isVariable(tid)) return "variable"
         if (isPage(tid)) return "page"
         if (isCarModifier(tid)) return "car"
@@ -862,7 +856,7 @@ namespace microcode {
             case Tid.TID_DECIMAL_EDITOR:
             case Tid.TID_POS_INT_EDITOR: {
                 const modEditor = tile as DigitEditor
-                const str = modEditor.getField().num
+                const str = modEditor.field
                 return str == "" ? 0 : parseFloat(str)
             }
             case Tid.TID_SENSOR_CUP_X_WRITTEN:

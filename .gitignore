@@ -17,3 +17,5 @@ Gemfile.lock
 .jekyll-metadata
 .DS_Store
 .pxt
+generated-docs
+scripts/size-ledger.js

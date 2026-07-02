@@ -9,13 +9,11 @@ namespace microcode {
                 resolveTooltip("T" + getTid(tile)).replaceAll(" ", "_")
             const tileToString = (tile: Tile) => {
                 const tok = toToken(tile)
-                if (tile instanceof ModifierEditor) {
+                if (isModifierEditor(tile)) {
                     const mod = tile as ModifierEditor
-                    const field = mod.fieldEditor.toString(mod.getField())
-                    if (mod instanceof IconEditor)
-                        return `${tok} \`\n${field}\`\n`
-                    else if (mod instanceof MelodyEditor)
-                        return `${tok} \`${field}\`\n`
+                    const field = editorFieldToString(mod)
+                    if (isIconEditor(mod)) return `${tok} \`\n${field}\`\n`
+                    else if (isMelodyEditor(mod)) return `${tok} \`${field}\`\n`
                     else return `${tok} ${field}`
                 }
                 return tok
@@ -41,7 +39,7 @@ namespace microcode {
         const res = prog.pages.map(pageToString)
         ret.s = res
             .map((ps, i) =>
-                ps == "" && i > 0 ? "" : i == 0 ? ps : `page_${i + 1}:\n${ps}`
+                ps == "" && i > 0 ? "" : i == 0 ? ps : `page_${i + 1}:\n${ps}`,
             )
             .filter(s => s != "")
             .join("\n")
@@ -61,8 +59,8 @@ namespace microcode {
             control.assert(tid != undefined, `tok ${tok} does not have mapping`)
             // check to see if field editor needed
             const tile = getEditor(tid)
-            if (tile && tile instanceof ModifierEditor) {
-                return tile.getNewInstance()
+            if (isModifierEditor(tile)) {
+                return createEditorInstance(tile)
             } else {
                 return tid
             }
@@ -118,11 +116,8 @@ namespace microcode {
         let tok: string = undefined
         while ((tok = getToken())) {
             // console.log(`tok = ${tok}`)
-            if (currTile && currTile instanceof ModifierEditor) {
-                if (
-                    currTile instanceof IconEditor ||
-                    currTile instanceof MelodyEditor
-                ) {
+            if (isModifierEditor(currTile)) {
+                if (isIconEditor(currTile) || isMelodyEditor(currTile)) {
                     const thisTile = currTile as ModifierEditor
                     control.assert(tok == "`", `expected \`, got ${tok}`)
                     let tokens = []
@@ -131,9 +126,12 @@ namespace microcode {
                     }
                     //console.log(`got tokens = ${tokens.join(":")}`)
                     control.assert(tok == "`", `expected \`, got ${tok}`)
-                    currTile.field = thisTile.fieldEditor.fromTokens(tokens)
-                } else if (currTile instanceof DigitEditor) {
-                    currTile.field = currTile.fieldEditor.fromTokens([tok])
+                    currTile.field = editorFieldFromTokens(thisTile, tokens)
+                } else if (isDigitEditor(currTile)) {
+                    currTile.field = editorFieldFromTokens(
+                        currTile as ModifierEditor,
+                        [tok],
+                    )
                 }
                 currTile = undefined
                 continue
@@ -145,12 +143,12 @@ namespace microcode {
             ) {
                 control.assert(
                     tok.length == 7,
-                    `expected page_[1-5]:, got ${tok}}`
+                    `expected page_[1-5]:, got ${tok}}`,
                 )
                 const pageNum = parseInt(tok[5])
                 control.assert(
                     pageNum >= 1 && pageNum <= 5,
-                    `page number must be between 1 and 5, got ${pageNum}`
+                    `page number must be between 1 and 5, got ${pageNum}`,
                 )
                 if (currPage && currPageNum !== undefined) {
                     if (currRule) currPage.rules.push(currRule)
@@ -159,7 +157,7 @@ namespace microcode {
                 }
                 assert(
                     pageMap[pageNum] == undefined,
-                    `page ${pageNum} redefined`
+                    `page ${pageNum} redefined`,
                 )
                 currPage = new PageDefn()
                 currPageNum = pageNum
@@ -203,7 +201,6 @@ namespace microcode {
         const samples = microcode.samples(false)
         console.log(`const newSamples: textSampleList = [`)
         for (const sample of samples) {
-            //console.log(`check sample ${sample.label}`)
             const buf = sample.source
             const prog = ProgramDefn.fromBuffer(new BufferReader(buf))
             const ret = { s: "" }
@@ -220,14 +217,12 @@ namespace microcode {
                 if (buf1[i] != buf2[i]) {
                     control.assert(
                         false,
-                        `buf/buf2[${i}] = ${buf[i]}/${buf2[i]}`
+                        `buf/buf2[${i}] = ${buf[i]}/${buf2[i]}`,
                     )
                 }
             }
             assert(buf1.length == buf2.length, `bufs not same length`)
             console.log(`{
- label: \"${sample.label}\",
- ariaId: ${sample.ariaId ? '"' + sample.ariaId + '"' : "undefined"},
  src: \`${pas2.replaceAll("`", "\\`")}\`,
  icon: ${sample.icon ? '"' + sample.icon + '"' : "undefined"},
 },\n`)

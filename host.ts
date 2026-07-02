@@ -1,24 +1,6 @@
 namespace microcode {
     // mapping of micro:bit and DAL namespace into MicroCode tiles
 
-    type SensorInfo = { [id: string]: { tid: number } }
-
-    const sensorInfo: SensorInfo = {
-        Light: { tid: Tid.TID_SENSOR_LED_LIGHT },
-        Microphone: { tid: Tid.TID_SENSOR_MICROPHONE },
-        Temperature: { tid: Tid.TID_SENSOR_TEMP },
-        Magnet: { tid: Tid.TID_SENSOR_MAGNET },
-    }
-
-    function tidToSensor(tid: number): string {
-        let result: string = undefined
-        Object.keys(sensorInfo).forEach(k => {
-            const keyTid = sensorInfo[k].tid
-            if (tid == keyTid) result = k
-        })
-        return result
-    }
-
     type IdMap = { [id: number]: number }
 
     // see DAL for these values
@@ -65,7 +47,8 @@ namespace microcode {
     ]
 
     export class MicrobitHost implements RuntimeHost {
-        private sensors: Sensor[] = []
+        /** Monotonic token observed by cancellable LED display work. */
+        private displayVersion = 0
 
         constructor() {
             this._handler = (s: number, f: number) => {}
@@ -82,8 +65,8 @@ namespace microcode {
                             ev == DAL.DEVICE_BUTTON_EVT_DOWN
                                 ? Tid.TID_SENSOR_PRESS
                                 : ev == DAL.DEVICE_BUTTON_EVT_UP
-                                ? Tid.TID_SENSOR_RELEASE
-                                : undefined
+                                  ? Tid.TID_SENSOR_RELEASE
+                                  : undefined
                         const filter = matchPressReleaseTable[b]
                         this._handler(tid, filter)
                     } else {
@@ -111,12 +94,10 @@ namespace microcode {
                 input.onGesture(g, () => {
                     this._handler(
                         Tid.TID_SENSOR_ACCELEROMETER,
-                        gestures2tids[index]
+                        gestures2tids[index],
                     )
                 })
             })
-
-            this.startSensors()
 
             radio.onReceivedNumber(radioNum => {
                 this._handler(Tid.TID_SENSOR_RADIO_RECEIVE, radioNum)
@@ -132,26 +113,36 @@ namespace microcode {
         }
 
         public getSensorValue(tid: number, normalized: boolean): number {
-            const sensorName = tidToSensor(tid)
-            const sensor = this.sensors.find(s => s.getName() == sensorName)
-            if (sensor)
-                return normalized
-                    ? sensor.getNormalisedReading()
-                    : sensor.getReading()
-            return 0
-        }
-
-        private startSensors() {
-            // initialize sensors
-            this.sensors.push(Sensor.getFromName("Light"))
-            this.sensors.push(Sensor.getFromName("Temperature"))
-            this.sensors.push(Sensor.getFromName("Magnet"))
-            this.sensors.push(Sensor.getFromName("Microphone"))
+            let value = 0
+            let min = 0
+            let max = 1
+            switch (tid) {
+                case Tid.TID_SENSOR_LED_LIGHT:
+                    value = input.lightLevel()
+                    max = 255
+                    break
+                case Tid.TID_SENSOR_TEMP:
+                    value = input.temperature()
+                    min = -40
+                    max = 100
+                    break
+                case Tid.TID_SENSOR_MAGNET:
+                    value = input.magneticForce(Dimension.Strength)
+                    min = -5000
+                    max = 5000
+                    break
+                case Tid.TID_SENSOR_MICROPHONE:
+                    value = input.soundLevel()
+                    max = 255
+                    break
+            }
+            if (!normalized) return value
+            return Math.abs(value) / (Math.abs(min) + max)
         }
 
         private _handler: (sensorTid: number, filter: number) => void
         registerOnSensorEvent(
-            handler: (sensorTid: number, filter: number) => void
+            handler: (sensorTid: number, filter: number) => void,
         ) {
             this._handler = (tid, filter) => {
                 if (tid >= 0 && filter) handler(tid, filter)
@@ -159,37 +150,46 @@ namespace microcode {
         }
 
         emitClearScreen() {
-            const anim = hex`
-                0001000000
-                0000010000
-                0000000100
-                0000000002
-                0000000004
-                0000000008
-                0000001000
-                0000100000
-                0010000000
-                0800000000
-                0400000000
-                0200000000
-                0000000000
-            `
-            let pos = 0
-            while (pos < anim.length) {
-                for (let col = 0; col < 5; col++) {
-                    for (let row = 0; row < 5; row++) {
-                        const onOff =
-                            anim[pos + col + (row >> 3)] & (1 << (row & 7))
-                        if (onOff) led.plot(col, row)
-                        else led.unplot(col, row)
+            led.stopAnimation()
+            const displayVersion = this.beginDisplayOperation()
+            control.inBackground(() => {
+                const anim = hex`
+                    0001000000
+                    0000010000
+                    0000000100
+                    0000000002
+                    0000000004
+                    0000000008
+                    0000001000
+                    0000100000
+                    0010000000
+                    0800000000
+                    0400000000
+                    0200000000
+                    0000000000
+                `
+                let pos = 0
+                while (
+                    displayVersion == this.displayVersion &&
+                    pos < anim.length
+                ) {
+                    for (let col = 0; col < 5; col++) {
+                        for (let row = 0; row < 5; row++) {
+                            if (displayVersion != this.displayVersion) return
+                            const onOff =
+                                anim[pos + col + (row >> 3)] & (1 << (row & 7))
+                            if (onOff) led.plot(col, row)
+                            else led.unplot(col, row)
+                        }
                     }
+                    basic.pause(20)
+                    pos = pos + 5
                 }
-                control.waitMicros(20000)
-                pos = pos + 5
-            }
+            })
         }
 
         public stopOngoingActions() {
+            this.cancelDisplayOperation()
             music.stopAllSounds()
             led.stopAnimation()
             basic.clearScreen()
@@ -198,10 +198,12 @@ namespace microcode {
         public execute(action: ActionTid, param: any) {
             switch (action) {
                 case Tid.TID_ACTUATOR_PAINT:
+                    const displayVersion = this.beginDisplayOperation()
                     led.stopAnimation()
-                    this.showIcon(param)
+                    this.showIcon(param, displayVersion)
                     return
                 case Tid.TID_ACTUATOR_SHOW_NUMBER:
+                    this.beginDisplayOperation()
                     led.stopAnimation()
                     basic.showNumber(param)
                     return
@@ -215,20 +217,39 @@ namespace microcode {
                     music.stopAllSounds()
                     music.play(
                         music.builtinPlayableSoundEffect(this.getSound(param)),
-                        music.PlaybackMode.UntilDone
+                        music.PlaybackMode.UntilDone,
                     )
                     return
                 case Tid.TID_ACTUATOR_MUSIC:
                     music.stopAllSounds()
                     music.play(
                         music.stringPlayable(param, 120),
-                        music.PlaybackMode.UntilDone
+                        music.PlaybackMode.UntilDone,
                     )
                     return
             }
         }
 
-        private showIcon(img: Bitmap) {
+        private beginDisplayOperation(): number {
+            this.displayVersion++
+            return this.displayVersion
+        }
+
+        private cancelDisplayOperation() {
+            this.displayVersion++
+        }
+
+        private pauseDisplayOperation(durationMs: number, version: number) {
+            const stepMs = 25
+            let remaining = durationMs
+            while (version == this.displayVersion && remaining > 0) {
+                const pauseMs = Math.min(stepMs, remaining)
+                basic.pause(pauseMs)
+                remaining -= pauseMs
+            }
+        }
+
+        private showIcon(img: Bitmap, displayVersion: number) {
             let s: string[] = []
             for (let row = 0; row < 5; row++) {
                 for (let col = 0; col < 5; col++) {
@@ -237,7 +258,7 @@ namespace microcode {
                 }
             }
             // TODO: do want this here? do we really want to yield?
-            basic.pause(400)
+            this.pauseDisplayOperation(400, displayVersion)
         }
 
         private getSound(sound: Tid) {

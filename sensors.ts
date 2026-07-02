@@ -13,7 +13,7 @@ class Sensor {
         private minimum: number,
         private maximum: number,
         private isJacdacSensor: boolean,
-        private setupFn?: () => void
+        private setupFn?: () => void,
     ) {
         // Data from opts:
         this.range = Math.abs(this.minimum) + this.maximum
@@ -40,7 +40,7 @@ class Sensor {
                 () => input.lightLevel(),
                 0,
                 255,
-                false
+                false,
             )
         else if (name == "Temp." || name == "Temperature" || name == "T")
             return new Sensor(
@@ -49,7 +49,7 @@ class Sensor {
                 () => input.temperature(),
                 -40,
                 100,
-                false
+                false,
             )
         else if (name == "Magnet" || name == "M")
             return new Sensor(
@@ -58,7 +58,7 @@ class Sensor {
                 () => input.magneticForce(Dimension.Strength),
                 -5000,
                 5000,
-                false
+                false,
             )
         else if (name == "Volume" || name == "Microphone" || name == "V")
             return new Sensor(
@@ -67,7 +67,7 @@ class Sensor {
                 () => input.soundLevel(),
                 0,
                 255,
-                false
+                false,
             )
         else return undefined
     }
