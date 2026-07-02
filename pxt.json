@@ -8,7 +8,7 @@
         "microphone": "*",
         "datalogger": "*",
         "settings": "*",
-        "ui-controls": "github:humanapp/ui-controls#v0.0.2"
+        "ui-controls": "github:microbit-apps/ui-controls#v0.0.2"
     },
     "files": [
         "config.ts",
