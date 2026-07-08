@@ -7,7 +7,7 @@
         "radio": "*",
         "microphone": "*",
         "settings": "*",
-        "ui-controls": "github:microbit-apps/ui-controls#v0.0.2"
+        "ui-controls": "github:microbit-apps/ui-controls#v0.0.5"
     },
     "files": [
         "config.ts",
@@ -43,6 +43,8 @@
         "target": "7.1.13",
         "targetId": "microbit"
     },
-    "supportedTargets": ["microbit"],
+    "supportedTargets": [
+        "microbit"
+    ],
     "preferredEditor": "tsprj"
 }
