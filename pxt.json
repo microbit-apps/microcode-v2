@@ -1,6 +1,6 @@
 {
     "name": "microcode",
-    "version": "2.5.47",
+    "version": "2.5.48",
     "description": "Physical computing library for micro:bit V2",
     "dependencies": {
         "core": "*",
