@@ -76,10 +76,13 @@ namespace microcode {
         ui.UiButtonStyles.FocusLabel,
     )
     const EDITOR_RULE_GENERATED_TILE_SIZE = 18
+    // Intentionally omits `font`: the render path resolves the default font at
+    // use time via `ui.locFont()`. Setting it here would capture
+    // `bitmaps.font8` at module-init time, before the app assigns a per-language
+    // font, and would never pick up a localized default.
     const EDITOR_RULE_GENERATED_TILE_CONTENT_STYLE: ui.UiButtonStyle = {
         color: 15,
         textPlacement: "content",
-        font: bitmaps.font8,
     }
     const EDITOR_RULE_SUBTLE_LABEL_STYLE = ui.buttonStyle(
         ui.UiButtonStyles.Transparent,
@@ -96,6 +99,7 @@ namespace microcode {
     const EDITOR_FIELD_DELETE_STYLE = ui.buttonStyle(
         ui.UiButtonStyles.RedBorderedWhite,
         ui.UiButtonStyles.RoundedFrame,
+        ui.UiButtonStyles.FocusLabel,
     )
     const EDITOR_FIELD_OK_STYLE = ui.buttonStyle(
         ui.UiButtonStyles.GreenBorderedWhite,
@@ -1191,7 +1195,7 @@ namespace microcode {
                 return {
                     id: "ok",
                     value: FIELD_EDITOR_COMMIT,
-                    text: "OK",
+                    text: ui.loc("OK"),
                     style: EDITOR_FIELD_OK_STYLE,
                 }
             return {
@@ -2781,7 +2785,9 @@ namespace microcode {
             text?: string,
         ): number {
             if (text !== undefined) {
-                return (text.length + 1) * bitmaps.font8.charWidth
+                // Match the render path, which resolves the default font via
+                // ui.locFont(), so measured width tracks the drawn glyphs.
+                return (text.length + 1) * ui.locFont().charWidth
             }
             if (generated) return EDITOR_RULE_GENERATED_TILE_SIZE
             return framed ? bitmap.width + 2 : bitmap.width

@@ -8,6 +8,7 @@
     "rule": "rule",
     "add_rule": "add rule",
     "delete_rule": "delete rule",
+    "delete": "delete",
     "rule_up": "move rule up",
     "rule_down": "move rule down",
     "disk": "save",

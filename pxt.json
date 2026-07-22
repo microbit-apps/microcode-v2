@@ -10,6 +10,7 @@
         "ui-controls": "github:microbit-apps/ui-controls#v0.0.5"
     },
     "files": [
+        "loc.g.ts",
         "config.ts",
         "main.ts",
         "README.md",

@@ -1,6 +1,5 @@
 {
     "dependencies": {
-        "node-fetch": "^3.3.0",
         "pxt-microbit": "^8.1.30"
     },
     "devDependencies": {
@@ -11,6 +10,12 @@
         "format": "prettier --write \"**/*.ts\"",
         "sync-local-pxt-deps": "node scripts/sync-local-pxt-deps.js",
         "build:hardware:v2": "makecode build --variant mbcodal --always-built",
-        "size-stats": "node scripts/size-stats.js"
+        "size-stats": "node scripts/size-stats.js",
+        "loc:strings": "node scripts/locstrings.mjs",
+        "loc:tooltips": "node scripts/tooltipgen.mjs",
+        "loc:regen": "npm run loc:strings && npm run loc:tooltips",
+        "loc:coverage": "node scripts/locgen.mjs --coverage",
+        "loc:hex": "node scripts/locgen.mjs",
+        "loc:verify": "node scripts/locstrings.mjs && node scripts/tooltipgen.mjs && git diff --exit-code locales/en.json tooltips.ts"
     }
 }

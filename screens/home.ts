@@ -150,6 +150,8 @@ namespace microcode {
             )
             if (!this.logoOffset_) {
                 const tagline = this.assets.getText("tagline")
+                // font5 covers Latin glyphs only; a localized tagline may
+                // require a different font.
                 const font = bitmaps.font5
                 surface.drawText(
                     tagline,

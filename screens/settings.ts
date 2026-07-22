@@ -5,9 +5,6 @@ namespace microcode {
     type SettingsMode = "classic" | "decimal"
 
     const SETTINGS_SCOPE = "settings/mode"
-    const SETTINGS_TITLE = "Select Mode"
-    const SETTINGS_CLASSIC_LABEL = "Classic: 1-5 dots"
-    const SETTINGS_DECIMAL_LABEL = "Decimal: base 10"
     const SETTINGS_BACKGROUND = 0xc
     const SETTINGS_TITLE_Y = 18
     const SETTINGS_GRID_CENTER_Y = 66
@@ -15,17 +12,19 @@ namespace microcode {
     const SETTINGS_ITEM_HEIGHT = 20
     const SETTINGS_ROW_GAP = 4
 
+    // These button styles intentionally omit `font`: the render path resolves
+    // the default font at use time via `ui.locFont()`. Setting it here would
+    // capture `bitmaps.font8` at module-init time, before the app assigns a
+    // per-language font, and would never pick up a localized default.
     const SETTINGS_UNSELECTED_BUTTON_STYLE: ui.UiButtonStyle = {
         backgroundColor: 11,
         borderColor: 11,
         frame: "roundedRect",
-        font: bitmaps.font8,
     }
     const SETTINGS_SELECTED_BUTTON_STYLE: ui.UiButtonStyle = {
         backgroundColor: 1,
         borderColor: 1,
         frame: "roundedRect",
-        font: bitmaps.font8,
     }
 
     /**
@@ -79,10 +78,10 @@ namespace microcode {
 
         private createControls(): ui.UiControl<SettingsMode>[] {
             return [
-                this.modeControl("classic", SETTINGS_CLASSIC_LABEL, () =>
+                this.modeControl("classic", ui.loc("Classic: 1-5 dots"), () =>
                     this.selectMode("classic"),
                 ),
-                this.modeControl("decimal", SETTINGS_DECIMAL_LABEL, () =>
+                this.modeControl("decimal", ui.loc("Decimal: base 10"), () =>
                     this.selectMode("decimal"),
                 ),
             ]
@@ -125,13 +124,11 @@ namespace microcode {
         }
 
         private drawTitle(surface: ui.DrawSurface): void {
-            const font = bitmaps.font8
+            const font = ui.locFont()
+            const title = ui.loc("Select Mode")
             surface.drawText(
-                SETTINGS_TITLE,
-                Math.idiv(
-                    UI_SCREEN_WIDTH - SETTINGS_TITLE.length * font.charWidth,
-                    2,
-                ),
+                title,
+                Math.idiv(UI_SCREEN_WIDTH - title.length * font.charWidth, 2),
                 SETTINGS_TITLE_Y,
                 { color: 1, font },
             )

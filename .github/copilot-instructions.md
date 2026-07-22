@@ -23,7 +23,7 @@ Keep changes minimal, consistent with existing patterns, and validate by buildin
 ## Project Conventions
 - Keep one-feature-per-file changes; avoid broad refactors. Follow existing naming and file organization in `pxt.json.files`.
 - No inline comments unless requested; prefer small, focused PRs.
-- UI strings and localization live in `assets/strings/*` and `locales/tooltips.json`. Add keys consistently; avoid hardcoded text in TS.
+- UI strings and localization live in `locales/` (see `locales/README.md`): `tooltips.json` maps tooltip ids to source strings, and `<lang>.json` catalogs map source strings to translations. Avoid hardcoded user-visible text in TS; use `ui.loc(...)` or a tooltip id.
 - Styles: edit `assets/css/style.scss` then ensure any pipeline that compiles CSS remains compatible with current loaders.
 - Assets loading: `assets/js/loader.js` initializes web assets; avoid breaking load order (`binary-en.js`, `custom.js`).
 
@@ -50,7 +50,7 @@ Keep changes minimal, consistent with existing patterns, and validate by buildin
 - Adding a new sensor tile:
   - Define tile in `tiles.ts` and `gallery.ts`.
   - Map to runtime in `sensors.ts` and ensure `interpreter.ts` dispatches events.
-  - Provide localized label in `assets/strings/<lang>/` and tooltips in `locales/tooltips.json`.
+  - Add the tooltip id and source string to `locales/tooltips.json`, and translations to `locales/<lang>.json`.
 - Tweaking editor behavior:
   - Update `fieldeditors.ts` for input handling; ensure `exprparser.ts` accepts resulting tokens.
   - If decimal vs dots mode: see `decimal.ts` and related config in `settings.ts`.
