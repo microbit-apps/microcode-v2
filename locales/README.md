@@ -39,6 +39,16 @@ the call site through `textId` / `titleId`. Add translations to the
 inventory is translated. Add `-- --verbose` to list the missing strings, and
 name languages after `--` to limit the report to them.
 
+### Web strings
+
+The deployed web page fetches id-keyed `assets/strings/<lang>/tooltips.json`
+at runtime. Those files are generated: every locgen run (`npm run loc:hex`)
+rewrites them for the requested languages by joining `tooltips.json` ids to
+the merged catalog; do not edit them by hand. Web snapshots are not glyph
+validated (the browser has its own fonts), so they include CJK languages and
+the sample-name (`N*`) strings, which ship only to the web and never occupy
+device flash.
+
 ### Context-disambiguated strings
 
 When one source string needs different translations in different places, use

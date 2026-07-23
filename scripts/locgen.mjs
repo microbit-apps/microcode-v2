@@ -4,8 +4,14 @@
 // translation catalogs, drop identity and unrenderable entries, emit
 // loc.g.ts, build with mkc, and copy the resulting hex to
 // assets/hex/microcode-v2.<lang>.hex. A language with no renderable
-// translations is skipped. loc.g.ts is restored to its default
+// translations builds no hex. loc.g.ts is restored to its default
 // (assign-nothing) state after the run.
+//
+// Every requested language (hex or not, including "en") also gets its web
+// snapshot regenerated: the deployed web page fetches the id-keyed
+// assets/strings/<lang>/tooltips.json at runtime, so locgen derives those
+// files from the merged catalog. The browser supplies its own fonts, so web
+// snapshots are not glyph-validated and include entries the device drops.
 //
 // Usage: node scripts/locgen.mjs [lang ...]
 //   No args: "en" plus every locales/<lang>.json (excluding en and tooltips).
@@ -110,6 +116,46 @@ function font5SrcStrings() {
     return set;
 }
 
+// Master tooltip map (id -> source string), in file order.
+let _tooltipMaster = null;
+function tooltipMaster() {
+    if (!_tooltipMaster)
+        _tooltipMaster = readCatalog(join(ROOT, "locales", "tooltips.json")) || {};
+    return _tooltipMaster;
+}
+
+// Source strings that appear only under N* sample ids. They surface on the
+// web page's gallery; the device never resolves them, so they are excluded
+// from device tables.
+function sampleOnlySources() {
+    const master = tooltipMaster();
+    const sample = new Set();
+    const other = new Set();
+    for (const id of Object.keys(master)) {
+        if (/^N\d+$/.test(id)) sample.add(master[id]);
+        else other.add(master[id]);
+    }
+    for (const src of other) sample.delete(src);
+    return sample;
+}
+
+// Write the web surface's id-keyed strings file for a language. For "en"
+// every id maps to its source string; otherwise the ids whose source string
+// has an entry in the merged catalog. Returns the emitted id count.
+function writeWebStrings(lang, merged) {
+    const master = tooltipMaster();
+    const out = {};
+    for (const id of Object.keys(master)) {
+        const src = master[id];
+        if (lang === "en") out[id] = src;
+        else if (merged[src] !== undefined) out[id] = merged[src];
+    }
+    const dir = join(ROOT, "assets", "strings", lang);
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "tooltips.json"), JSON.stringify(out, null, 4) + "\n");
+    return Object.keys(out).length;
+}
+
 // --- helpers ----------------------------------------------------------------
 
 function toHexCp(cp) {
@@ -182,6 +228,9 @@ function processLanguage(lang) {
 
     if (lang === "en") {
         writeFileSync(LOC_G_PATH, DEFAULT_LOC_G);
+        const webIds = writeWebStrings(lang, null);
+        console.log(`\n=== ${lang} ===`);
+        console.log(`  web strings: assets/strings/en/tooltips.json (${webIds} ids)`);
         const built = buildAndCopy(lang);
         report.merged = 0;
         report.identityDropped = 0;
@@ -191,7 +240,6 @@ function processLanguage(lang) {
         report.layers = ["(source strings, no catalog)"];
         report.hexPath = built.dst;
         report.hexSize = built.size;
-        console.log(`\n=== ${lang} ===`);
         console.log("  source-string build (no translation table)");
         console.log(`  hex: ${built.dst} (${built.size} bytes)`);
         return report;
@@ -209,6 +257,19 @@ function processLanguage(lang) {
         console.log(`  layer ${l.name}: ${l.count} entries`);
     }
     const mergedCount = Object.keys(merged).length;
+
+    const webIds = writeWebStrings(lang, merged);
+    console.log(`  web strings: assets/strings/${lang}/tooltips.json (${webIds} ids)`);
+
+    // Sample-name strings ship only in the web snapshot.
+    const sampleOnly = sampleOnlySources();
+    let sampleDropped = 0;
+    for (const k of Object.keys(merged)) {
+        if (sampleOnly.has(k)) {
+            delete merged[k];
+            sampleDropped++;
+        }
+    }
 
     // Drop identity entries (value === key): they only waste flash.
     let identityDropped = 0;
@@ -281,7 +342,7 @@ function processLanguage(lang) {
     // image identical to the source-string build; skip it rather than emit a
     // pointless hex.
     if (finalCount === 0) {
-        console.log(`  merged ${mergedCount}, identity-dropped ${identityDropped}, font5-dropped ${font5Dropped}, glyph-dropped ${glyphDropped}`);
+        console.log(`  merged ${mergedCount}, sample-only ${sampleDropped}, identity-dropped ${identityDropped}, font5-dropped ${font5Dropped}, glyph-dropped ${glyphDropped}`);
         console.log("  no renderable translations; skipped (no hex built)");
         report.layers = layersFound;
         report.merged = mergedCount;
@@ -298,7 +359,7 @@ function processLanguage(lang) {
 
     const built = buildAndCopy(lang);
 
-    console.log(`  merged ${mergedCount}, identity-dropped ${identityDropped}, font5-dropped ${font5Dropped}, glyph-dropped ${glyphDropped}, length-warnings ${lengthWarnings}, table ${finalCount}`);
+    console.log(`  merged ${mergedCount}, sample-only ${sampleDropped}, identity-dropped ${identityDropped}, font5-dropped ${font5Dropped}, glyph-dropped ${glyphDropped}, length-warnings ${lengthWarnings}, table ${finalCount}`);
     console.log(`  hex: ${built.dst} (${built.size} bytes)`);
 
     report.layers = layersFound;
