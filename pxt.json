@@ -7,9 +7,10 @@
         "radio": "*",
         "microphone": "*",
         "settings": "*",
-        "ui-controls": "github:microbit-apps/ui-controls#v0.0.5"
+        "ui-controls": "github:microbit-apps/ui-controls#v0.0.6"
     },
     "files": [
+        "loc.g.ts",
         "config.ts",
         "main.ts",
         "README.md",

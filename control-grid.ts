@@ -597,6 +597,7 @@ namespace microcode {
             if (title.length)
                 surface.drawText(title, x, this.finalRect.y + 4, {
                     color: this.titleColor_,
+                    font: ui.locFont(),
                 })
         }
 

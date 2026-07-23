@@ -46,11 +46,12 @@ namespace microcode {
         /**
          * Button style for compact modal controls.
          */
+        // Intentionally omits `font`: the render path resolves the default font
+        // at use time via `ui.locFont()`. Setting it here would capture
+        // `bitmaps.font8` at module-init time, before the app assigns a
+        // per-language font, and would never pick up a localized default.
         export const ModalButton = ui.buttonStyle(
             ui.UiButtonStyles.LightShadowedWhite,
-            {
-                font: bitmaps.font8,
-            },
         )
 
         /**
