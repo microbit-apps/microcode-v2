@@ -55,6 +55,7 @@ namespace microcode {
         "T28": "moisture",
         "T29": "distance",
         "T30": "reflected light",
+        "T31": "jacdac sensor",
         "T40": "switch page",
         "T41": "play sound",
         "T43": "music",
@@ -220,6 +221,7 @@ namespace microcode {
         else if (id === "moisture") tid = 28
         else if (id === "distance") tid = 29
         else if (id === "reflected light") tid = 30
+        else if (id === "jacdac sensor") tid = 31
         else if (id === "switch page") tid = 40
         else if (id === "play sound") tid = 41
         else if (id === "music") tid = 43

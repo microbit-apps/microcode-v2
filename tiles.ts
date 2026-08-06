@@ -22,15 +22,16 @@ namespace microcode {
         TID_SENSOR_CUP_Z_WRITTEN = 21,
         TID_SENSOR_MAGNET = 22,
         TID_SENSOR_SLIDER = 23,
-        TID_SENSOR_ROTARY = 24,
-        TID_SENSOR_CAR_WALL = 25,
-        TID_SENSOR_LINE = 26,
+        TID_SENSOR_ROTARY = 24, // jacdac
+        TID_SENSOR_CAR_WALL = 25, // RC car
+        TID_SENSOR_LINE = 26, // RC car
         TID_SENSOR_LED_LIGHT = 27, // this built-in light sensor on microbit
-        TID_SENSOR_MOISTURE = 28,
-        TID_SENSOR_DISTANCE = 29,
+        TID_SENSOR_MOISTURE = 28, // jacdac
+        TID_SENSOR_DISTANCE = 29, // jacdac
 
-        TID_SENSOR_REFLECTED = 30,
-        SENSOR_END = 30,
+        TID_SENSOR_REFLECTED = 30, // jacdac
+        TID_SENSOR_JACDAC = 31, // jacdac
+        SENSOR_END = 31,
 
         ACTUATOR_START = 40,
         TID_ACTUATOR_SWITCH_PAGE = 40,
@@ -59,8 +60,9 @@ namespace microcode {
         TID_FILTER_PIN_2 = 72,
         TID_FILTER_BUTTON_A = 73,
         TID_FILTER_BUTTON_B = 74,
-        TID_FILTER_KITA_KEY_1 = 75,
-        TID_FILTER_KITA_KEY_2 = 76,
+        // TODO: add BUTTON_AB
+        TID_FILTER_KITA_KEY_1 = 75, // jacdac only, deprecated
+        TID_FILTER_KITA_KEY_2 = 76, // jacdac only, deprecated
         TID_FILTER_LOGO = 77,
         PRESS_RELEASE_END = 77,
         //
@@ -93,8 +95,8 @@ namespace microcode {
         TID_FILTER_CUP_Y_READ = 96,
         TID_FILTER_CUP_Z_READ = 97,
         //
-        TID_FILTER_ROTARY_LEFT = 98,
-        TID_FILTER_ROTARY_RIGHT = 99,
+        TID_FILTER_ROTARY_LEFT = 98, // jacdac only
+        TID_FILTER_ROTARY_RIGHT = 99, // jacdac only
         //
         TID_FILTER_UP = 100,
         TID_FILTER_DOWN = 101,
@@ -160,7 +162,7 @@ namespace microcode {
 
         TID_MODIFIER_TEMP_READ = 180,
         //
-        TID_MODIFIER_RGB_LED_COLOR_X = 181,
+        TID_MODIFIER_RGB_LED_COLOR_X = 181, // jacdac
         TID_MODIFIER_RGB_LED_COLOR_1 = 182,
         TID_MODIFIER_RGB_LED_COLOR_2 = 183,
         TID_MODIFIER_RGB_LED_COLOR_3 = 184,
@@ -170,7 +172,7 @@ namespace microcode {
         TID_MODIFIER_RGB_LED_COLOR_RAINBOW = 188,
         TID_MODIFIER_RGB_LED_COLOR_SPARKLE = 189,
         //
-        CAR_MODIFIER_BEGIN = 190,
+        CAR_MODIFIER_BEGIN = 190, // RC car
         TID_MODIFIER_CAR_FORWARD = 190,
         TID_MODIFIER_CAR_REVERSE = 191,
         TID_MODIFIER_CAR_TURN_LEFT = 192, // deprecate
@@ -211,6 +213,7 @@ namespace microcode {
         TID_COMPARE_GTE = 225,
         TID_COMPARE_END = 225,
 
+        TID_JACDAC_DASH = 253,
         TID_POS_INT_EDITOR = 254,
         TID_DECIMAL_EDITOR = 255, // both filter and modifier
     }

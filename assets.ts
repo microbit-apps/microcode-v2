@@ -230,6 +230,9 @@ namespace microcode {
             if (name == Tid.TID_COMPARE_GT) return icondb.gt
             if (name == Tid.TID_COMPARE_GTE) return icondb.gte
 
+            if (name == Tid.TID_JACDAC_DASH || name == Tid.TID_SENSOR_JACDAC)
+                return icondb.jacdac_logo
+
             // micro:bit car
             // const car = carImages(name)
             // if (car) return car
@@ -1453,9 +1456,29 @@ namespace icondb {
     . . . . . . . . . . . . . . . .
 `
 
+    export const jacdac_logo = bmp`
+    . . . . . . . . . . . . . . . . 
+    . . 4 4 4 4 4 4 4 4 4 4 4 4 . . 
+    . 4 f f 4 4 4 4 4 4 4 4 4 4 4 . 
+    . 4 f f 4 4 4 4 4 4 4 4 4 4 4 . 
+    . . 4 4 4 4 4 4 4 4 4 4 4 4 . . 
+    . . . . . . . . . . . . . . . . 
+    . . 4 4 4 4 4 4 4 4 4 4 4 4 . . 
+    . 4 f f 4 4 4 4 4 4 4 4 4 4 4 . 
+    . 4 f f 4 4 4 4 4 4 4 4 4 4 4 . 
+    . . 4 4 4 4 4 4 4 4 4 4 4 4 . . 
+    . . . . . . . . . . . . . . . . 
+    . . 4 4 4 4 4 4 4 4 4 . . . . . 
+    . 4 f f 4 4 4 4 4 4 4 4 . . . . 
+    . 4 f f 4 4 4 4 4 4 4 4 . . . . 
+    . . 4 4 4 4 4 4 4 4 4 . . . . . 
+    . . . . . . . . . . . . . . . . 
+    `
+
     //TODO: I think this is actually the Jacdac logo?
     // user-interface-base/coreAssets.ts has the real microbitLogo
-    // Use "microbitLogo" and at the end of this function it will check user-interface-base and fetch it.
+    // Use "microbitLogo" and at the end of this function it will
+    // check user-interface-base and fetch it.
     export const microbit_logo = bmp`
     . . . . . . . . . . . . . . . . 
     . . . . . . . . . . . . . . . . 
