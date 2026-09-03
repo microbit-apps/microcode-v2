@@ -15,6 +15,7 @@
         "main.ts",
         "README.md",
         "assets.ts",
+        "robot.ts",
         "field-editor-model.ts",
         "language.ts",
         "tiles.ts",
@@ -44,8 +45,6 @@
         "target": "7.1.13",
         "targetId": "microbit"
     },
-    "supportedTargets": [
-        "microbit"
-    ],
+    "supportedTargets": ["microbit"],
     "preferredEditor": "tsprj"
 }

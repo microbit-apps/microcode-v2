@@ -16,8 +16,13 @@ namespace microcode {
 
             const buf = this.load(SAVESLOT_AUTO)
             if (buf) {
-                const prog = ProgramDefn.fromBuffer(new BufferReader(buf))
-                runProgram(prog)
+                try {
+                    const prog = ProgramDefn.fromBuffer(new BufferReader(buf))
+                    runProgram(prog)
+                } catch (e) {
+                    console.log("invalid auto-save, clearing")
+                    this.save(SAVESLOT_AUTO, new ProgramDefn().toBuffer())
+                }
             }
 
             this.host_ = new AppHost(this)

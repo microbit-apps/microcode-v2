@@ -231,8 +231,10 @@ namespace microcode {
             if (name == Tid.TID_COMPARE_GTE) return icondb.gte
 
             // micro:bit car
-            // const car = carImages(name)
-            // if (car) return car
+            if (CAR_TILES) {
+                const car = carImages(name)
+                if (car) return car
+            }
             // const jacdac = jacdacImages(name)
             // if (jacdac) return jacdac
             extraImage = null

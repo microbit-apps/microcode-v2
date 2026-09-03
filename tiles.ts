@@ -411,10 +411,10 @@ namespace microcode {
         if (
             tid == Tid.TID_ACTUATOR_MICROPHONE ||
             tid == Tid.TID_FILTER_ACCEL ||
-            // TODO: no car for now
-            tid == Tid.TID_SENSOR_CAR_WALL ||
-            tid == Tid.TID_SENSOR_LINE ||
-            tid == Tid.TID_ACTUATOR_CAR
+            (!CAR_TILES &&
+                (tid == Tid.TID_SENSOR_CAR_WALL ||
+                    tid == Tid.TID_SENSOR_LINE ||
+                    tid == Tid.TID_ACTUATOR_CAR))
         )
             return false
         // TODO: no jacdac for now
