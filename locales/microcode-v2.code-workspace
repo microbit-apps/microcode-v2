@@ -1,0 +1,16 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		},
+		{
+			"path": "../../sensors"
+		},
+		{
+			"path": "../../ui-controls"
+		},
+		{
+			"path": "../../user-interface-base"
+		}
+	]
+}
