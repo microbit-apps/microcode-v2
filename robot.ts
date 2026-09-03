@@ -4,12 +4,12 @@ namespace microcode {
         if (name == Tid.TID_MODIFIER_CAR_FORWARD) return icondb.car_forward
         if (name == Tid.TID_MODIFIER_CAR_REVERSE) return icondb.car_reverse
         if (name == Tid.TID_MODIFIER_CAR_TURN_LEFT) return icondb.car_left_turn
-        if (name == Tid.TID_MODIFIER_CAR_TURN_RIGHT) return icondb.car_left_turn
+        if (name == Tid.TID_MODIFIER_CAR_TURN_RIGHT) return ui.car_right_turn
         if (name == Tid.TID_MODIFIER_CAR_STOP) return icondb.stop
         if (name == Tid.TID_MODIFIER_CAR_FORWARD_FAST)
             return icondb.car_forward_fast
         if (name == Tid.TID_MODIFIER_CAR_SPIN_LEFT) return icondb.car_left_spin
-        if (name == Tid.TID_MODIFIER_CAR_SPIN_RIGHT) return icondb.car_left_spin
+        if (name == Tid.TID_MODIFIER_CAR_SPIN_RIGHT) return ui.car_right_spin
         if (name == Tid.TID_MODIFIER_CAR_LED_COLOR_1)
             return icondb.tile_color_red
         if (
