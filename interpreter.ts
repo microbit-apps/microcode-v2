@@ -370,6 +370,7 @@ namespace microcode {
         | Tid.TID_SENSOR_PRESS
         | Tid.TID_SENSOR_RELEASE
         | Tid.TID_SENSOR_RADIO_RECEIVE
+        | Tid.TID_SENSOR_CAR_WALL
 
     export type ActionTid =
         | Tid.TID_ACTUATOR_PAINT
@@ -478,6 +479,7 @@ namespace microcode {
                 this.sensors[tid] = undefined
             }
             this.sensors[Tid.TID_SENSOR_RADIO_RECEIVE] = 0
+            this.sensors[Tid.TID_SENSOR_CAR_WALL] = 0
             this.startSensors()
             this.running = true
             // get ready to receive events

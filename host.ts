@@ -46,9 +46,22 @@ namespace microcode {
         Tid.TID_FILTER_PIN_2,
     ]
 
+    const line2tids: IdMap = {
+        [robot.robots.RobotLineState.None]: Tid.TID_FILTER_LINE_NEITHER,
+        [robot.robots.RobotLineState.Left]: Tid.TID_FILTER_LINE_LEFT,
+        [robot.robots.RobotLineState.Right]: Tid.TID_FILTER_LINE_RIGHT,
+        [robot.robots.RobotLineState.Both]: Tid.TID_FILTER_LINE_BOTH,
+        [robot.robots.RobotLineState.LostLeft]:
+            Tid.TID_FILTER_LINE_NEITHER_LEFT,
+        [robot.robots.RobotLineState.LostRight]:
+            Tid.TID_FILTER_LINE_NEITHER_RIGHT,
+    }
+
     export class MicrobitHost implements RuntimeHost {
         /** Monotonic token observed by cancellable LED display work. */
         private displayVersion = 0
+        private carWallValue = 0
+        private carLineValue = 0
 
         constructor() {
             this._handler = (s: number, f: number) => {}
@@ -99,9 +112,7 @@ namespace microcode {
                 })
             })
 
-            radio.onReceivedNumber(radioNum => {
-                this._handler(Tid.TID_SENSOR_RADIO_RECEIVE, radioNum)
-            })
+            radio.onReceivedNumber(radioNum => this.handleRadioNumber(radioNum))
 
             input.onSound(DetectedSound.Loud, () => {
                 this._handler(Tid.TID_SENSOR_MICROPHONE, Tid.TID_FILTER_LOUD)
@@ -135,9 +146,33 @@ namespace microcode {
                     value = input.soundLevel()
                     max = 255
                     break
+                case Tid.TID_SENSOR_CAR_WALL:
+                    value = this.carWallValue
+                    max = 5
+                    break
+                case Tid.TID_SENSOR_LINE:
+                    value = this.carLineValue
+                    break
             }
             if (!normalized) return value
             return Math.abs(value) / (Math.abs(min) + max)
+        }
+
+        private handleRadioNumber(radioValue: number) {
+            const obstacleState = robot.robots.RobotCompactCommand.ObstacleState
+            const lineState = robot.robots.RobotCompactCommand.LineState
+
+            if (radioValue > obstacleState && radioValue < lineState) {
+                this.carWallValue = radioValue - obstacleState
+                this._handler(Tid.TID_SENSOR_CAR_WALL, this.carWallValue)
+            } else if (radioValue >= lineState) {
+                this.carLineValue = radioValue - lineState
+                const lineTid = line2tids[this.carLineValue]
+                if (lineTid !== undefined)
+                    this._handler(Tid.TID_SENSOR_LINE, lineTid)
+            } else {
+                this._handler(Tid.TID_SENSOR_RADIO_RECEIVE, radioValue)
+            }
         }
 
         private _handler: (sensorTid: number, filter: number) => void
@@ -290,35 +325,3 @@ namespace microcode {
 
     export const runtimeHost: RuntimeHost = new MicrobitHost()
 }
-
-/*
-
-                // TODO: convert this to external sensor with events and values
-                // TODO: and lift out
-                const radioVal = this.getRadioVal()
-                if (
-                    sensor == Tid.TID_SENSOR_CAR_WALL ||
-                    sensor == Tid.TID_SENSOR_LINE
-                ) {
-                    // this hack separates radio ranges used to communicate with robot car
-                    if (
-                        robot.robots.RobotCompactCommand.ObstacleState <
-                        radioVal
-                    )
-                        if (sensor == Tid.TID_SENSOR_CAR_WALL)
-                            return this.filterOnEvent(
-                                radioVal -
-                                    robot.robots.RobotCompactCommand
-                                        .ObstacleState
-                            )
-                        else if (
-                            robot.robots.RobotCompactCommand.LineState <=
-                            radioVal
-                        )
-                            return this.filterOnEvent(radioVal)
-                } else if (
-                    radioVal < robot.robots.RobotCompactCommand.ObstacleState
-                )
-                    return this.filterViaCompare()
-
-*/

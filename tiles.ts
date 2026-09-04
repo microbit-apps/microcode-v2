@@ -813,6 +813,12 @@ namespace microcode {
             case Tid.TID_FILTER_PIN_0:
             case Tid.TID_FILTER_PIN_1:
             case Tid.TID_FILTER_PIN_2:
+            case Tid.TID_FILTER_LINE_BOTH:
+            case Tid.TID_FILTER_LINE_LEFT:
+            case Tid.TID_FILTER_LINE_RIGHT:
+            case Tid.TID_FILTER_LINE_NEITHER:
+            case Tid.TID_FILTER_LINE_NEITHER_LEFT:
+            case Tid.TID_FILTER_LINE_NEITHER_RIGHT:
                 return TileKind.EventCode
 
             case Tid.TID_SENSOR_LED_LIGHT:
@@ -821,8 +827,6 @@ namespace microcode {
             case Tid.TID_SENSOR_TEMP:
             case Tid.TID_SENSOR_RADIO_RECEIVE:
             case Tid.TID_SENSOR_CAR_WALL:
-            case Tid.TID_SENSOR_LINE:
-
             case Tid.TID_MODIFIER_RADIO_READ:
             case Tid.TID_MODIFIER_TEMP_READ:
             case Tid.TID_MODIFIER_LIGHT_READ:
@@ -900,20 +904,6 @@ namespace microcode {
                 return SensorChange.Up
             case Tid.TID_MODIFIER_OFF:
                 return SensorChange.Down
-            //
-            case Tid.TID_FILTER_LINE_BOTH:
-                return robot.robots.RobotCompactCommand.LineBoth
-            case Tid.TID_FILTER_LINE_LEFT:
-                return robot.robots.RobotCompactCommand.LineLeft
-            case Tid.TID_FILTER_LINE_RIGHT:
-                return robot.robots.RobotCompactCommand.LineRight
-            case Tid.TID_FILTER_LINE_NEITHER:
-                return robot.robots.RobotCompactCommand.LineNone
-            case Tid.TID_FILTER_LINE_NEITHER_LEFT:
-                return robot.robots.RobotCompactCommand.LineLostLeft
-            case Tid.TID_FILTER_LINE_NEITHER_RIGHT:
-                return robot.robots.RobotCompactCommand.LineLostRight
-            //
             case Tid.TID_FILTER_TIMESPAN_SHORT:
                 return 250
             case Tid.TID_FILTER_TIMESPAN_LONG:
@@ -964,6 +954,7 @@ namespace microcode {
             case Tid.TID_SENSOR_PRESS:
             case Tid.TID_SENSOR_RELEASE:
             case Tid.TID_SENSOR_RADIO_RECEIVE:
+            case Tid.TID_SENSOR_CAR_WALL:
                 return -1 // any
             default:
                 return undefined
