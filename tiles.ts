@@ -193,7 +193,8 @@ namespace microcode {
         TID_MODIFIER_LIGHT_READ = 206,
         TID_MODIFIER_MAGNET_READ = 207,
         TID_MODIFIER_MIC_READ = 208,
-        MODIFIER_END = 208,
+        TID_MODIFIER_CAR_WALL_READ = 209,
+        MODIFIER_END = 209,
 
         TID_OPERATOR_START = 210,
         TID_OPERATOR_PLUS = 210,
@@ -764,6 +765,7 @@ namespace microcode {
             case Tid.TID_MODIFIER_MIC_READ:
             case Tid.TID_MODIFIER_LIGHT_READ:
             case Tid.TID_MODIFIER_MAGNET_READ:
+            case Tid.TID_MODIFIER_CAR_WALL_READ:
                 return "variable"
             case Tid.TID_OPERATOR_DIVIDE:
             case Tid.TID_OPERATOR_MINUS:
@@ -832,6 +834,7 @@ namespace microcode {
             case Tid.TID_MODIFIER_LIGHT_READ:
             case Tid.TID_MODIFIER_MAGNET_READ:
             case Tid.TID_MODIFIER_MIC_READ:
+            case Tid.TID_MODIFIER_CAR_WALL_READ:
                 return TileKind.Sensor
 
             case Tid.TID_SENSOR_CUP_X_WRITTEN:
@@ -889,6 +892,8 @@ namespace microcode {
                 return Tid.TID_SENSOR_MAGNET
             case Tid.TID_MODIFIER_MIC_READ:
                 return Tid.TID_SENSOR_MICROPHONE
+            case Tid.TID_MODIFIER_CAR_WALL_READ:
+                return Tid.TID_SENSOR_CAR_WALL
             //
             case Tid.TID_FILTER_ROTARY_LEFT:
             case Tid.TID_FILTER_DOWN:
