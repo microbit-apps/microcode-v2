@@ -215,6 +215,7 @@ namespace microcode {
             if (name == Tid.TID_MODIFIER_LIGHT_READ) return icondb.light_sensor
             if (name == Tid.TID_MODIFIER_MAGNET_READ) return icondb.magnet
             if (name == Tid.TID_MODIFIER_MIC_READ) return icondb.microphone
+            if (name == Tid.TID_MODIFIER_CAR_WALL_READ) return icondb.car_wall
 
             // operators
 
