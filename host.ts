@@ -103,7 +103,7 @@ namespace microcode {
                 //TODO: This is a hack to fix the onGesture events not working.
                 // In GDB we see that the CPP functions onGesture, MicrobitAccelerometer constructor and the LSM303Accelerometer constructor are invoked.
                 // In spite of this the __handler is not invoked. For some reason this basic.pause(0) fixes this issue (possibly because of it briefly yielding?)
-                basic.pause(0)
+                basic.pause(0) // this is due to the queueing problem in CODAL. see: https://github.com/microsoft/pxt-microbit/issues/7083
                 input.onGesture(g, () => {
                     this._handler(
                         Tid.TID_SENSOR_ACCELEROMETER,
@@ -146,10 +146,6 @@ namespace microcode {
                     value = input.soundLevel()
                     max = 255
                     break
-                case Tid.TID_SENSOR_CAR_WALL:
-                    value = this.carWallValue
-                    max = 5
-                    break
                 case Tid.TID_SENSOR_LINE:
                     value = this.carLineValue
                     break
@@ -164,13 +160,16 @@ namespace microcode {
 
             if (radioValue > obstacleState && radioValue < lineState) {
                 this.carWallValue = radioValue - obstacleState
+                basic.showString("W")
                 this._handler(Tid.TID_SENSOR_CAR_WALL, this.carWallValue)
             } else if (radioValue >= lineState) {
+                basic.showString("L")
                 this.carLineValue = radioValue - lineState
                 const lineTid = line2tids[this.carLineValue]
                 if (lineTid !== undefined)
                     this._handler(Tid.TID_SENSOR_LINE, lineTid)
             } else {
+                basic.showNumber(radioValue)
                 this._handler(Tid.TID_SENSOR_RADIO_RECEIVE, radioValue)
             }
         }

@@ -18,7 +18,7 @@ namespace microcode {
             if (buf) {
                 try {
                     const prog = ProgramDefn.fromBuffer(new BufferReader(buf))
-                    runProgram(prog)
+                    if (!__screenhelpers.displayPresent()) runProgram(prog)
                 } catch (e) {
                     console.log("invalid auto-save, clearing")
                     this.save(SAVESLOT_AUTO, new ProgramDefn().toBuffer())
@@ -75,8 +75,9 @@ namespace microcode {
         const wasRunning = isProgramRunning()
         if (wasRunning) stopProgram()
         settings.writeBuffer(SAVESLOT_AUTO, buf)
-        if (wasRunning)
+        if (wasRunning) {
             runProgram(ProgramDefn.fromBuffer(new BufferReader(buf)))
+        }
     }
 
     export function stopProgram() {
