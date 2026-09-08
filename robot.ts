@@ -41,7 +41,7 @@ namespace microcode {
         return null
     }
 
-    function getCarParam2(tile: Tile) {
+    export function getCarParam(tile: Tile) {
         const tid = getTid(tile)
         switch (tid) {
             case Tid.TID_MODIFIER_CAR_FORWARD:

@@ -252,6 +252,9 @@ namespace microcode {
                         music.PlaybackMode.UntilDone,
                     )
                     return
+                case Tid.TID_ACTUATOR_CAR:
+                    if (param !== undefined) radio.sendNumber(param)
+                    return
                 case Tid.TID_ACTUATOR_MUSIC:
                     music.stopAllSounds()
                     music.play(

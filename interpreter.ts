@@ -18,6 +18,7 @@ namespace microcode {
         RadioGroup, // well radio group affects subsequent radio.send
         RadioSend,
         PageCounter,
+        Car,
     }
 
     function getOutputResource(action: Tid) {
@@ -38,6 +39,8 @@ namespace microcode {
                 return OutputResource.Speaker
             case Tid.TID_ACTUATOR_SWITCH_PAGE:
                 return OutputResource.PageCounter
+            case Tid.TID_ACTUATOR_CAR:
+                return OutputResource.Car
         }
         return undefined
     }
@@ -97,6 +100,12 @@ namespace microcode {
             if (resource == OutputResource.LEDScreen) {
                 led.stopAnimation()
             } else if (resource == OutputResource.Speaker) music.stopAllSounds()
+            else if (resource == OutputResource.Car)
+                this.interp.runAction(
+                    this.index,
+                    Tid.TID_ACTUATOR_CAR,
+                    robot.robots.RobotCompactCommand.MotorStop,
+                )
             this.actionRunning = false
             // give the background fiber chance to finish unless it is waiting
             while (this.wakeTime == 0 && this.backgroundActive) {
@@ -304,6 +313,8 @@ namespace microcode {
                 getTid(this.rule.modifiers[0]) == Tid.TID_MODIFIER_LOOP
             ) {
                 param = defaultModifier(actuator)
+                if (actuator == Tid.TID_ACTUATOR_CAR)
+                    param = getCarParam(param as Tile)
             } else {
                 switch (actuator) {
                     case Tid.TID_ACTUATOR_PAINT: {
@@ -322,6 +333,11 @@ namespace microcode {
                     }
                     case Tid.TID_ACTUATOR_SPEAKER: {
                         param = this.rule.modifiers[this.modifierIndex]
+                        break
+                    }
+                    case Tid.TID_ACTUATOR_CAR: {
+                        const mod = this.rule.modifiers[this.modifierIndex]
+                        param = getCarParam(mod)
                         break
                     }
                     default:
@@ -383,6 +399,7 @@ namespace microcode {
         | Tid.TID_ACTUATOR_MUSIC
         | Tid.TID_ACTUATOR_RADIO_SEND
         | Tid.TID_ACTUATOR_RADIO_SET_GROUP
+        | Tid.TID_ACTUATOR_CAR
 
     export interface RuntimeHost {
         emitClearScreen(): void
