@@ -449,6 +449,7 @@ namespace microcode {
             case Tid.TID_ACTUATOR_CUP_X_ASSIGN:
             case Tid.TID_ACTUATOR_CUP_Y_ASSIGN:
             case Tid.TID_ACTUATOR_CUP_Z_ASSIGN:
+            case Tid.TID_ACTUATOR_RADIO_SEND:
                 return 0
             default:
                 return undefined

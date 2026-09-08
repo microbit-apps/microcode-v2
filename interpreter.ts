@@ -16,6 +16,7 @@ namespace microcode {
         LEDScreen = 1000,
         Speaker,
         RadioGroup, // well radio group affects subsequent radio.send
+        RadioSend,
         PageCounter,
     }
 
@@ -30,6 +31,8 @@ namespace microcode {
                 return action
             case Tid.TID_ACTUATOR_RADIO_SET_GROUP:
                 return OutputResource.RadioGroup
+            case Tid.TID_ACTUATOR_RADIO_SEND:
+                return OutputResource.RadioSend
             case Tid.TID_ACTUATOR_MUSIC:
             case Tid.TID_ACTUATOR_SPEAKER:
                 return OutputResource.Speaker
@@ -272,7 +275,8 @@ namespace microcode {
                 case Tid.TID_ACTUATOR_SHOW_NUMBER:
                 case Tid.TID_ACTUATOR_RADIO_SEND:
                 case Tid.TID_ACTUATOR_RADIO_SET_GROUP: {
-                    return this.interp.getValue(this.rule.modifiers, 0)
+                    const ret = this.interp.getValue(this.rule.modifiers, 0)
+                    return ret
                 }
                 case Tid.TID_ACTUATOR_SWITCH_PAGE: {
                     let targetPage = 1

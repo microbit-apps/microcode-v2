@@ -112,6 +112,7 @@ namespace microcode {
                 })
             })
 
+            radio.setGroup(1)
             radio.onReceivedNumber(radioNum => this.handleRadioNumber(radioNum))
 
             input.onSound(DetectedSound.Loud, () => {
@@ -169,7 +170,6 @@ namespace microcode {
                 if (lineTid !== undefined)
                     this._handler(Tid.TID_SENSOR_LINE, lineTid)
             } else {
-                basic.showNumber(radioValue)
                 this._handler(Tid.TID_SENSOR_RADIO_RECEIVE, radioValue)
             }
         }
