@@ -161,10 +161,8 @@ namespace microcode {
 
             if (radioValue > obstacleState && radioValue < lineState) {
                 this.carWallValue = radioValue - obstacleState
-                basic.showString("W")
                 this._handler(Tid.TID_SENSOR_CAR_WALL, this.carWallValue)
             } else if (radioValue >= lineState) {
-                basic.showString("L")
                 this.carLineValue = radioValue - lineState
                 const lineTid = line2tids[this.carLineValue]
                 if (lineTid !== undefined)
