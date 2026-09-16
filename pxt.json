@@ -14,6 +14,7 @@
         "config.ts",
         "main.ts",
         "README.md",
+        "icon-table.g.ts",
         "assets.ts",
         "field-editor-model.ts",
         "language.ts",
