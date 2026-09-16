@@ -425,6 +425,8 @@ namespace microcode {
 
     export function defaultModifier(tid: Tid) {
         switch (tid) {
+            case Tid.TID_ACTUATOR_CAR:
+                return Tid.TID_MODIFIER_CAR_STOP
             case Tid.TID_ACTUATOR_RELAY:
             case Tid.TID_ACTUATOR_SERVO_POWER:
                 return Tid.TID_MODIFIER_OFF

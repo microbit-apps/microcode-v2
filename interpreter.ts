@@ -313,8 +313,6 @@ namespace microcode {
                 getTid(this.rule.modifiers[0]) == Tid.TID_MODIFIER_LOOP
             ) {
                 param = defaultModifier(actuator)
-                if (actuator == Tid.TID_ACTUATOR_CAR)
-                    param = getCarParam(param as Tile)
             } else {
                 switch (actuator) {
                     case Tid.TID_ACTUATOR_PAINT: {
