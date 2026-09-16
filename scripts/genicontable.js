@@ -11,8 +11,6 @@
 // emitted here as an eager iconByIndex() so assets.ts can drop the literal.
 //
 // Run: node scripts/genicontable.js
-// Then remove the corresponding bmp literals from assets.ts (the script
-// prints the list; scripts/striplits.js does it mechanically).
 const fs = require("fs")
 const path = require("path")
 
@@ -22,18 +20,31 @@ const map = JSON.parse(
 )
 const assetsSrc = fs.readFileSync(path.join(root, "assets.ts"), "utf8")
 
-// -- collect bmp literals: icon-literals.json is the durable store for icons
-// already stripped from assets.ts; a literal still present in assets.ts
-// (e.g. a new or edited icon) takes precedence and refreshes the store
+// -- collect literals: icon-literals.json is the durable pixel store ---------
+// Each entry is an array of row strings, one per pixel row, exactly as the
+// MakeCode pixel editor prints them ("." = transparent, hex digit = color;
+// spaces between characters are ignored). To add or edit an icon, paste the
+// body of the img``/bmp`` literal here as quoted rows and rerun this script.
+// A plain string with embedded newlines is accepted too. A bmp literal still
+// present in assets.ts takes precedence and refreshes the store.
 const litStore = path.join(__dirname, "icon-literals.json")
-const literals = fs.existsSync(litStore)
-    ? JSON.parse(fs.readFileSync(litStore, "utf8"))
-    : {}
+const toRows = v =>
+    (Array.isArray(v) ? v : v.split("\n"))
+        .map(r => r.trim())
+        .filter(r => r.length > 0)
+const literals = {}
 {
+    if (fs.existsSync(litStore)) {
+        const stored = JSON.parse(fs.readFileSync(litStore, "utf8"))
+        for (const [name, v] of Object.entries(stored))
+            literals[name] = toRows(v).join("\n")
+    }
     const re = /export const (\w+) = bmp`([^`]*)`/g
     let m
-    while ((m = re.exec(assetsSrc))) literals[m[1]] = m[2]
-    fs.writeFileSync(litStore, JSON.stringify(literals, null, 1))
+    while ((m = re.exec(assetsSrc))) literals[m[1]] = toRows(m[2]).join("\n")
+    const out = {}
+    for (const [name, v] of Object.entries(literals)) out[name] = v.split("\n")
+    fs.writeFileSync(litStore, JSON.stringify(out, null, 1))
 }
 
 // -- F4 encoding, matching pxt's bmp literal output --------------------------
