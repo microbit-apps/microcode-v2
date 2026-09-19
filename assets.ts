@@ -38,26 +38,47 @@ namespace microcode {
                     return icondb.operatorIcon("*")
                 if (name == Tid.TID_OPERATOR_PLUS)
                     return icondb.operatorIcon("+")
-                // all other tids resolve through the flash lookup table
-                // (see icon-table.g.ts, regenerate with scripts/genicontable.js)
-                if (name >= 0 && name < 256) {
-                    const idx = TID_ICON_IDX[name]
-                    if (idx) return iconByIndex(idx - 1)
-                }
-            } else {
-                for (let i = 0; i < ICON_NAMES.length; ++i)
-                    if (ICON_NAMES[i] == name)
-                        return iconByIndex(ICON_NAME_IDX[i])
             }
+
+            // Images that are not packed: drawn at startup, or the fallback.
+            const extern = externIcon(name)
+            if (extern) return extern
+
+            // Everything else comes out of the generated pack
+            // (img.g.ts, regenerate with npm run img:gen).
+            const packed = _img.get(name, true)
+            if (packed) return packed
 
             extraImage = null
             extraSamples(name) // only for web app
             if (extraImage) return extraImage
             if (nullIfMissing) return null
-            return icondb.MISSING
+            return ui.MISSING
         }
     }
 
+    /**
+     * The images the pack does not hold: operator glyphs drawn at startup, and
+     * the fallback image, which a pack must not contain. Returns null for
+     * anything the pack answers for.
+     */
+    function externIcon(key: string | number): Bitmap {
+        if (typeof key == "number") {
+            const tid = <number>key
+            if (tid == 220) return icondb.eq
+            if (tid == 221) return icondb.neq
+            if (tid == 222) return icondb.lt
+            if (tid == 223) return icondb.lte
+            if (tid == 224) return icondb.gt
+            if (tid == 225) return icondb.gte
+            return null
+        }
+        const name = <string>key
+        if (name == "MISSING") return ui.MISSING
+        return null
+    }
+
+    // Not packable: apphost.ts returns this const directly for "wordLogo".
     export const wordLogo = bmp` 
     .111111.......111111...1111.......................................................1111111.................................1111..................
     11bbbbbb.....11bbbbbb.11bbbb....................................................111bbbbbbb1..............................11bbbb.................
@@ -83,6 +104,7 @@ namespace microcode {
     ..fffff.........fffff...ffff......fffffff......ffff.............fffffff............fffffff...........fffffff.........ffffffffff......ffffffff...
     `
 
+    // Not packable: screens/editor.ts draws this const directly.
     export const editorBackground = bmp`
     8888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888
     8888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888
@@ -134,6 +156,7 @@ namespace icondb {
         return img
     }
 
+    // Not packable: melodyToImage draws this const directly.
     const note4x3 = bmp`
     . f f .
     f c c .
@@ -193,6 +216,7 @@ namespace icondb {
     })
     */
 
+    // Not packable: carImages in robot.ts returns this const directly.
     export const arm_open = bmp`
     . . . . . . . . . . c c c . . .
     . . . . . . . . c c b b b c c .
@@ -212,6 +236,7 @@ namespace icondb {
     . . . . . . . . . . c c c . . .
     `
 
+    // Not packable: carImages in robot.ts returns this const directly.
     export const arm_close = bmp`
     . . . . . . . . . . . . . . . .
     . . . . . . . . . . . . . . . .
@@ -233,6 +258,8 @@ namespace icondb {
     ///
     /// BUTTON ICONS
     ///
+    // Not packable: nothing draws it, and whenUsed drops it from the device build.
+    //% whenUsed
     export const btn_stop = bmp`
         . . . . . . . . . . . . . . . . 
         . . . . . . . . . . . . . . . . 
@@ -252,6 +279,8 @@ namespace icondb {
         . . . . . . . . . . . . . . . . 
     `
 
+    // Not packable: only named in docs.ts, which isn't compiled; whenUsed drops it from the device build.
+    //% whenUsed
     export const arith_plus = bmp`
     . . . . . . . .
     . . . f f . . .
@@ -263,6 +292,8 @@ namespace icondb {
     . . . . . . . .
 `
 
+    // Not packable: only named in docs.ts, which isn't compiled; whenUsed drops it from the device build.
+    //% whenUsed
     export const arith_equals = bmp`
     . . . . . . . .
     . f f f f f f .
@@ -287,6 +318,8 @@ namespace icondb {
     // user-interface-base/coreAssets.ts has the real microbitLogo
     // Use "microbitLogo" and at the end of this function it will check user-interface-base and fetch it.
 
+    // Not packable: web-only art; whenUsed drops it from the device build.
+    //% whenUsed
     export const sampleFlashingHeart = bmp`
     .ffffffffffffffffffffffffffffff.
     ffffffffffffffffffffffffffffffff
@@ -322,6 +355,8 @@ namespace icondb {
     bffffffffffffffffffffffffffffffb
     .bbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.
 `
+
+    // Not packable: commented out; kept for its art, not currently used.
     /*
     export const sampleDice = bmp`
     .111111111111111111111111111111.
@@ -359,6 +394,8 @@ namespace icondb {
     .bbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.
 `*/
 
+    // Not packable: web-only art; whenUsed drops it from the device build.
+    //% whenUsed
     export const sampleFirefly = bmp`
 .ffffffffffffffffffffffffffffff.
 ffffffffffffffffffffffffffffffff
@@ -394,6 +431,9 @@ ffffffffffffffffffffffffffffffff
 bffffffffffffffffffffffffffffffb
 ..bbbbbbbbbbbbbbbbbbbbbbbbbbbbb.
 `
+
+    // Not packable: web-only art; whenUsed drops it from the device build.
+    //% whenUsed
     export const sampleClapLights = bmp`
     .ffffffff8fffffffffffffffffffff.
     fffffffff8ffffffffffffffffffffff
@@ -429,6 +469,9 @@ bffffffffffffffffffffffffffffffb
     bffffffffffffffffffff4555555554b
     ..bbbbbbbbbbbbbbbbbbbbbbbbbbbbb.
 `
+
+    // Not packable: web-only art; whenUsed drops it from the device build.
+    //% whenUsed
     export const sampleRockPaperScissors = bmp`
     .111111111111111111111111111111.
     11111111111111111111111111111111
@@ -464,6 +507,9 @@ bffffffffffffffffffffffffffffffb
     b111111111111111111111111111111b
     .bbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.
 `
+
+    // Not packable: web-only art; whenUsed drops it from the device build.
+    //% whenUsed
     export const sampleTeleportDuck = bmp`
     .111111111111111111111111111111.
     11111111111111111111111111111111
@@ -499,6 +545,9 @@ bffffffffffffffffffffffffffffffb
     b111111111111111111111111111111b
     .bbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.
 `
+
+    // Not packable: web-only art; whenUsed drops it from the device build.
+    //% whenUsed
     export const samplePetHamster = bmp`
     .999999999999999999999999999999.
     99999999999999999999999999999999
@@ -535,6 +584,8 @@ bffffffffffffffffffffffffffffffb
     .bbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.
 `
 
+    // Not packable: web-only art; whenUsed drops it from the device build.
+    //% whenUsed
     export const sampleHeadsOrTails = bmp`
     .111111111111111111111111111111.
     111111111fff11111111111111111111
@@ -571,6 +622,8 @@ bffffffffffffffffffffffffffffffb
     .bbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.
 `
 
+    // Not packable: web-only art; whenUsed drops it from the device build.
+    //% whenUsed
     export const sampleReactionTime = bmp`
     .ffffffffffffffffffff455555554f.
     fffffffffffffffff1ff455555554fff
@@ -606,6 +659,9 @@ bffffffffffffffffffffffffffffffb
     bddddddddddddddddddddddddddddddb
     .bbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.
 `
+
+    // Not packable: web-only art; whenUsed drops it from the device build.
+    //% whenUsed
     export const sampleHotPotato = bmp`
     .ffffffffffffffffffffffffffffff.
     ffffffffffffffff5fffffffffffffff
@@ -642,6 +698,8 @@ bffffffffffffffffffffffffffffffb
     .bbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.
 `
 
+    // Not packable: web-only art; whenUsed drops it from the device build.
+    //% whenUsed
     export const sampleRailCrossingLight = bmp`
     .999999991999999999999999999999.
     99999999999999199999999919999999
@@ -677,6 +735,9 @@ bffffffffffffffffffffffffffffffb
     b7777ccceeeeeeeeeeeeeeeeeeeee554
     .bbbbbbbbbbbbbbbbbbbbbbbbbbbb44.
     `
+
+    // Not packable: nothing draws it, and whenUsed drops it from the device build.
+    //% whenUsed
     export const settingsGear = bmp`
     . . . . . . . . . . . . . . . .
     . . . . . . . d d . . . . . . .
@@ -696,6 +757,8 @@ bffffffffffffffffffffffffffffffb
     . . . . . . . . . . . . . . . .
 `
 
+    // Not packable: unreferenced and not exported; whenUsed drops it from the device build.
+    //% whenUsed
     const one = bmp`
 . . . . . .
 . . f f . .
@@ -707,6 +770,8 @@ bffffffffffffffffffffffffffffffb
 . . . . . .
 `
 
+    // Not packable: unreferenced and not exported; whenUsed drops it from the device build.
+    //% whenUsed
     const two = bmp`
 . . . . . .
 . . f f . .
@@ -717,6 +782,8 @@ bffffffffffffffffffffffffffffffb
 . f f f f .
 . . . . . .
 `
+    // Not packable: unreferenced and not exported; whenUsed drops it from the device build.
+    //% whenUsed
     const three = bmp`
 . . . . . .
 . f f f . .
@@ -727,6 +794,8 @@ bffffffffffffffffffffffffffffffb
 . f f f . .
 . . . . . .
 `
+    // Not packable: unreferenced and not exported; whenUsed drops it from the device build.
+    //% whenUsed
     const four = bmp`
 . . . . . .
 . f . . f .
@@ -737,6 +806,8 @@ bffffffffffffffffffffffffffffffb
 . . . . f .
 . . . . . .
 `
+    // Not packable: unreferenced and not exported; whenUsed drops it from the device build.
+    //% whenUsed
     const five = bmp`
 . . . . . .
 . f f f f .
@@ -748,6 +819,8 @@ bffffffffffffffffffffffffffffffb
 . . . . . .
 `
 
+    //% packable
+    //% whenUsed
     export const blocks1 = bmp`
     . . . . . . . . . . . . . . . .
     . . . . . . . . . . . . . . . .
@@ -767,6 +840,8 @@ bffffffffffffffffffffffffffffffb
     . . . . . . . . . . . . . . . .
 `
 
+    //% packable
+    //% whenUsed
     export const blocks2 = bmp`
         . . . . . . . . . . . . . . . .
         . . . . . . . . . . . . . . . .
@@ -785,6 +860,8 @@ bffffffffffffffffffffffffffffffb
         . . . . . . . . . . . . . . . .
         . . . . . . . . . . . . . . . .
     `
+    //% packable
+    //% whenUsed
     export const blocks3 = bmp`
         . . . . . . . . . . . . . . . .
         . . . . . . . . . . . . . . . .
@@ -803,6 +880,8 @@ bffffffffffffffffffffffffffffffb
         . . . . . . . . . . . . . . . .
         . . . . . . . . . . . . . . . .
     `
+    //% packable
+    //% whenUsed
     export const blocks4 = bmp`
         . . . . . . . . . . . . . . . .
         . . . . . . . . . . . . . . . .
@@ -821,6 +900,8 @@ bffffffffffffffffffffffffffffffb
         . . . . . . . . . . . . . . . .
         . . . . . . . . . . . . . . . .
     `
+    //% packable
+    //% whenUsed
     export const blocks5 = bmp`
         . . . . . . . . . . . . . . . .
         . . . . . . . . . . . . . . . .
@@ -840,14 +921,6 @@ bffffffffffffffffffffffffffffffb
         . . . . . . . . . . . . . . . .
     `
 
-    const num2image = [
-        icondb.blocks1,
-        icondb.blocks2,
-        icondb.blocks3,
-        icondb.blocks4,
-        icondb.blocks5,
-    ]
-
     export function numberToDecimalImage(
         i: number | string,
         transparent = true,
@@ -865,12 +938,15 @@ bffffffffffffffffffffffffffffffb
     export function numberToImage(i: number) {
         if (microcode.microcodeClassic) {
             const index = Math.floor(i - 1)
+            // Looked up here rather than held in an array, so the images are
+            // only decoded if classic mode actually shows them.
             if (index == i - 1 && index >= 0 && index < 5)
-                return num2image[index]
+                return _img.get("blocks" + (index + 1))
         }
         return numberToDecimalImage(i, false)
     }
 
+    // Not packable: screens/editor.ts sets the run button to this const directly.
     export const run = bmp`
         . . . . . . . . . . . . . . . .
         . . . . . . . . . . . . . . . .
@@ -890,6 +966,7 @@ bffffffffffffffffffffffffffffffb
         . . . . . . . . . . . . . . . .
     `
 
+    // Not packable: screens/editor.ts sets the run button to this const directly.
     export const runDisabled = bmp`
         . . . . . . . . . . . . . . . .
         . . . . . . . . . . . . . . . .
@@ -909,6 +986,7 @@ bffffffffffffffffffffffffffffffb
         . . . . . . . . . . . . . . . .
     `
 
+    // Not packable: screens/editor.ts and robot.ts use this const directly.
     export const stop = bmp`
 . . . . . . . . . . . . . . . . 
 . . . . . d d d d d d . . . . . 
@@ -928,6 +1006,7 @@ bffffffffffffffffffffffffffffffb
 . . . . . . . . . . . . . . . . 
 `
 
+    // Not packable: screens/editor.ts sets the stop button to this const directly.
     export const stopDisabled = bmp`
         . . . . . . . . . . . . . . . .
         . . . . . d d d d d d . . . . .
@@ -947,6 +1026,8 @@ bffffffffffffffffffffffffffffffb
         . . . . . . . . . . . . . . . .
     `
 
+    // Not packable: the loud tile uses speakerFun, and whenUsed drops it from the device build.
+    //% whenUsed
     export const loud = bmp`
 . . . . . . . . . . . . . . . .
 . 2 2 2 2 2 2 2 2 2 2 2 2 2 2 .
@@ -966,6 +1047,8 @@ bffffffffffffffffffffffffffffffb
 . . . . . . . . . . . . . . . .
 `
 
+    // Not packable: the quiet tile uses speakerSoft, and whenUsed drops it from the device build.
+    //% whenUsed
     export const quiet = bmp`
 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9
 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9 9
@@ -984,4 +1067,2102 @@ bffffffffffffffffffffffffffffffb
 7 7 7 7 7 7 7 7 7 7 7 7 7 7 7 7
 7 7 7 7 7 7 7 7 7 7 7 7 7 7 7 7
 `
+
+    // Images packed into the generated table, img.g.ts. Each is marked
+    // //% packable and named by its const, and img.keys.json maps MicroCode's
+    // keys to those names. Edit the pixels here, then run npm run img:gen.
+    //% packable
+    //% whenUsed
+    export const tile_start_page = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . f f f f . . .
+        . . . . . . . . f f 7 7 f . . .
+        . . . . . . . f 7 f 7 7 f d . .
+        . . . . . . f f f f 7 7 f d . .
+        . . . . . . f 5 f 7 7 7 f d . .
+        . . . f f f f 5 5 f 7 7 f d . .
+        . . . f 5 5 5 5 5 5 f 7 f d . .
+        . . . f f f f 5 5 f 7 7 f d . .
+        . . . d d d f 5 f 7 7 7 f d . .
+        . . . . . . f f f f f f f d . .
+        . . . . . . . d d d d d d d . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const finger_release = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . f . . . . . . . .
+        . . . . . . f f f . . . . . . .
+        . . . . . f . f . f . . . . . .
+        . . . . . . . f . . . . . . . .
+        . . . . . . . f . . . . . . . .
+        . . . . . . . f . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . 4 4 4 4 4 . . . . . .
+        . . . . 4 4 4 4 4 4 4 d . . . .
+        . . . e 4 4 4 4 4 4 4 e d . . .
+        . . . e 2 4 4 4 4 4 2 e d . . .
+        . . . e e 2 2 2 2 2 e e d . . .
+        . . . . e e e e e e e d . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const tile_timer = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . f . . . . . . . .
+        . . . . . b b b b b . . . . . .
+        . . . . b 1 1 9 9 9 b . . . . .
+        . . . b 1 1 1 b 9 9 9 c . . . .
+        . . b 1 1 d 1 b 9 b 9 9 c . . .
+        . . b 1 1 1 1 9 9 9 9 9 c d . .
+        . . b 1 d d 1 2 2 2 2 9 c d . .
+        . . b 1 1 1 1 1 1 1 1 1 c d . .
+        . . b 1 1 d 1 d 1 d 1 1 c d . .
+        . . . b 1 1 1 d 1 1 1 c d . . .
+        . . . . c 1 1 1 1 1 c d . . . .
+        . . . . . c c c c c d . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const light_sensor = bmp`
+        . . . . . . . . . . . . . . . .
+        . . 8 8 8 8 5 5 5 8 8 8 8 . . .
+        . . 8 8 8 5 4 4 4 5 8 8 8 . . .
+        . . 8 8 8 5 4 4 4 5 8 8 8 . . .
+        . . 8 8 8 5 4 4 4 5 8 8 8 . . .
+        . . 8 8 8 8 5 5 5 8 8 8 8 . . .
+        . . 8 8 5 8 8 8 8 8 5 8 8 . . .
+        . . 8 5 8 8 8 5 8 8 8 5 8 . . .
+        . . 8 8 8 5 8 8 8 5 8 8 8 . . .
+        . . 8 8 5 8 8 5 8 8 5 8 8 . . .
+        . . 8 5 8 8 8 8 8 8 8 5 8 . . .
+        . . 8 8 8 8 8 5 8 8 8 8 8 . . .
+        . . 8 8 8 8 8 8 8 8 8 8 8 . . .
+        . . 8 8 8 2 2 2 2 2 8 8 8 . . .
+        . . 8 f f f f f f f f f 8 . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const radio_receive = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . 8 . . . 8 . . . . . .
+        . . . 8 . . 8 8 8 . . 8 . . . .
+        . 8 . . 8 . . . . . 8 . . 8 . .
+        . . 8 . . 8 8 8 8 8 . . 8 . . .
+        . . . 8 . . . . . . . 8 . . . .
+        . . . . 8 8 8 8 8 8 8 . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . 4 5 4 . . . . . . .
+        . . . . . . 4 5 4 . . . . . . .
+        . . . . . . 4 5 4 . . . . . . .
+        . . . . 4 5 5 5 5 5 4 . . . . .
+        . . . . . 4 5 5 5 4 . . . . . .
+        . . . . . . 4 5 4 . . . . . . .
+        . . . . . . . 4 . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const microphone = bmp`
+        1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+        1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+        1 1 1 1 1 1 b c 1 1 1 1 1 1 1 1
+        1 1 1 1 1 1 b c c c 1 1 1 1 1 1
+        1 1 1 1 1 1 b c c c 1 1 1 1 1 1
+        1 1 1 1 1 1 b c c c 1 1 1 1 1 1
+        1 1 1 1 1 1 b c c c 1 1 1 1 1 1
+        1 1 1 1 f 1 c c c c 1 f 1 1 1 1
+        1 1 1 1 f 1 c c c c 1 f 1 1 1 1
+        1 1 1 1 f 1 1 c c 1 1 f 1 1 1 1
+        1 1 1 1 1 f 1 1 1 1 f 1 1 1 1 1
+        1 1 1 1 1 1 f f f f 1 1 1 1 1 1
+        1 1 1 1 1 1 1 f f 1 1 1 1 1 1 1
+        1 1 1 1 1 1 1 f f 1 1 1 1 1 1 1
+        1 1 1 1 1 f f f f f f 1 1 1 1 1
+        1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+    `
+
+    //% packable
+    //% whenUsed
+    export const cupXwritten = bmp`
+        4 4 4 4 4 4 4 . . . . . . . . .
+        5 5 5 5 5 5 5 4 . . . . . . . .
+        4 4 4 4 4 4 4 5 4 . . . . . . .
+        . . . . . . 4 5 4 . . . . . . .
+        . . . . c c 4 5 4 c c . . . . .
+        . . . c 4 5 5 5 5 5 4 c . . . .
+        . . c f f 4 5 5 5 4 f f c . . .
+        . . c c f 4 4 5 4 4 f c c . . .
+        . . c d c c c c c c c b c . . .
+        . . c d 1 d d d d d d b c . . .
+        . . c d 1 d f d f d d b c . . .
+        . . c d 1 d f d f d d b c . . .
+        . . c d 1 d d f d d d b c . . .
+        . . c d 1 d f d f d d b c . . .
+        . . . d 1 d f d f d d b . . . .
+        . . . . 1 d d d d d d . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const cupYwritten = bmp`
+        4 4 4 4 4 4 4 . . . . . . . . .
+        5 5 5 5 5 5 5 4 . . . . . . . .
+        4 4 4 4 4 4 4 5 4 . . . . . . .
+        . . . . . . 4 5 4 . . . . . . .
+        . . . . c c 4 5 4 c c . . . . .
+        . . . c 4 5 5 5 5 5 4 c . . . .
+        . . c f f 4 5 5 5 4 f f c . . .
+        . . c c f 4 4 5 4 4 f c c . . .
+        . . c d c c c c c c c b c . . .
+        . . c d 1 d d d d d d b c . . .
+        . . c d 1 d f d f d d b c . . .
+        . . c d 1 d f d f d d b c . . .
+        . . c d 1 d d f d d d b c . . .
+        . . c d 1 d d f d d d b c . . .
+        . . . d 1 d d f d d d b . . . .
+        . . . . 1 d d d d d d . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const cupZwritten = bmp`
+        4 4 4 4 4 4 4 . . . . . . . . .
+        5 5 5 5 5 5 5 4 . . . . . . . .
+        4 4 4 4 4 4 4 5 4 . . . . . . .
+        . . . . . . 4 5 4 . . . . . . .
+        . . . . c c 4 5 4 c c . . . . .
+        . . . c 4 5 5 5 5 5 4 c . . . .
+        . . c f f 4 5 5 5 4 f f c . . .
+        . . c c f 4 4 5 4 4 f c c . . .
+        . . c d c c c c c c c b c . . .
+        . . c d 1 d d d d d d b c . . .
+        . . c d 1 d f f f d d b c . . .
+        . . c d 1 d d d f d d b c . . .
+        . . c d 1 d d f d d d b c . . .
+        . . c d 1 d f d d d d b c . . .
+        . . . d 1 d f f f d d b . . . .
+        . . . . 1 d d d d d d . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const kita_slider = bmp`
+        . . . . . . 6 6 6 6 6 . . . . .
+        . . . . . 6 6 6 f 6 6 6 . . . .
+        . . . . . 6 6 f f f 6 6 . . . .
+        . . . . . 6 6 f c f 6 6 . . . .
+        . . . . . 6 6 f c f 6 6 . . . .
+        . . . . . 6 6 f c f 6 6 . . . .
+        . . . . . 6 6 f c f 6 6 . . . .
+        . . . . . 6 9 9 9 9 9 6 . . . .
+        . . . . . 6 9 9 9 9 9 6 . . . .
+        . . . . . 6 6 f c f 6 6 . . . .
+        . . . . . 6 6 f c f 6 6 . . . .
+        . . . . . 6 6 f c f 6 6 . . . .
+        . . . . . 6 6 f c f 6 6 . 5 5 5
+        . . . . . 6 6 f f f 6 6 . 5 5 5
+        . . . . . 6 6 6 f 6 6 6 . 5 5 4
+        . . . . . . 6 6 6 6 6 . . 4 4 .
+    `
+
+    //% packable
+    //% whenUsed
+    export const kita_rotary = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . 6 6 6 6 6 6 6 . . . . .
+        . . . 6 6 6 6 6 6 6 6 6 . . . .
+        . . 6 6 6 d d d d d 6 6 6 . . .
+        . . 6 6 d f f 1 f f d 6 6 . . .
+        . . 6 d f f f 1 f f f d 6 . . .
+        . . 6 d f f f 1 f f f d 6 . . .
+        . . 6 d f f f f f f f d 6 . . .
+        . . 6 d f f f f f f f d 6 . . .
+        . . 6 6 d f f f f f d 6 6 . . .
+        . . 6 6 6 d d d d d 6 6 6 . . .
+        . . . 6 6 6 6 6 6 6 6 6 . 5 5 5
+        . . . . 6 6 6 6 6 6 6 . . 5 5 5
+        . . . . . . . . . . . . . 5 5 4
+        . . . . . . . . . . . . . 4 4 .
+    `
+
+    //% packable
+    //% whenUsed
+    export const soil_moisture = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . 8 . . . . . . . . . . .
+        . . . . 9 8 . . . . . 8 . . . .
+        . . . . 9 8 . . . . . 9 8 . . .
+        . . . 9 9 9 8 . . . . 9 8 . . .
+        . . . 9 9 9 8 . . . 9 9 9 8 . .
+        . . 9 9 9 9 9 8 . . 9 9 9 8 . .
+        . . 9 9 9 9 9 8 . 9 9 9 9 9 8 .
+        . . 9 1 9 9 9 8 . 9 9 9 9 9 8 .
+        . . 9 9 1 9 9 8 . 9 1 9 9 9 8 .
+        . . e 9 9 9 8 e e 9 9 1 9 9 8 .
+        . e e e e e e e e e 9 9 9 8 . .
+        . b e e e e e e e e e e e 5 5 5
+        . . b e e e e e e e e e b 5 5 5
+        . . . b b b b b b b b b . 5 5 4
+        . . . . . . . . . . . . . 4 4 .
+    `
+
+    //% packable
+    //% whenUsed
+    export const distance_sensor = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . 6 6 6 . . . . 6 6 6 . . .
+        . . 6 1 1 1 6 . . 6 1 1 1 6 . .
+        . 6 1 1 9 1 1 6 6 1 1 9 1 1 6 .
+        . 6 1 9 9 9 1 6 6 1 9 9 9 1 6 .
+        . 6 1 1 9 1 1 6 6 1 1 9 1 1 6 .
+        . . 6 1 1 1 6 . . 6 1 1 1 6 . .
+        . . . 6 6 6 . . . . 6 6 6 . . .
+        . . . . 2 . . . . . . 2 . . . .
+        . . . . 2 . . . . . 2 2 2 . . .
+        . . . . 2 . . . . 2 2 2 2 2 . .
+        . . 2 2 2 2 2 . . . . 2 . 5 5 5
+        . . . 2 2 2 . . . . . 2 . 5 5 5
+        . . . . 2 . . . . . . 2 . 5 5 4
+        . . . . . . . . . . . . . 4 4 .
+    `
+
+    //% packable
+    //% whenUsed
+    export const reflected_light_sensor = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . f f f f f d d d d d . . . .
+        . . f f f f f d d d d d . . . .
+        . . f f f f f d d d d d . . . .
+        . . f 7 7 7 f d f f f d . . . .
+        . . f 7 7 7 f d f f f d . . . .
+        . . f 7 7 7 f d f f f d . . . .
+        . . f f f f f d d d d d . . . .
+        . . f f f f f d d d d d . . . .
+        . . f f f f f d d d d d . . . .
+        . . f f f f f d d d d d . . . .
+        . . f f f f f d d d d d . 5 5 5
+        . . f f f f f d d d d d . 5 5 5
+        . . . . . . . . . . . . . 5 5 4
+        . . . . . . . . . . . . . 4 4 .
+    `
+
+    //% packable
+    //% whenUsed
+    export const tile_switch_page = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . f f f f . . . . . . .
+        . . . . f f 9 9 f . . . . . . .
+        . . . f 9 f 9 9 f d f f f f . .
+        . . f f f f 9 9 f f f 7 7 f . .
+        . . f 9 9 9 9 9 f 7 f 7 7 f d .
+        . . f 9 9 9 9 f f f f 7 7 f d .
+        . . f 9 9 9 9 f 5 f 7 7 7 f d .
+        . . f 9 f f f f 5 5 f 7 7 f d .
+        . . f 9 f 5 5 5 5 5 5 f 7 f d .
+        . . f f f f f f 5 5 f 7 7 f d .
+        . . . d d d d f 5 f 7 7 7 f d .
+        . . . . . . . f f f f f f f d .
+        . . . . . . . . d d d d d d d .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const speakerFun = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . 3 . . . 5 . . .
+        . . . . . . . 3 . . . . . . 2 .
+        . . . . . c . . . . . 2 . 2 . .
+        . . . . c b . . 2 . 2 . 2 . . .
+        . . . c b c . 2 . 2 . . . . 5 .
+        . c c b c c . . . . . . . . . .
+        . b b c c c . 4 . 4 . 4 . 4 . .
+        . c c c c c . . 4 . 4 . 4 . 4 .
+        . c c c c c . . . . . . . . . .
+        . . . c c c . 6 . 6 . 5 . . . .
+        . . . . c c . . 6 . 6 . 6 . . .
+        . . . . . c . . . . . 6 . 6 . .
+        . . . . . . . 9 . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const music = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . f c . . .
+        . . . . . . . . . c c c c b . .
+        . . . . . . . c c c b b c b . .
+        . . . . . f c c b b b . c b . .
+        . . . . . c b b b . . . c b . .
+        . . . . . c b . . . . . c b . .
+        . . . . . c b . . . . . c b . .
+        . . . . . c b . . . f f c b . .
+        . . . f f c b . . f c c c b . .
+        . . f c c c b . . f c c b b . .
+        . . f c c b b . . . b b b . . .
+        . . . b b b . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const showScreen = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . 2 4 . .
+        . . . . 2 . . . . . . 2 4 4 2 .
+        . . . . 2 . . . . . 2 4 4 2 e .
+        . 2 . . 2 . . . . 2 4 4 2 e b .
+        . . 2 . 2 . . . 2 4 4 2 e b . .
+        . . . . . . . d 4 4 2 e b . . .
+        . . f f f f f d d 2 e b . . . .
+        . . f f f f f 2 d d b . . . . .
+        . . f f 2 f 2 f f b . . . . . .
+        . . f f f f f f f b . 2 2 2 2 .
+        . . f 2 f f f 2 f b . . . . . .
+        . . f f 2 2 2 f f b . 2 . . . .
+        . . f f f f f f f b . . 2 . . .
+        . . . b b b b b b b . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const radio_send = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . 8 8 8 8 8 8 8 . . . . .
+        . . . 8 . . . . . . . 8 . . . .
+        . . 8 . . 8 8 8 8 8 . . 8 . . .
+        . 8 . . 8 . . . . . 8 . . 8 . .
+        . . . 8 . . 8 8 8 . . 8 . . . .
+        . . . . . 8 . . . 8 . . . . . .
+        . . . . . . . 4 . . . . . . . .
+        . . . . . . 4 5 4 . . . . . . .
+        . . . . . 4 5 5 5 4 . . . . . .
+        . . . . 4 5 5 5 5 5 4 . . . . .
+        . . . . . . 4 5 4 . . . . . . .
+        . . . . . . 4 5 4 . . . . . . .
+        . . . . . . 4 5 4 . . . . . . .
+        . . . . . . 4 5 4 . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const radio_set_group_small = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . 8 . . . 8 . . . . . .
+        . . . 8 . . 8 8 8 . . 8 . . . .
+        . 8 . . 8 . . . . . 8 . . 8 . .
+        . . 8 . . 8 8 8 8 8 . . 8 . . .
+        . . . 8 . . . . . . . 8 . . . .
+        . . . . 8 8 8 8 8 8 8 . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . 6 6 6 . . . . 6 6 6 . . .
+        . . 6 9 6 9 6 . . 6 9 6 9 6 . .
+        . . . 6 6 6 . . . . 6 6 6 . . .
+        . . . . . . . . . . . . . . . .
+        . . . 6 6 6 . . . . 6 6 6 . . .
+        . . 6 9 6 9 6 . . 6 9 6 9 6 . .
+        . . . 6 6 6 . . . . 6 6 6 . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const rgbLed = bmp`
+        . . . . f f f f f f f . . . . .
+        . . f f f 4 4 f 9 9 f f f . . .
+        . f 5 5 f 4 4 f 9 9 f b b f . .
+        . f 5 5 f f f f f f f b b f d .
+        f f f f f . . . . . f f f f f d
+        f 4 4 f . . . . . . . f 7 7 f d
+        f 4 4 f . . . . . . . f 7 7 f d
+        f f f f . . . . . . . f f f f d
+        f 2 2 f . . . . . . . f e e f d
+        f 2 2 f . . . . . . . f e e f d
+        f f f f . . . . . . . f f f f d
+        b f 6 6 f f f f f f f c c f b d
+        . f 6 6 f 8 8 f a a f c c 5 5 5
+        . b f f f 8 8 f a a f f f 5 5 5
+        . . b b f f f f f f f b b 5 5 4
+        . . . . d b b b b b b d d 4 4 .
+    `
+
+    //% packable
+    //% whenUsed
+    export const cupXassign = bmp`
+        . . . . . . . . . 4 4 4 4 4 4 4
+        . . . . . . . . 4 5 5 5 5 5 5 5
+        . . . . . . . 4 5 4 4 4 4 4 4 4
+        . . . . . . . 4 5 4 . . . . . .
+        . . . . c c c 4 5 4 c . . . . .
+        . . . c f 4 5 5 5 5 5 4 . . . .
+        . . c f f f 4 5 5 5 4 f c . . .
+        . . c c f 4 5 4 5 4 f c c . . .
+        . . c d c c c c c c c b c . . .
+        . . c d 1 d d d d d d b c . . .
+        . . c d 1 d f d f d d b c . . .
+        . . c d 1 d f d f d d b c . . .
+        . . c d 1 d d f d d d b c . . .
+        . . c d 1 d f d f d d b c . . .
+        . . . d 1 d f d f d d b . . . .
+        . . . . 1 d d d d d d . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const cupYassign = bmp`
+        . . . . . . . . . 4 4 4 4 4 4 4
+        . . . . . . . . 4 5 5 5 5 5 5 5
+        . . . . . . . 4 5 4 4 4 4 4 4 4
+        . . . . . . . 4 5 4 . . . . . .
+        . . . . c c c 4 5 4 c . . . . .
+        . . . c f 4 5 5 5 5 5 4 . . . .
+        . . c f f f 4 5 5 5 4 f c . . .
+        . . c c f 4 5 4 5 4 f c c . . .
+        . . c d c c c c c c c b c . . .
+        . . c d 1 d d d d d d b c . . .
+        . . c d 1 d f d f d d b c . . .
+        . . c d 1 d f d f d d b c . . .
+        . . c d 1 d d f d d d b c . . .
+        . . c d 1 d d f d d d b c . . .
+        . . . d 1 d d f d d d b . . . .
+        . . . . 1 d d d d d d . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const cupZassign = bmp`
+        . . . . . . . . . 4 4 4 4 4 4 4
+        . . . . . . . . 4 5 5 5 5 5 5 5
+        . . . . . . . 4 5 4 4 4 4 4 4 4
+        . . . . . . . 4 5 4 . . . . . .
+        . . . . c c c 4 5 4 c . . . . .
+        . . . c f 4 5 5 5 5 5 4 . . . .
+        . . c f f f 4 5 5 5 4 f c . . .
+        . . c c f 4 5 4 5 4 f c c . . .
+        . . c d c c c c c c c b c . . .
+        . . c d 1 d d d d d d b c . . .
+        . . c d 1 d f f f d d b c . . .
+        . . c d 1 d d d f d d b c . . .
+        . . c d 1 d d f d d d b c . . .
+        . . c d 1 d f d d d d b c . . .
+        . . . d 1 d f f f d d b . . . .
+        . . . . 1 d d d d d d . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const showNumber = bmp`
+        . . . . . . . . . . 4 4 4 4 4 4
+        . . . . . . . . . 4 5 5 5 5 5 5
+        . . . . 2 . . . 4 5 4 4 4 4 4 4
+        . . . . 2 . . . 4 5 4 . . . . .
+        . 2 . . 2 . . . 4 5 4 . . . . .
+        . . 2 . 2 . 4 5 5 5 5 5 4 . . .
+        . . . . . . . 4 5 5 5 4 . . . .
+        . . f f f f f f 4 5 4 . . . . .
+        . . f f f 2 2 f f b . . . . . .
+        . . f f 2 f 2 f f b . . . . . .
+        . . f 2 f f 2 f f b . 2 2 2 2 .
+        . . f 2 2 2 2 2 f b . . . . . .
+        . . f f f f 2 f f b . 2 . . . .
+        . . f f f f f f f b . . 2 . . .
+        . . . b b b b b b b . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const servo_set_angle = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . 8 8 8 . . . . 4 . . . . .
+        . . 8 8 8 8 8 . . . 2 . . . . .
+        . . 8 8 8 8 8 . . . 2 4 . . . .
+        . . 8 8 8 8 8 . . . . 2 . . . .
+        . . 8 8 8 8 8 . . . . 2 . . . .
+        . . 8 8 8 8 8 . . . . 2 . . . .
+        . . 8 b b b 8 . . 4 . 2 . 4 . .
+        . . 8 b c b b . . 2 4 2 4 2 . .
+        . . 8 b c c b . . . 2 2 2 . . .
+        . . 8 8 b b c b . . . 2 . . . .
+        . . 8 8 8 8 b c b . . . . . . .
+        . . 8 8 8 8 8 b c b . . . 5 5 5
+        . . 8 8 8 8 8 . b c b . . 5 5 5
+        . . . 8 8 8 . . . b c . . 5 5 4
+        . . . . . . . . . . . b . 4 4 .
+    `
+
+    //% packable
+    //% whenUsed
+    export const relay = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . f f f f f f . . . . .
+        . . . . f b b b b b b f . . . .
+        . . . f b b b b 9 8 b b f . . .
+        . . f b b b b 9 8 b b b b f . .
+        . . f b b b 9 8 b b b b b f . .
+        . . f b b 9 8 b b b 9 b b f . .
+        . 9 9 9 9 8 b b b b 8 9 9 9 9 .
+        . . f b b 9 b b b b 9 b b f . .
+        . . f b b b b b b b b b b f . .
+        . . f b b b b b b b b b b f . .
+        . . . f b b b b b b b b f . . .
+        . . . . f b b b b b b f . 5 5 5
+        . . . . . f f f f f f . . 5 5 5
+        . . . . . . . . . . . . . 5 5 4
+        . . . . . . . . . . . . . 4 4 .
+    `
+
+    //% packable
+    //% whenUsed
+    export const servo_power = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . 8 8 8 . . . . . 7 7 . . .
+        . . 8 8 8 8 8 . . . 7 7 7 7 . .
+        . . 8 8 8 8 8 . . . 7 7 7 7 . .
+        . . 8 8 8 8 8 . . . 7 7 7 7 . .
+        . . 8 8 8 8 8 . . . . . . . . .
+        . . 8 8 8 8 8 . . . f f f f . .
+        . . 8 b b b 8 . . . f f f f . .
+        . . 8 b c b b . . . f f f f . .
+        . . 8 b c c b . . . . f f . . .
+        . . 8 8 b b c b . . . . . . . .
+        . . 8 8 8 8 b c b . . . . . . .
+        . . 8 8 8 8 8 b c b . . . 5 5 5
+        . . 8 8 8 8 8 . b c b . . 5 5 5
+        . . . 8 8 8 . . . b . . . 5 5 4
+        . . . . . . . . . . . . . 4 4 .
+    `
+
+    //% packable
+    //% whenUsed
+    export const tile_pin_0 = bmp`
+        . . 4 5 4 d . . . . 4 5 4 d . .
+        . . 4 5 4 d . . . . 4 5 4 d . .
+        . . 4 5 4 d . . . . 4 5 4 d . .
+        . . 4 5 5 4 4 4 4 4 5 5 4 d . .
+        . . 4 5 5 5 5 5 5 5 5 5 4 d . .
+        . . 4 5 5 5 5 5 5 5 5 5 4 d . .
+        . . 4 5 5 5 5 f 5 5 5 5 4 d . .
+        . . 4 5 5 5 f 5 f 5 5 5 4 d . .
+        . . 4 5 5 5 f 5 f 5 5 5 4 d . .
+        . . 4 5 5 5 f 5 f 5 5 5 4 d . .
+        . . 4 5 5 5 5 f 5 5 5 5 4 d . .
+        . . 4 5 5 5 5 5 5 5 5 5 4 d . .
+        . . 4 5 5 4 4 4 4 4 5 5 4 d . .
+        . . . 4 4 d . . . . 4 4 d . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const tile_pin_1 = bmp`
+        . . 4 5 4 d . . . . 4 5 4 d . .
+        . . 4 5 4 d . . . . 4 5 4 d . .
+        . . 4 5 4 d . . . . 4 5 4 d . .
+        . . 4 5 5 4 4 4 4 4 5 5 4 d . .
+        . . 4 5 5 5 5 5 5 5 5 5 4 d . .
+        . . 4 5 5 5 5 5 5 5 5 5 4 d . .
+        . . 4 5 5 5 5 f 5 5 5 5 4 d . .
+        . . 4 5 5 5 f f 5 5 5 5 4 d . .
+        . . 4 5 5 5 5 f 5 5 5 5 4 d . .
+        . . 4 5 5 5 5 f 5 5 5 5 4 d . .
+        . . 4 5 5 5 f f f 5 5 5 4 d . .
+        . . 4 5 5 5 5 5 5 5 5 5 4 d . .
+        . . 4 5 5 4 4 4 4 4 5 5 4 d . .
+        . . . 4 4 d . . . . 4 4 d . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const tile_pin_2 = bmp`
+        . . 4 5 4 d . . . . 4 5 4 d . .
+        . . 4 5 4 d . . . . 4 5 4 d . .
+        . . 4 5 4 d . . . . 4 5 4 d . .
+        . . 4 5 5 4 4 4 4 4 5 5 4 d . .
+        . . 4 5 5 5 5 5 5 5 5 5 4 d . .
+        . . 4 5 5 5 5 5 5 5 5 5 4 d . .
+        . . 4 5 5 5 f f 5 5 5 5 4 d . .
+        . . 4 5 5 5 5 5 f 5 5 5 4 d . .
+        . . 4 5 5 5 5 f 5 5 5 5 4 d . .
+        . . 4 5 5 5 f 5 5 5 5 5 4 d . .
+        . . 4 5 5 5 f f f 5 5 5 4 d . .
+        . . 4 5 5 5 5 5 5 5 5 5 4 d . .
+        . . 4 5 5 4 4 4 4 4 5 5 4 d . .
+        . . . 4 4 d . . . . 4 4 d . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const kita_key_1 = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . 6 6 6 6 6 6 6 6 . . . . .
+        . . 6 6 6 6 6 6 6 6 6 6 . . . .
+        . . 6 c f f f f f f c 6 . . f .
+        . . 6 f f c c c c f f 6 . f f .
+        . . 6 f c f f f f c f 6 . . f .
+        . . 6 f c f f f f c f 6 . . f .
+        . . 6 f c f f f f c f 6 . f f f
+        . . 6 f c f f f f c f 6 . . . .
+        . . 6 f f c c c c f f 6 . . . .
+        . . 6 c f f f f f f c 6 . . . .
+        . . 6 6 6 6 6 6 6 6 6 6 . 5 5 5
+        . . . 6 6 6 6 6 6 6 6 . . 5 5 5
+        . . . . . . . . . . . . . 5 5 4
+        . . . . . . . . . . . . . 4 4 .
+    `
+
+    //% packable
+    //% whenUsed
+    export const kita_key_2 = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . 6 6 6 6 6 6 6 6 . . . . .
+        . . 6 6 6 6 6 6 6 6 6 6 . . . .
+        . . 6 c f f f f f f c 6 . f f .
+        . . 6 f f c c c c f f 6 . . . f
+        . . 6 f c f f f f c f 6 . . f .
+        . . 6 f c f f f f c f 6 . f . .
+        . . 6 f c f f f f c f 6 . f f f
+        . . 6 f c f f f f c f 6 . . . .
+        . . 6 f f c c c c f f 6 . . . .
+        . . 6 c f f f f f f c 6 . . . .
+        . . 6 6 6 6 6 6 6 6 6 6 . 5 5 5
+        . . . 6 6 6 6 6 6 6 6 . . 5 5 5
+        . . . . . . . . . . . . . 5 5 4
+        . . . . . . . . . . . . . 4 4 .
+    `
+
+    //% packable
+    //% whenUsed
+    export const microbit_logo = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . 4 4 4 4 4 4 4 4 d . . .
+        . . . 4 d 5 5 5 5 5 5 5 4 d . .
+        . . 4 d . . . . . . . . 5 4 d .
+        . . 4 d 4 4 d . . . 4 4 d 4 d .
+        . . 4 d 4 4 d . . . 4 4 d 4 d .
+        . . 4 d . 5 5 . . . . 5 5 4 d .
+        . . . 4 d . . . . . . . 4 d . .
+        . . . . 4 4 4 4 4 4 4 4 d . . .
+        . . . . . 5 5 5 5 5 5 5 . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const tile_timespan_short = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . b b b b b b b b b b . . .
+        . . b 1 1 1 1 1 1 1 1 1 1 c . .
+        . . b 1 1 2 1 1 1 1 1 1 1 c . .
+        . . b 1 1 2 1 1 1 1 1 1 1 c d .
+        . . b 1 1 1 1 1 1 1 1 1 1 c d .
+        . . b 1 2 2 2 1 1 1 f f 1 c d .
+        . . b 1 1 1 1 1 1 f 1 1 1 c d .
+        . . b 1 2 1 2 1 1 1 f 1 1 c d .
+        . . b 1 2 2 2 1 1 1 1 f 1 c d .
+        . . b 1 1 1 2 1 1 f f 1 1 c d .
+        . . b 1 1 1 1 1 1 1 1 1 1 c d .
+        . . . c c c c c c c c c c d . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const tile_timespan_long = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . b b b b b b b b b b . . .
+        . . b 1 1 1 1 1 1 1 1 1 1 c . .
+        . . b 1 1 1 1 1 1 1 1 1 1 c . .
+        . . b 1 1 1 2 1 1 1 1 1 1 c d .
+        . . b 1 1 2 2 1 1 1 1 1 1 c d .
+        . . b 1 1 1 2 1 1 1 f f 1 c d .
+        . . b 1 1 1 2 1 1 f 1 1 1 c d .
+        . . b 1 1 1 2 1 1 1 f 1 1 c d .
+        . . b 1 1 1 2 1 1 1 1 f 1 c d .
+        . . b 1 1 2 2 2 1 f f 1 1 c d .
+        . . b 1 1 1 1 1 1 1 1 1 1 c d .
+        . . . c c c c c c c c c c d . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const tile_timespan_random = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . b b b b b b b b b b . . .
+        . . b 1 1 1 1 1 1 1 1 1 1 c . .
+        . . b 1 1 1 1 1 1 1 1 1 1 c . .
+        . . b 1 1 2 2 1 1 1 1 1 1 c d .
+        . . b 1 2 1 1 2 1 1 1 1 1 c d .
+        . . b 1 1 1 1 2 1 1 f f 1 c d .
+        . . b 1 1 2 2 1 1 f 1 1 1 c d .
+        . . b 1 1 2 1 1 1 1 f 1 1 c d .
+        . . b 1 1 1 1 1 1 1 1 f 1 c d .
+        . . b 1 1 2 1 1 1 f f 1 1 c d .
+        . . b 1 1 1 1 1 1 1 1 1 1 c d .
+        . . . c c c c c c c c c c d . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const tile_timespan_fiveSeconds = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . b b b b b b b b b b . . .
+        . . b 1 1 1 1 1 1 1 1 1 1 c . .
+        . . b 1 1 1 1 1 1 1 1 1 1 c . .
+        . . b 1 2 2 2 2 1 1 1 1 1 c d .
+        . . b 1 2 1 1 1 1 1 1 1 1 c d .
+        . . b 1 2 2 2 1 1 1 f f 1 c d .
+        . . b 1 1 1 1 2 1 f 1 1 1 c d .
+        . . b 1 1 1 1 2 1 1 f 1 1 c d .
+        . . b 1 1 1 1 2 1 1 1 f 1 c d .
+        . . b 1 2 2 2 1 1 f f 1 1 c d .
+        . . b 1 1 1 1 1 1 1 1 1 1 c d .
+        . . . c c c c c c c c c c d . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const speakerSoft = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . c . . . . . . . . . .
+        . . . . c b . . . . . . . . . .
+        . . . c b c . . . . . . . . . .
+        . c c b c c . 8 . . . . . . . .
+        . b b c c c . . 8 . . . . . . .
+        . c c c c c . . 8 . . . . . . .
+        . c c c c c . 8 . . . . . . . .
+        . . . c c c . . . . . . . . . .
+        . . . . c c . . . . . . . . . .
+        . . . . . c . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const moveShake = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . 8 . . 8 . .
+        . . . 9 9 9 9 9 9 . . 8 . . 8 .
+        . . . 9 6 6 6 6 6 . . . 8 . 8 .
+        . . . 9 6 f f f f f f . 8 . 8 .
+        . . . 9 6 f 5 5 5 5 f . . . . .
+        . . . 9 6 f 5 5 5 5 f 6 9 . . .
+        . . . . . f 5 5 5 5 f 6 9 . . .
+        . 8 . 8 . f f f f f f 6 9 . . .
+        . 8 . 8 . . . 6 6 6 6 6 9 . . .
+        . 8 . . 8 . . 9 9 9 9 9 9 . . .
+        . . 8 . . 8 . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const moveTiltUp = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . 8 8 8 8 . . . . . .
+        . . . . . . . . . . 8 . . . . .
+        . . . . . . . . . . . 8 . . . .
+        . . . . . . . . . 8 8 8 8 8 . .
+        . . 9 9 9 9 9 9 9 9 8 8 8 . . .
+        . . 9 9 9 9 9 9 9 9 9 8 . . . .
+        . . 9 9 9 9 9 9 9 9 9 . . . . .
+        . . 9 9 9 9 8 8 8 8 8 f f f . .
+        . . 9 9 9 8 6 6 6 6 6 5 f . . .
+        . . 9 9 8 6 6 6 6 6 6 f . . . .
+        . . 9 8 6 6 6 6 6 6 8 . . . . .
+        . . 8 8 8 8 8 8 8 8 9 . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const moveTiltDown = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . 8 8 8 8 . . . . .
+        . . . . . . 8 . . . . . . . . .
+        . . . . . 8 . . . . . . . . . .
+        . . . 8 8 8 8 8 . . . . . . . .
+        . . . . 8 8 8 9 9 9 9 9 9 9 . .
+        . . . . 9 8 9 9 9 9 9 9 9 9 . .
+        . . . . 9 9 9 9 9 9 9 9 9 9 . .
+        . f f f f f f f f f 9 9 9 9 . .
+        . . f 5 5 5 5 5 5 5 f 9 9 9 . .
+        . . . f 5 5 5 5 5 5 5 f 9 9 . .
+        . . . . f 5 5 5 5 5 5 5 f 9 . .
+        . . . . . f f f f f f f f f . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const moveTiltLeft = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . 8 . . . . .
+        . . . . . . f f . 8 8 . . . . .
+        . . . . . f 5 f 8 8 8 8 8 . . .
+        . . 9 9 8 5 5 f 9 8 8 . . 8 . .
+        . . 9 8 6 5 5 f 9 9 8 . . . 8 .
+        . . 9 8 6 5 5 f 9 9 9 . . . 8 .
+        . . 9 8 6 5 5 f 9 9 9 . . . 8 .
+        . . 9 8 6 5 5 f 9 9 9 . . 8 . .
+        . . 9 8 6 5 5 f 9 9 9 . . . . .
+        . . 9 8 6 5 5 f 9 9 9 . . . . .
+        . . 9 9 8 5 5 f 9 9 9 . . . . .
+        . . . . . f 5 f . . . . . . . .
+        . . . . . . f f . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const moveTiltRight = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . 8 . . . . . . . . . .
+        . . . . . 8 8 . f f . . . . . .
+        . . . 8 8 8 8 8 f 5 f . . . . .
+        . . 8 . . 8 8 9 f 5 5 8 9 9 . .
+        . 8 . . . 8 9 9 f 5 5 6 8 9 . .
+        . 8 . . . 9 9 9 f 5 5 6 8 9 . .
+        . 8 . . . 9 9 9 f 5 5 6 8 9 . .
+        . . 8 . . 9 9 9 f 5 5 6 8 9 . .
+        . . . . . 9 9 9 f 5 5 6 8 9 . .
+        . . . . . 9 9 9 f 5 5 6 8 9 . .
+        . . . . . 9 9 9 f 5 5 8 9 9 . .
+        . . . . . . . . f 5 f . . . . .
+        . . . . . . . . f f . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const cupXread = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . c c c c c c c . . . . .
+        . . . c f f f f f f f c . . . .
+        . . c f f f 4 5 4 f f f c . . .
+        . . c c f 4 5 5 5 4 f c c . . .
+        . . c d c c c c c c c b c . . .
+        . . c d 1 d d d d d d b c . . .
+        . . c d 1 d f d f d d b c . . .
+        . . c d 1 d f d f d d b c . . .
+        . . c d 1 d d f d d d b c . . .
+        . . c d 1 d f d f d d b c . . .
+        . . . d 1 d f d f d d b . . . .
+        . . . . 1 d d d d d d . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const cupYread = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . c c c c c c c . . . . .
+        . . . c f f f f f f f c . . . .
+        . . c f f f 4 5 4 f f f c . . .
+        . . c c f 4 5 5 5 4 f c c . . .
+        . . c d c c c c c c c b c . . .
+        . . c d 1 d d d d d d b c . . .
+        . . c d 1 d f d f d d b c . . .
+        . . c d 1 d f d f d d b c . . .
+        . . c d 1 d d f d d d b c . . .
+        . . c d 1 d d f d d d b c . . .
+        . . . d 1 d d f d d d b . . . .
+        . . . . 1 d d d d d d . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const cupZread = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . c c c c c c c . . . . .
+        . . . c f f f f f f f c . . . .
+        . . c f f f 4 5 4 f f f c . . .
+        . . c c f 4 5 5 5 4 f c c . . .
+        . . c d c c c c c c c b c . . .
+        . . c d 1 d d d d d d b c . . .
+        . . c d 1 d f f f d d b c . . .
+        . . c d 1 d d d f d d b c . . .
+        . . c d 1 d d f d d d b c . . .
+        . . c d 1 d f d d d d b c . . .
+        . . . d 1 d f f f d d b . . . .
+        . . . . 1 d d d d d d . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const kita_rotary_left = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . 9 9 9 9 8 . . . . .
+        . . . . . 9 9 9 9 9 8 . . . . .
+        . . . . 9 9 9 8 . . . . . . . .
+        . . . . 9 9 8 . . . . . . . . .
+        . . . . 9 9 8 . . . . . . . . .
+        . . 9 9 9 9 9 9 8 . . . . . . .
+        . . . 9 9 9 9 8 . . . . . . . .
+        . . . . 9 9 8 . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const kita_rotary_right = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . 8 9 9 9 9 . . . . . .
+        . . . . . 8 9 9 9 9 9 . . . . .
+        . . . . . . . . 8 9 9 9 . . . .
+        . . . . . . . . . 8 9 9 . . . .
+        . . . . . . . . . 8 9 9 . . . .
+        . . . . . . . 8 9 9 9 9 9 9 . .
+        . . . . . . . . 8 9 9 9 9 . . .
+        . . . . . . . . . 8 9 9 . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const temp_warmer = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . f . . . . . . . .
+        . . . . . . f 2 f . . . . . . .
+        . . . . . f 2 2 2 f . . . . . .
+        . . . . f 2 2 2 2 2 f . . . . .
+        . . . f 2 2 2 2 2 2 2 f . . . .
+        . . . f f f 2 2 2 f f f . . . .
+        . . . . . f 2 2 2 f . . . . . .
+        . . . . . f 2 2 2 f . . . . . .
+        . . . . . f 2 2 2 f . . . . . .
+        . . . . . f 2 2 2 f . . . . . .
+        . . . . . f 2 2 2 f . . . . . .
+        . . . . . f f f f f . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const temp_colder = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . f f f f f . . . . . .
+        . . . . . f 9 9 9 f . . . . . .
+        . . . . . f 9 9 9 f . . . . . .
+        . . . . . f 9 9 9 f . . . . . .
+        . . . . . f 9 9 9 f . . . . . .
+        . . . . . f 9 9 9 f . . . . . .
+        . . . f f f 9 9 9 f f f . . . .
+        . . . f 9 9 9 9 9 9 9 f . . . .
+        . . . . f 9 9 9 9 9 f . . . . .
+        . . . . . f 9 9 9 f . . . . . .
+        . . . . . . f 9 f . . . . . . .
+        . . . . . . . f . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const moveFaceUp = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . 8 . . . . . . . .
+        . . . . . . 8 8 8 . . . . . . .
+        . . . . . 8 8 8 8 8 . . . . . .
+        . . . . . . . 8 . . . . . . . .
+        . . . . . . . 8 . . . . . . . .
+        . . . . . . . 8 . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . f f f f f f f . . . . .
+        . . . f 5 5 5 5 5 5 5 f . . . .
+        . . f 5 5 5 5 5 5 5 5 5 f . . .
+        . f 5 5 5 5 5 5 5 5 5 5 5 f . .
+        f f f f f f f f f f f f f f f .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const moveFaceDown = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . f f f f f f f f f f f f f f f
+        . . f 5 5 5 5 5 5 5 5 5 5 5 f .
+        . . . f 5 5 5 5 5 5 5 5 5 f . .
+        . . . . f 5 5 5 5 5 5 5 f . . .
+        . . . . . f f f f f f f . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . 8 . . . . . . .
+        . . . . . . . . 8 . . . . . . .
+        . . . . . . . . 8 . . . . . . .
+        . . . . . . 8 8 8 8 8 . . . . .
+        . . . . . . . 8 8 8 . . . . . .
+        . . . . . . . . 8 . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const tile_page_1 = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . f f f f f f f . . .
+        . . . . . f f 9 9 9 9 9 f . . .
+        . . . . f 9 f 9 9 9 9 9 f . . .
+        . . . f f f f 9 9 9 9 9 f . . .
+        . . . f 9 9 9 9 9 9 9 9 f . . .
+        . . . f 9 9 9 f f 9 9 9 f . . .
+        . . . f 9 9 9 9 f 9 9 9 f . . .
+        . . . f 9 9 9 9 f 9 9 9 f . . .
+        . . . f 9 9 9 9 f 9 9 9 f . . .
+        . . . f 9 9 9 f f f 9 9 f . . .
+        . . . f 9 9 9 9 9 9 9 9 f . . .
+        . . . f f f f f f f f f f . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const tile_page_2 = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . f f f f f f f . . .
+        . . . . . f f 5 5 5 5 5 f . . .
+        . . . . f 5 f 5 5 5 5 5 f . . .
+        . . . f f f f 5 5 5 5 5 f . . .
+        . . . f 5 5 5 5 5 5 5 5 f . . .
+        . . . f 5 5 5 f f 5 5 5 f . . .
+        . . . f 5 5 f 5 5 f 5 5 f . . .
+        . . . f 5 5 5 5 f 5 5 5 f . . .
+        . . . f 5 5 5 f 5 5 5 5 f . . .
+        . . . f 5 5 f f f f 5 5 f . . .
+        . . . f 5 5 5 5 5 5 5 5 f . . .
+        . . . f f f f f f f f f f . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const tile_page_3 = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . f f f f f f f . . .
+        . . . . . f f 4 4 4 4 4 f . . .
+        . . . . f 4 f 4 4 4 4 4 f . . .
+        . . . f f f f 4 4 4 4 4 f . . .
+        . . . f 4 4 4 4 4 4 4 4 f . . .
+        . . . f 4 4 4 f f 4 4 4 f . . .
+        . . . f 4 4 4 4 4 f 4 4 f . . .
+        . . . f 4 4 4 4 f 4 4 4 f . . .
+        . . . f 4 4 4 4 4 f 4 4 f . . .
+        . . . f 4 4 4 f f 4 4 4 f . . .
+        . . . f 4 4 4 4 4 4 4 4 f . . .
+        . . . f f f f f f f f f f . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const tile_page_4 = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . f f f f f f f . . .
+        . . . . . f f 3 3 3 3 3 f . . .
+        . . . . f 3 f 3 3 3 3 3 f . . .
+        . . . f f f f 3 3 3 3 3 f . . .
+        . . . f 3 3 3 3 3 3 3 3 f . . .
+        . . . f 3 3 f 3 f 3 3 3 f . . .
+        . . . f 3 3 f 3 f 3 3 3 f . . .
+        . . . f 3 3 f f f f 3 3 f . . .
+        . . . f 3 3 3 3 f 3 3 3 f . . .
+        . . . f 3 3 3 3 f 3 3 3 f . . .
+        . . . f 3 3 3 3 3 3 3 3 f . . .
+        . . . f f f f f f f f f f . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const tile_page_5 = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . f f f f f f f . . .
+        . . . . . f f 7 7 7 7 7 f . . .
+        . . . . f 7 f 7 7 7 7 7 f . . .
+        . . . f f f f 7 7 7 7 7 f . . .
+        . . . f 7 7 7 7 7 7 7 7 f . . .
+        . . . f 7 7 f f f f 7 7 f . . .
+        . . . f 7 7 f 7 7 7 7 7 f . . .
+        . . . f 7 7 f f f 7 7 7 f . . .
+        . . . f 7 7 7 7 7 f 7 7 f . . .
+        . . . f 7 7 f f f 7 7 7 f . . .
+        . . . f 7 7 7 7 7 7 7 7 f . . .
+        . . . f f f f f f f f f f . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const iconEditor = bmp`
+        f f f f f f f f f f f f f f f f
+        f f f f f f f f f f f f f f f f
+        f f f f f f f f f f f f f f f f
+        f f f f e e f f f f e e f f f f
+        f f f e 2 2 e f f e 2 2 e f f f
+        f f f e 2 2 e f f e 2 2 e f f f
+        f f f f e e f f f f e e f f f f
+        f f f f f f f f f f f f f f f f
+        f f f f f f f f f f f f f f f f
+        f e e f f f f f f f f f f e e f
+        e 2 2 e f f f f f f f f e 2 2 e
+        e 2 2 e f f f f f f f f e 2 2 e
+        f e e f e e f e e f e e f e e f
+        f f f e 2 2 e 2 2 e 2 2 e f f f
+        f f f e 2 2 e 2 2 e 2 2 e f f f
+        f f f f e e f e e f e e f f f f
+    `
+
+    //% packable
+    //% whenUsed
+    export const soundGiggle = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . 4 4 4 4 4 . . . . . .
+        . . . . 4 5 5 5 5 5 4 . . . . .
+        . . . 4 5 5 5 5 5 5 5 4 . . . .
+        . . 4 5 5 f 5 5 5 f 5 5 4 . . .
+        . . 4 5 f 5 f 5 f 5 f 5 4 d . .
+        . . 4 3 3 5 5 5 5 5 3 3 4 d . .
+        . . 4 5 5 f f f f f 5 5 4 d . .
+        . . 4 5 5 f f 2 2 2 5 5 4 d . .
+        . . . 4 5 5 f 2 2 5 5 4 d . . .
+        . . . . 4 5 5 5 5 5 4 d . . . .
+        . . . . . 4 4 4 4 4 d . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const soundHappy = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . 4 4 4 4 4 . . . . . .
+        . . . . 4 5 5 5 5 5 4 . . . . .
+        . . . 4 5 5 5 5 5 5 5 4 . . . .
+        . . 4 5 5 f 5 5 5 f 5 5 4 . . .
+        . . 4 5 5 f 5 5 5 f 5 5 4 d . .
+        . . 4 5 5 5 5 5 5 5 5 5 4 d . .
+        . . 4 5 5 f 5 5 5 f 5 5 4 d . .
+        . . 4 5 5 5 f f f 5 5 5 4 d . .
+        . . . 4 5 5 5 5 5 5 5 4 d . . .
+        . . . . 4 5 5 5 5 5 4 d . . . .
+        . . . . . 4 4 4 4 4 d . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const soundHello = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . 8 8 8 . .
+        . . . . . . . . . . 8 . . . 8 .
+        . . . . 4 4 4 4 . . . . 4 . . .
+        . . . 4 5 5 5 5 4 . . 4 5 4 . .
+        . . 4 5 f 5 5 f 5 4 . 8 8 8 d .
+        . . 4 5 5 5 5 5 5 4 d 8 9 8 d .
+        . . 4 5 f 5 5 f 5 4 8 9 9 8 d .
+        . . 4 5 5 f f 5 5 4 8 9 8 d . .
+        . . . 4 5 5 5 5 4 8 9 9 8 d . .
+        . . . . 4 4 4 4 9 9 9 8 d . . .
+        . . . 8 9 9 9 9 9 9 8 d . . . .
+        . . 8 9 9 9 9 9 9 9 8 d . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const soundMysterious = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . 6 6 6 6 6 6 . . . . . .
+        . . . 6 7 7 7 7 7 7 6 . . . . .
+        . . f f 1 7 7 7 7 f 1 f . . . .
+        . . f f f f 7 7 f f f f d . . .
+        . . 6 f f f 7 7 f f f 6 d . . .
+        . . 6 7 7 7 7 7 7 7 7 6 d . . .
+        . . 6 7 7 f 7 7 f 7 7 6 d . . .
+        . . . 6 7 7 f f 7 7 6 d . . . .
+        . . . . 6 7 7 7 7 6 d . . . . .
+        . . . . . 6 7 7 6 d . . . . . .
+        . . . . . . 6 6 d . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const soundSad = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . 4 4 4 4 4 . . . . . .
+        . . . . 4 5 5 5 5 5 4 . . . . .
+        . . . 4 5 5 5 5 5 5 5 4 . . . .
+        . . 4 5 5 f 5 5 5 f 5 5 4 . . .
+        . . 4 5 5 f 5 5 5 f 5 5 4 d . .
+        . . 4 5 5 5 5 5 5 5 5 5 4 d . .
+        . . 4 5 5 5 f f f 5 5 5 4 d . .
+        . . 4 5 5 f 5 5 5 f 5 5 4 d . .
+        . . . 4 5 5 5 5 5 5 5 4 d . . .
+        . . . . 4 5 5 5 5 5 4 d . . . .
+        . . . . . 4 4 4 4 4 d . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const soundSlide = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . 2 2 2 e e e . . . .
+        . . . . . 2 2 2 e e d e d . . .
+        . . . . . 2 2 e d e e e d . . .
+        . . . . . 2 2 e d e d e d . . .
+        . . . . . 2 2 e d e e e d . . .
+        . . . . . 2 2 e d e d e d . . .
+        . . . . . 2 2 e d e e e d . . .
+        . . . . 2 2 2 e d e d e d . . .
+        . . . 2 2 2 e d . e e e d . . .
+        . . 2 2 2 e d . . e d e d . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const soundSoaring = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . 9 9 9 9 9 . . . . . .
+        . . . . 9 1 9 9 9 9 9 . . . . .
+        . . . 9 1 9 9 7 7 7 9 9 . . . .
+        . . . 9 1 9 7 f 7 f 7 9 . . . .
+        . . 6 6 6 6 6 6 6 6 6 6 6 d . .
+        . 6 9 5 9 5 9 5 9 5 9 5 9 6 d .
+        . 8 8 8 8 8 8 8 8 8 8 8 8 8 d .
+        . . . . . . 8 8 8 d . . . . . .
+        . . . . 9 . . . . . 9 . . . . .
+        . . . . . 9 9 9 9 9 . . . . . .
+        . . . 9 . . . . . . . 9 . . . .
+        . . . . 9 9 9 9 9 9 9 . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const soundSpring = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . 2 d . . . . . . . . . . .
+        . . 2 d . . 4 4 d . . . . . . .
+        . 2 d . . 4 d d 5 d . . . . . .
+        . 2 d . 4 d . . 5 d . . . . . .
+        . d 4 4 d . . 5 d . . . . . . .
+        . . d d . . 5 d . . 7 7 d . . .
+        . . . . . 5 d . . 7 d d 9 d . .
+        . . . . . 5 d . 7 d . . 9 d . .
+        . . . . . d 7 7 d . . 9 d . . .
+        . . . . . . d d . . 9 d . . . .
+        . . . . . . . . . . d . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const soundTwinkle = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . 3 . . . 3 . . . 3 . . . .
+        . . 3 5 3 . . 3 . . . . . . . .
+        . . . 3 . . 3 5 3 . . . . . . .
+        . . . . . . 3 5 3 . . . . 3 . .
+        . . . . 3 3 5 5 5 3 3 . . . . .
+        . . 3 3 5 5 5 5 5 5 5 3 3 . . .
+        . . . . 3 3 5 5 5 3 3 . . . . .
+        . . . . . . 3 5 3 . . . . . . .
+        . . . . . . 3 5 3 . . . 3 . . .
+        . . . 3 . . . 3 . . . 3 5 3 . .
+        . . . . . . . 3 . . . . 3 . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const soundYawn = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . 4 4 4 4 4 . . . . . .
+        . . . . 4 5 5 5 5 5 4 . . . . .
+        . . . 4 5 5 5 5 5 5 5 4 . . . .
+        . . 4 5 f f 5 5 5 f f 5 4 . . .
+        . . 4 5 5 5 5 5 5 5 5 5 4 d . .
+        . . 4 5 5 5 f f f 5 5 5 4 d . .
+        . . 4 5 5 5 f f f 5 5 5 4 d . .
+        . . 4 5 5 5 f 2 2 5 5 5 4 d . .
+        . . . 4 5 5 5 5 5 5 5 4 d . . .
+        . . . . 4 5 5 5 5 5 4 d . . . .
+        . . . . . 4 4 4 4 4 d . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const radio_value = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . 8 . . . 8 . . . . . .
+        . . . 8 . . 8 8 8 . . 8 . . . .
+        . 8 . . 8 . . . . . 8 . . 8 . .
+        . . 8 . . 8 8 8 8 8 . . 8 . . .
+        . . . 8 . . . . . . . 8 . . . .
+        . . . . 8 8 8 8 8 8 8 . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . 4 4 4 . . . . . . .
+        . . . . . 4 5 1 5 4 . . . . . .
+        . . . . . 4 1 1 1 4 . . . . . .
+        . . . . . 4 5 1 5 4 . . . . . .
+        . . . . . . 4 4 4 . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const diceToss = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . b b b b b b b b . . .
+        . . . . b 1 1 1 1 1 1 1 b b . .
+        . . . b 1 1 1 b 1 1 1 b d b . .
+        . . b 1 1 1 1 1 1 1 b d d b . .
+        . . c b b b b b b b d d b b . .
+        . . c b b c c c b b d d d b . .
+        . . c b c b b b c b d d d b . .
+        . . c b b b b b c b d b d b d .
+        . . c b b b c c b b d d d b d .
+        . . c b b b b b b b d d b d . .
+        . . c b b b c b b b d b d . . .
+        . . . c c c c c c c b d . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const loop = bmp`
+        4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4
+        4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4
+        4 4 4 f f f f 4 4 4 4 4 4 4 4 4
+        4 4 4 c c c c f 4 4 4 4 4 4 4 4
+        4 4 4 1 1 1 1 1 f 4 4 4 4 4 4 4
+        4 4 4 4 4 4 c 1 1 4 1 4 4 4 1 4
+        4 4 4 4 4 4 4 c 1 4 4 1 4 1 4 4
+        4 4 4 4 f 4 4 c 1 4 4 4 1 4 4 4
+        4 4 4 f c 4 f c 1 4 4 1 4 1 4 4
+        4 4 f c 1 f c 1 1 4 1 4 4 4 1 4
+        4 4 c 1 1 c 1 1 4 4 4 4 4 4 4 4
+        4 4 1 1 1 1 1 4 4 4 4 4 4 4 4 4
+        4 4 4 1 1 4 4 4 4 4 4 4 4 4 4 4
+        4 4 4 4 1 4 4 4 4 4 4 4 4 4 4 4
+        4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4
+        . . . . . . . . . . . . . . . .
+    `
+
+    // icondb already has a melodyEditor, drawn from a melody at startup, so
+    // this one's const carries a different name and tid 179 points at it.
+    //% packable
+    //% whenUsed
+    export const melodyEditorIcon = bmp`
+        1111111111111111
+        111111111ff11111
+        11111111fcc11111
+        11111111fcc11111
+        1111111111111111
+        1111111111111111
+        1111111111111111
+        11111ff111111111
+        1111fcc111111111
+        1111fcc111111111
+        1111111111111111
+        1111111111111111
+        1111111111111111
+        1ff1111111111ff1
+        fcc111111111fcc1
+        fcc111111111fcc1
+    `
+
+    //% packable
+    //% whenUsed
+    export const tile_color_red = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . 1 1 1 1 1 . . . . . .
+        . . . 1 1 2 2 2 2 2 b b . . . .
+        . . 1 2 2 2 2 2 2 2 2 2 b . . .
+        . . 1 2 2 2 2 2 2 2 2 2 b . . .
+        . 1 2 2 2 2 2 2 2 2 2 2 2 b . .
+        . 1 2 2 2 2 2 2 2 2 2 2 2 b d .
+        . 1 2 2 2 2 2 2 2 2 2 2 2 b d .
+        . 1 2 2 2 2 2 2 2 2 2 2 2 b d .
+        . 1 2 2 2 2 2 2 2 2 2 2 2 b d .
+        . . b 2 2 2 2 2 2 2 2 2 b d d .
+        . . b 2 2 2 2 2 2 2 2 2 b d . .
+        . . . b b 2 2 2 2 2 b b d . . .
+        . . . . . b b b b b d d . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const tile_color_green = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . 1 1 1 1 1 . . . . . .
+        . . . 1 1 7 7 7 7 7 b b . . . .
+        . . 1 7 7 7 7 7 7 7 7 7 b . . .
+        . . 1 7 7 7 7 7 7 7 7 7 b . . .
+        . 1 7 7 7 7 7 7 7 7 7 7 7 b . .
+        . 1 7 7 7 7 7 7 7 7 7 7 7 b d .
+        . 1 7 7 7 7 7 7 7 7 7 7 7 b d .
+        . 1 7 7 7 7 7 7 7 7 7 7 7 b d .
+        . 1 7 7 7 7 7 7 7 7 7 7 7 b d .
+        . . b 7 7 7 7 7 7 7 7 7 b d d .
+        . . b 7 7 7 7 7 7 7 7 7 b d . .
+        . . . b b 7 7 7 7 7 b b d . . .
+        . . . . . b b b b b d d . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const tile_color_blue = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . 1 1 1 1 1 . . . . . .
+        . . . 1 1 8 8 8 8 8 b b . . . .
+        . . 1 8 8 8 8 8 8 8 8 8 b . . .
+        . . 1 8 8 8 8 8 8 8 8 8 b . . .
+        . 1 8 8 8 8 8 8 8 8 8 8 8 b . .
+        . 1 8 8 8 8 8 8 8 8 8 8 8 b d .
+        . 1 8 8 8 8 8 8 8 8 8 8 8 b d .
+        . 1 8 8 8 8 8 8 8 8 8 8 8 b d .
+        . 1 8 8 8 8 8 8 8 8 8 8 8 b d .
+        . . b 8 8 8 8 8 8 8 8 8 b d d .
+        . . b 8 8 8 8 8 8 8 8 8 b d . .
+        . . . b b 8 8 8 8 8 b b d . . .
+        . . . . . b b b b b d d . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const tile_color_magenta = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . 1 1 1 1 1 . . . . . .
+        . . . 1 1 a a a a a b b . . . .
+        . . 1 a a a a a a a a a b . . .
+        . . 1 a a a a a a a a a b . . .
+        . 1 a a a a a a a a a a a b . .
+        . 1 a a a a a a a a a a a b d .
+        . 1 a a a a a a a a a a a b d .
+        . 1 a a a a a a a a a a a b d .
+        . 1 a a a a a a a a a a a b d .
+        . . b a a a a a a a a a b d d .
+        . . b a a a a a a a a a b d . .
+        . . . b b a a a a a b b d . . .
+        . . . . . b b b b b d d . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const tile_color_yellow = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . 1 1 1 1 1 . . . . . .
+        . . . 1 1 5 5 5 5 5 b b . . . .
+        . . 1 5 5 5 5 5 5 5 5 5 b . . .
+        . . 1 5 5 5 5 5 5 5 5 5 b . . .
+        . 1 5 5 5 5 5 5 5 5 5 5 5 b . .
+        . 1 5 5 5 5 5 5 5 5 5 5 5 b d .
+        . 1 5 5 5 5 5 5 5 5 5 5 5 b d .
+        . 1 5 5 5 5 5 5 5 5 5 5 5 b d .
+        . 1 5 5 5 5 5 5 5 5 5 5 5 b d .
+        . . b 5 5 5 5 5 5 5 5 5 b d d .
+        . . b 5 5 5 5 5 5 5 5 5 b d . .
+        . . . b b 5 5 5 5 5 b b d . . .
+        . . . . . b b b b b d d . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const tile_color_black = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . 1 1 1 1 1 . . . . . .
+        . . . 1 1 f f f f f b b . . . .
+        . . 1 f f f f f f f f f b . . .
+        . . 1 f f f f f f f f f b . . .
+        . 1 f f f f f f f f f f f b . .
+        . 1 f f f f f f f f f f f b d .
+        . 1 f f f f f f f f f f f b d .
+        . 1 f f f f f f f f f f f b d .
+        . 1 f f f f f f f f f f f b d .
+        . . b f f f f f f f f f b d d .
+        . . b f f f f f f f f f b d . .
+        . . . b b f f f f f b b d . . .
+        . . . . . b b b b b d d . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const tile_rainbow = bmp`
+        . . . . . . . . . . . . . . . .
+        . . 2 2 2 2 2 2 2 2 2 2 2 2 . .
+        . 2 2 2 2 2 2 2 2 2 2 2 2 2 2 .
+        2 2 2 4 4 4 4 4 4 4 4 4 4 2 2 2
+        2 2 4 4 4 4 4 4 4 4 4 4 4 4 2 2
+        2 4 4 5 5 5 5 5 5 5 5 5 5 4 4 2
+        4 4 5 5 5 5 5 5 5 5 5 5 5 5 4 4
+        4 5 5 5 7 7 7 7 7 7 7 7 5 5 5 4
+        5 5 7 7 7 7 7 7 7 7 7 7 7 7 5 5
+        5 7 7 7 7 8 8 8 8 8 8 7 7 7 7 5
+        7 7 7 7 8 8 8 8 8 8 8 8 7 7 7 5
+        7 7 7 8 8 8 c c c c 8 8 8 7 7 7
+        7 7 8 8 8 c c c c c c 8 8 8 7 7
+        7 7 8 8 c c a a a a c c 8 8 7 7
+        7 7 8 8 c c a . . a c c 8 8 7 7
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const tile_sparkle = bmp`
+        c c c c c c c c c c c c c c c c
+        c c d c c c c c c c c c c c c c
+        c d 1 d c c c c c c c c c d c c
+        c c d c c c c c c c c c c c c c
+        c c c c c c c d c c d c c c c c
+        c c c c c c c c c d 1 d c c c c
+        c c c c c c c c c c d c c c c c
+        c d c c c c c c c c c c c c c c
+        c c c c c c c c c c c c c c c c
+        c c c c c c d c c 1 c c c c c c
+        c c c c c d 1 d c c c c c c c c
+        c c c c c c d c c c c c c c c c
+        c c c c c c c c c c c c c d c c
+        c c c c c c c c c c c c d 1 d c
+        c c c d c c c c c c c c c d c c
+        c c c c c c c c c c c c c c c c
+    `
+
+    //% packable
+    //% whenUsed
+    export const decimalEditor = bmp`
+        . . . . . . . . . . . . . . . .
+        2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . 4 4 4 . . .
+        . . . f . . f f f . . 4 . . . .
+        . . f f . . . . f . . 4 . . . .
+        . . . f . . . . f . . 4 . . . .
+        . . . f . . f f f . . 4 . . . .
+        . . . f . . f . . . . 4 . . . .
+        . . . f . . f . . . . 4 . . . .
+        . . f f f . f f f . . 4 . . . .
+        . . . . . . . . . . 4 4 4 . . .
+        . . . . . . . . . . . . . . . .
+        2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const btn_delete = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . c f f . . . . . . .
+        . . . . . c . . . f . . . . . .
+        . . . . c c c f f f f . . . . .
+        . . . c 1 1 d d d b b f . . . .
+        . . c c c c c f f f f f f . . .
+        . . . c b c b c b c c f . . . .
+        . . . c 1 c d c d c b f d . . .
+        . . . c 1 c d c d c b f d . . .
+        . . . c 1 c d c d c b f d . . .
+        . . . c 1 1 d d d b b f d . . .
+        . . . c 1 1 d d d b b f d . . .
+        . . . . c c c f f f f d . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const btn_plus = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . f f f f . . . . . .
+        . . . . . . f 5 5 f . . . . . .
+        . . . . . . f 5 5 f . . . . . .
+        . . . f f f f 5 5 f f f f . . .
+        . . . f 5 5 5 5 5 5 5 5 f . . .
+        . . . f 5 5 5 5 5 5 5 5 f . . .
+        . . . f f f f 5 5 f f f f . . .
+        . . . . . . f 5 5 f . . . . . .
+        . . . . . . f 5 5 f . . . . . .
+        . . . . . . f f f f . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const btn_when_insertion_point = bmp`
+        dddddddddddddddddd
+        dcddcddcddcddcddcd
+        dddddddddddddddddd
+        dddddddddddddddddd
+        dcddddddddddddddcd
+        dddddddddddddddddd
+        dddddddddddddddddd
+        dcddddddddddddddcd
+        dddddddddddddddddd
+        dddddddddddddddddd
+        dcddddddddddddddcd
+        dddddddddddddddddd
+        dddddddddddddddddd
+        dcddddddddddddddcd
+        dddddddddddddddddd
+        dddddddddddddddddd
+        dcddcddcddcddcddcd
+        dddddddddddddddddd
+    `
+
+    //% packable
+    //% whenUsed
+    export const btn_do_insertion_point = bmp`
+        bbbbbbbbbbbbbbbbbb
+        bdbbdbbdbbdbbdbbdb
+        bbbbbbbbbbbbbbbbbb
+        bbbbbbbbbbbbbbbbbb
+        bdbbbbbbbbbbbbbbdb
+        bbbbbbbbbbbbbbbbbb
+        bbbbbbbbbbbbbbbbbb
+        bdbbbbbbbbbbbbbbdb
+        bbbbbbbbbbbbbbbbbb
+        bbbbbbbbbbbbbbbbbb
+        bdbbbbbbbbbbbbbbdb
+        bbbbbbbbbbbbbbbbbb
+        bbbbbbbbbbbbbbbbbb
+        bdbbbbbbbbbbbbbbdb
+        bbbbbbbbbbbbbbbbbb
+        bbbbbbbbbbbbbbbbbb
+        bdbbdbbdbbdbbdbbdb
+        bbbbbbbbbbbbbbbbbb
+    `
+
+    //% packable
+    //% whenUsed
+    export const rule_arrow = bmp`
+        d d d . . . . . . . . . . .
+        d d d d . . . . . . . . . .
+        d d d d d . . . . . . . . .
+        d d d d d d . . . . . . . .
+        d d d d d d d . . . . . . .
+        d d d d d d d d . . . . . .
+        d d d d d d d d d . . . . .
+        d d d d d d d d d d . . . .
+        d d d d d d d d d d d . . .
+        d d d d d d d d d d d d . .
+        d d d d d d d d d d d d . .
+        d d d d d d d d d d d . . .
+        d d d d d d d d d d . . . .
+        d d d d d d d d d . . . . .
+        d d d d d d d d . . . . . .
+        d d d d d d d . . . . . . .
+        d d d d d d . . . . . . . .
+        d d d d d . . . . . . . . .
+        d d d d . . . . . . . . . .
+        d d d . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const rule_handle = bmp`
+        . f f f f f f f .
+        f 1 1 1 1 1 1 1 f
+        f 1 1 1 1 1 1 1 f
+        f 1 1 1 1 1 1 1 f
+        f 1 1 1 1 1 1 1 f
+        f 1 1 1 1 1 1 1 f
+        f 1 1 1 1 1 1 1 f
+        f 1 1 1 1 1 1 1 f
+        . f f f f f f f .
+    `
+
+    //% packable
+    //% whenUsed
+    export const largeNewProgramIcon = bmp`
+        .11111111..............11111111.
+        1bbbbbbbb..............bbbbbbbb1
+        1..............................1
+        1..............................1
+        1..............................1
+        1..............................1
+        1..............................1
+        1..............................1
+        1..............................1
+        b..............................b
+        ................................
+        ...............11...............
+        ...............11...............
+        ...............11...............
+        ...............11...............
+        ...........1111111111...........
+        ...........1111111111...........
+        ...........bbbb11bbbb...........
+        ...............11...............
+        ...............11...............
+        ...............11...............
+        ...............bb...............
+        ................................
+        1..............................1
+        1..............................1
+        1..............................1
+        1..............................1
+        1..............................1
+        1..............................1
+        1..............................1
+        1..............................1
+        b11111111..............11111111b
+        .bbbbbbbb..............bbbbbbbb.
+    `
+
+    //% packable
+    //% whenUsed
+    export const disk = bmp`
+        . . . . . . . . . . . . . . . .
+        . . 8 d d d d 8 8 d d 8 . . . .
+        . . 8 d d d d 8 8 d d 8 8 . . .
+        . . 8 d d d d 8 8 d d 8 8 8 . .
+        . . 8 d d d d d d d d 8 8 8 . .
+        . . 8 8 8 8 8 8 8 8 8 8 8 8 . .
+        . . 8 8 3 3 3 3 3 3 3 3 8 8 d .
+        . . 8 8 1 1 1 1 1 1 1 1 8 8 d .
+        . . 8 8 1 1 1 1 1 1 1 1 8 8 d .
+        . . 8 8 1 1 1 1 1 1 1 1 8 8 d .
+        . . 8 8 1 1 1 1 1 1 1 1 8 8 d .
+        . . 8 8 1 1 1 1 1 1 1 1 8 8 d .
+        . . 8 8 1 1 1 1 1 1 1 1 8 8 d .
+        . . 8 8 1 1 1 1 1 1 1 1 8 8 . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const disk1 = bmp`
+        . . . . . . . . . . . . . . . .
+        . . 8 d d d d 8 8 d d 8 . . . .
+        . . 8 d d d d 8 8 d d 8 8 . . .
+        . . 8 d d d d 8 8 d d 8 8 8 . .
+        . . 8 d d d d d d d d 8 8 8 . .
+        . . 8 8 8 8 8 8 8 8 8 8 8 8 d .
+        . . 8 8 3 3 3 3 3 3 3 3 8 8 d .
+        . . 8 8 1 1 1 1 1 1 1 1 8 8 d .
+        . . 8 8 1 1 1 1 f 1 1 1 8 8 d .
+        . . 8 8 1 1 1 f f 1 1 1 8 8 d .
+        . . 8 8 1 1 1 1 f 1 1 1 8 8 d .
+        . . 8 8 1 1 1 1 f 1 1 1 8 8 d .
+        . . 8 8 1 1 1 f f f 1 1 8 8 d .
+        . . 8 8 1 1 1 1 1 1 1 1 8 8 . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const disk2 = bmp`
+        . . . . . . . . . . . . . . . .
+        . . 8 d d d d 8 8 d d 8 . . . .
+        . . 8 d d d d 8 8 d d 8 8 . . .
+        . . 8 d d d d 8 8 d d 8 8 8 . .
+        . . 8 d d d d d d d d 8 8 8 . .
+        . . 8 8 8 8 8 8 8 8 8 8 8 8 d .
+        . . 8 8 3 3 3 3 3 3 3 3 8 8 d .
+        . . 8 8 1 1 1 1 1 1 1 1 8 8 d .
+        . . 8 8 1 1 1 f f 1 1 1 8 8 d .
+        . . 8 8 1 1 1 1 1 f 1 1 8 8 d .
+        . . 8 8 1 1 1 1 f 1 1 1 8 8 d .
+        . . 8 8 1 1 1 f 1 1 1 1 8 8 d .
+        . . 8 8 1 1 1 f f f 1 1 8 8 d .
+        . . 8 8 1 1 1 1 1 1 1 1 8 8 . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const disk3 = bmp`
+        . . . . . . . . . . . . . . . .
+        . . 8 d d d d 8 8 d d 8 . . . .
+        . . 8 d d d d 8 8 d d 8 8 . . .
+        . . 8 d d d d 8 8 d d 8 8 8 . .
+        . . 8 d d d d d d d d 8 8 8 . .
+        . . 8 8 8 8 8 8 8 8 8 8 8 8 d .
+        . . 8 8 3 3 3 3 3 3 3 3 8 8 d .
+        . . 8 8 1 1 1 1 1 1 1 1 8 8 d .
+        . . 8 8 1 1 1 f f 1 1 1 8 8 d .
+        . . 8 8 1 1 1 1 1 f 1 1 8 8 d .
+        . . 8 8 1 1 1 1 f f 1 1 8 8 d .
+        . . 8 8 1 1 1 1 1 f 1 1 8 8 d .
+        . . 8 8 1 1 1 f f 1 1 1 8 8 d .
+        . . 8 8 1 1 1 1 1 1 1 1 8 8 . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const solid_red = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . 2 2 2 2 2 2 2 2 2 2 . . .
+        . . 2 2 4 4 4 4 4 4 4 4 2 2 . .
+        . . 2 4 4 4 4 4 4 4 4 4 4 2 . .
+        . . 2 4 4 4 4 4 4 4 4 4 4 2 . .
+        . . 2 4 4 4 4 4 4 4 4 4 4 2 . .
+        . . 2 4 4 4 4 4 4 4 4 4 4 2 . .
+        . . 2 4 4 4 4 4 4 4 4 4 4 2 . .
+        . . 2 4 4 4 4 4 4 4 4 4 4 2 . .
+        . . 2 4 4 4 4 4 4 4 4 4 4 2 . .
+        . . 2 4 4 4 4 4 4 4 4 4 4 2 . .
+        . . 2 4 4 4 4 4 4 4 4 4 4 2 . .
+        . . 2 4 4 4 4 4 4 4 4 4 4 2 . .
+        . . 2 2 4 4 4 4 4 4 4 4 2 2 . .
+        . . . 2 2 2 2 2 2 2 2 2 2 . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const led_off = bmp`
+        . . . . . . . . . . . . . . . .
+        . . . c c c c c c c c c c . . .
+        . . c c c c c c c c c c c c . .
+        . . c c c c c c c c c c c c . .
+        . . c c c c c c c c c c c c . .
+        . . c c c c c c c c c c c c . .
+        . . c c c c c c c c c c c c . .
+        . . c c c c c c c c c c c c . .
+        . . c c c c c c c c c c c c . .
+        . . c c c c c c c c c c c c . .
+        . . c c c c c c c c c c c c . .
+        . . c c c c c c c c c c c c . .
+        . . c c c c c c c c c c c c . .
+        . . c c c c c c c c c c c c . .
+        . . . c c c c c c c c c c . . .
+        . . . . . . . . . . . . . . . .
+    `
+
+    //% packable
+    //% whenUsed
+    export const note_on = bmp`
+        1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+        1 1 1 1 1 1 1 c c c c 1 1 1 1 1
+        1 1 1 1 1 1 c f f f f c 1 1 1 1
+        1 1 1 1 1 c f f f f f f c 1 1 1
+        1 1 1 1 c f f f f f f f f c 1 1
+        1 1 1 1 c f f f f f f f f c 1 1
+        1 1 1 c f f f f f f f f f c 1 1
+        1 1 1 c f f f f f f f f f c 1 1
+        1 1 1 c f f f f f f f f f c 1 1
+        1 1 1 c f f f f f f f f f c 1 1
+        1 1 1 c f f f f f f f f c 1 1 1
+        1 1 1 c f f f f f f f f c 1 1 1
+        1 1 1 1 c f f f f f f c 1 1 1 1
+        1 1 1 1 1 c f f f f c 1 1 1 1 1
+        1 1 1 1 1 1 c c c c 1 1 1 1 1 1
+        1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+    `
+
+    //% packable
+    //% whenUsed
+    export const note_off = bmp`
+        1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+        1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+        1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+        1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+        1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+        1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+        1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+        1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+        1 1 1 1 1 1 1 1 f 1 1 1 1 1 1 1
+        1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+        1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+        1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+        1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+        1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+        1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+        1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+    `
+
+    //% packable
+    //% whenUsed
+    export const sampleSmileyButtons = bmp`
+        .111111111111111111111111111111.
+        11111111111111111111111111111111
+        11111111111111111111111111111111
+        11111bbbbbbbbbbbbbbbb11111111111
+        1111b1111111111111111b1111111111
+        1111b1111111111111111b1111111111
+        1111b1111114444111111bd111111111
+        1111b1111445555441111bd111111111
+        1111b1114555555554111bd111111111
+        1111b111455f55f554111bd111111111
+        1111b114555f55f555411bd111111111
+        1111b1145555555555411bd111111111
+        1111b1145555555555411bd111111111
+        1111b114555f55f555411bd111111111
+        1111b1114555ff5554111bd111111111
+        1111b1114555555554111bd111111111
+        1111b1111445555441111bd111111111
+        1111b1111114444111111bd111111111
+        1111b111111111111111888811111111
+        1111b111111111111118666681111111
+        11111bbbbbb1111bbb86611668111111
+        111111dddddb11bdd866166166811111
+        11111111111b11bd.8661111668d1111
+        11111111111db11bd8661661668d1111
+        111111111111dbbbd8661661668d1111
+        1111111111111ddd18866666688d1111
+        11111111111111111188666688d11111
+        1111111111111111111888888d111111
+        111111111111111111118888d1111111
+        11111111111111111111111111111111
+        11111111111111111111111111111111
+        b111111111111111111111111111111b
+        .bbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.
+    `
 }

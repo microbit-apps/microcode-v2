@@ -254,6 +254,7 @@ namespace microcode {
     }
 
     function initIconField(): Bitmap {
+        // Not packable: an inline literal, not a const; the smiley a new icon field starts with.
         return bmp`
         . . . . .
         . 1 . 1 .

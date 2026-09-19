@@ -58,7 +58,7 @@ Keep changes minimal, consistent with existing patterns, and validate by buildin
 ## Gotchas
 - Do not edit `pxt_modules/*` unless you understand MakeCode shims; changes may require rebuilding native parts and break compatibility.
 - `pxt.json.files` list controls bundling; new TS files must be added there to be built.
-- Built `assets/microcode-v2.hex` is a distribution artifact; maintain via normal build/deploy workflows.
+- Built `assets/microcode.hex` is a distribution artifact; maintain via normal build/deploy workflows.
 - Localization folders contain many locales; keep keys aligned across languages and fallback to `en`.
 
 ## Quick Commands

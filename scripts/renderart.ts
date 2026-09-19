@@ -1,4 +1,5 @@
 // render cup icons
+// Not packable: input to this offline art script, not app code.
 const labelX = bmp`
 f . f
 f . f
@@ -6,6 +7,7 @@ f . f
 f . f
 f . f
 `
+// Not packable: input to this offline art script, not app code.
 const labelY = bmp`
 f . f
 f . f
@@ -13,6 +15,7 @@ f . f
 . f .
 . f .
 `
+// Not packable: input to this offline art script, not app code.
 const labelZ = bmp`
 f f f
 . . f
@@ -21,6 +24,7 @@ f . .
 f f f
 `
 
+// Not packable: input to this offline art script, not app code.
 const cup = bmp`
 . . . . . . . . . . . . . . . .
 . . . . . . . . . . . . . . . .
@@ -40,6 +44,7 @@ const cup = bmp`
 . . . . 1 d d d d d d . . . . .
 `
 
+// Not packable: input to this offline art script, not app code.
 const inFromLeft = bmp`
 4 4 4 4 4 4 4 . . . . . . . . .
 5 5 5 5 5 5 5 4 . . . . . . . .
@@ -51,6 +56,7 @@ const inFromLeft = bmp`
 . . . . . . 4 5 4 . . . . . . .
 `
 
+// Not packable: input to this offline art script, not app code.
 const inFromRight = bmp`
 . . . . . . . . . 4 4 4 4 4 4 4
 . . . . . . . . 4 5 5 5 5 5 5 5
@@ -62,6 +68,7 @@ const inFromRight = bmp`
 . . . . . . . 4 5 4 . . . . . .
 `
 
+// Not packable: input to this offline art script, not app code.
 const disk = bmp`
 . . . . . . . . . . . . . . . .
 . . 8 d d d d 8 8 d d 8 . . . .
