@@ -3318,7 +3318,7 @@ namespace microcode {
                 {
                     id: "disk",
                     value: "disk",
-                    bitmap: icondb.disk,
+                    bitmap: icons.get("disk"),
                     textId: "disk",
                 },
                 this.runControl_,

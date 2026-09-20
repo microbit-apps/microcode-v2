@@ -7,13 +7,14 @@
         "radio": "*",
         "microphone": "*",
         "settings": "*",
-        "ui-controls": "github:microbit-apps/ui-controls#v0.0.7"
+        "ui-controls": "github:microbit-apps/ui-controls#v0.0.10"
     },
     "files": [
         "loc.g.ts",
         "config.ts",
         "main.ts",
         "README.md",
+        "img.g.ts",
         "assets.ts",
         "robot.ts",
         "field-editor-model.ts",
