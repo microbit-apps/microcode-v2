@@ -110,8 +110,8 @@
         "193": "car_right_turn",
         "194": "stop",
         "195": "car_forward_fast",
-        "196": "car_spin_left",
-        "197": "car_spin_right",
+        "196": "car_left_spin",
+        "197": "car_right_spin",
         "198": "tile_color_red",
         "199": "tile_color_green",
         "200": "tile_color_blue",
@@ -125,6 +125,7 @@
         "255": "decimalEditor"
     },
     "names": {
+        "microcodeLogo": "microcodeLogo",
         "blocks1": "blocks1",
         "blocks2": "blocks2",
         "blocks3": "blocks3",
@@ -142,10 +143,21 @@
         "led_off": "led_off",
         "microbitLogo": "ui.microbitLogo",
         "microbitLogoBtn": "ui.microbit_logo_btn",
-        "blocks1": "blocks1",
-        "blocks2": "blocks2",
-        "blocks3": "blocks3",
-        "blocks4": "blocks4",
-        "blocks5": "blocks5"
+        "microbit_logo": "microbit_logo",
+        "new_program": "largeNewProgramIcon",
+        "note_off": "note_off",
+        "note_on": "note_on",
+        "plus": "btn_plus",
+        "rule_arrow": "rule_arrow",
+        "rule_down": "temp_colder",
+        "rule_handle": "rule_handle",
+        "rule_up": "temp_warmer",
+        "run": "run",
+        "runDisabled": "runDisabled",
+        "smiley_buttons": "sampleSmileyButtons",
+        "solid_red": "solid_red",
+        "stop": "stop",
+        "stopDisabled": "stopDisabled",
+        "when_insertion_point": "btn_when_insertion_point"
     }
 }
