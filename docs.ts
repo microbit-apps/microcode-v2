@@ -43,7 +43,7 @@ namespace docs {
         appendImage(images, "image", "home", screen())
         renderIcons(images)
         const samples = renderSamples(images)
-        appendImage(images, "image", "microcode", microcode.wordLogo)
+        appendImage(images, "image", "microcode", microcode.microcodeLogo)
         appendImage(images, "image", "microbit", microcode.microbitLogo)
         appendImage(
             images,

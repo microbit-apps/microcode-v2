@@ -78,8 +78,9 @@ namespace microcode {
         return null
     }
 
-    // Not packable: apphost.ts returns this const directly for "wordLogo".
-    export const wordLogo = bmp` 
+    //% packable
+    //% whenUsed
+    export const microcodeLogo = bmp` 
     .111111.......111111...1111.......................................................1111111.................................1111..................
     11bbbbbb.....11bbbbbb.11bbbb....................................................111bbbbbbb1..............................11bbbb.................
     1bbbbbbbb...11bbbbbbbf1bbbbbf..................................................11bbbbbbbbbbb.............................1bbbbbf................
@@ -316,7 +317,7 @@ namespace icondb {
 
     //TODO: I think this is actually the Jacdac logo?
     // user-interface-base/coreAssets.ts has the real microbitLogo
-    // Use "microbitLogo" and at the end of this function it will check user-interface-base and fetch it.
+    // Use "cd" and at the end of this function it will check user-interface-base and fetch it.
 
     // Not packable: web-only art; whenUsed drops it from the device build.
     //% whenUsed
