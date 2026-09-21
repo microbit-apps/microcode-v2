@@ -1,32 +1,4 @@
 namespace microcode {
-    /*
-    export function carImages(name: string | number) {
-        if (name == Tid.TID_ACTUATOR_CAR) return icondb.car
-        if (name == Tid.TID_MODIFIER_CAR_FORWARD) return icondb.car_forward
-        if (name == Tid.TID_MODIFIER_CAR_REVERSE) return icondb.car_reverse
-        if (name == Tid.TID_MODIFIER_CAR_TURN_LEFT) return icondb.car_left_turn
-        if (name == Tid.TID_MODIFIER_CAR_TURN_RIGHT) return ui.car_right_turn
-        if (name == Tid.TID_MODIFIER_CAR_STOP) return icondb.stop
-        if (name == Tid.TID_MODIFIER_CAR_FORWARD_FAST)
-            return icondb.car_forward_fast
-        if (name == Tid.TID_MODIFIER_CAR_SPIN_LEFT) return icondb.car_left_spin
-        if (name == Tid.TID_MODIFIER_CAR_SPIN_RIGHT)
-            return icondb.car_right_spin
-        if (name == Tid.TID_MODIFIER_CAR_ARM_OPEN) return icondb.arm_open
-        if (name == Tid.TID_MODIFIER_CAR_ARM_CLOSE) return icondb.arm_close
-        if (name == Tid.TID_SENSOR_CAR_WALL) return icondb.car_wall
-        if (name == Tid.TID_SENSOR_LINE) return icondb.line_sensor
-        if (name == Tid.TID_FILTER_LINE_LEFT) return icondb.line_left_on
-        if (name == Tid.TID_FILTER_LINE_RIGHT) return icondb.line_right_on
-        if (name == Tid.TID_FILTER_LINE_BOTH) return icondb.line_both_on
-        if (name == Tid.TID_FILTER_LINE_NEITHER) return icondb.line_neither_on
-        if (name == Tid.TID_FILTER_LINE_NEITHER_LEFT)
-            return icondb.line_none_from_left
-        if (name == Tid.TID_FILTER_LINE_NEITHER_RIGHT)
-            return icondb.line_none_from_right
-        return null
-    }
-*/
     export function getCarParam(tile: Tile) {
         const tid = getTid(tile)
         switch (tid) {
