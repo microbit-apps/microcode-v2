@@ -7,7 +7,6 @@ namespace microcode {
             id: string | number,
             nullIfMissing?: boolean,
         ): Bitmap | undefined {
-            if (id == "wordLogo") return wordLogo
             const bitmap = icons.get(id, !!nullIfMissing)
             if (bitmap) return bitmap
             if (nullIfMissing) return undefined

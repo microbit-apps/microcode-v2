@@ -1507,7 +1507,7 @@ namespace microcode {
                 const buffer = this.progdef_.toBuffer()
                 this.queueAutosave(buffer)
             }
-            if (wasRunning) runProgram(this.progdef_)
+            // if (wasRunning) runProgram(this.progdef_)
             return changed
         }
 

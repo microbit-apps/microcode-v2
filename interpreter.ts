@@ -16,7 +16,9 @@ namespace microcode {
         LEDScreen = 1000,
         Speaker,
         RadioGroup, // well radio group affects subsequent radio.send
+        RadioSend,
         PageCounter,
+        Car,
     }
 
     function getOutputResource(action: Tid) {
@@ -30,11 +32,15 @@ namespace microcode {
                 return action
             case Tid.TID_ACTUATOR_RADIO_SET_GROUP:
                 return OutputResource.RadioGroup
+            case Tid.TID_ACTUATOR_RADIO_SEND:
+                return OutputResource.RadioSend
             case Tid.TID_ACTUATOR_MUSIC:
             case Tid.TID_ACTUATOR_SPEAKER:
                 return OutputResource.Speaker
             case Tid.TID_ACTUATOR_SWITCH_PAGE:
                 return OutputResource.PageCounter
+            case Tid.TID_ACTUATOR_CAR:
+                return OutputResource.Car
         }
         return undefined
     }
@@ -94,6 +100,12 @@ namespace microcode {
             if (resource == OutputResource.LEDScreen) {
                 led.stopAnimation()
             } else if (resource == OutputResource.Speaker) music.stopAllSounds()
+            else if (resource == OutputResource.Car)
+                this.interp.runAction(
+                    this.index,
+                    Tid.TID_ACTUATOR_CAR,
+                    robot.robots.RobotCompactCommand.MotorStop,
+                )
             this.actionRunning = false
             // give the background fiber chance to finish unless it is waiting
             while (this.wakeTime == 0 && this.backgroundActive) {
@@ -272,7 +284,8 @@ namespace microcode {
                 case Tid.TID_ACTUATOR_SHOW_NUMBER:
                 case Tid.TID_ACTUATOR_RADIO_SEND:
                 case Tid.TID_ACTUATOR_RADIO_SET_GROUP: {
-                    return this.interp.getValue(this.rule.modifiers, 0)
+                    const ret = this.interp.getValue(this.rule.modifiers, 0)
+                    return ret
                 }
                 case Tid.TID_ACTUATOR_SWITCH_PAGE: {
                     let targetPage = 1
@@ -318,6 +331,11 @@ namespace microcode {
                     }
                     case Tid.TID_ACTUATOR_SPEAKER: {
                         param = this.rule.modifiers[this.modifierIndex]
+                        break
+                    }
+                    case Tid.TID_ACTUATOR_CAR: {
+                        const mod = this.rule.modifiers[this.modifierIndex]
+                        param = getCarParam(mod)
                         break
                     }
                     default:
@@ -370,6 +388,7 @@ namespace microcode {
         | Tid.TID_SENSOR_PRESS
         | Tid.TID_SENSOR_RELEASE
         | Tid.TID_SENSOR_RADIO_RECEIVE
+        | Tid.TID_SENSOR_CAR_WALL
 
     export type ActionTid =
         | Tid.TID_ACTUATOR_PAINT
@@ -378,6 +397,7 @@ namespace microcode {
         | Tid.TID_ACTUATOR_MUSIC
         | Tid.TID_ACTUATOR_RADIO_SEND
         | Tid.TID_ACTUATOR_RADIO_SET_GROUP
+        | Tid.TID_ACTUATOR_CAR
 
     export interface RuntimeHost {
         emitClearScreen(): void
@@ -478,6 +498,7 @@ namespace microcode {
                 this.sensors[tid] = undefined
             }
             this.sensors[Tid.TID_SENSOR_RADIO_RECEIVE] = 0
+            this.sensors[Tid.TID_SENSOR_CAR_WALL] = 0
             this.startSensors()
             this.running = true
             // get ready to receive events

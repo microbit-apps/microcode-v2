@@ -133,7 +133,7 @@ namespace microcode {
             this.logoOffset_ = Math.min(0, this.logoOffset_ + 2)
             const t = control.millis()
             const dy = this.logoOffset_ == 0 ? (Math.idiv(t, 800) & 1) - 1 : 0
-            const word = this.assets.getBitmap("wordLogo")
+            const word = this.assets.getBitmap("microcodeLogo")
             const microbit = this.assets.getBitmap("microbitLogo")
             const offset = (UI_SCREEN_HEIGHT >> 1) - word.height - HOME_MARGIN
             const y = offset + dy

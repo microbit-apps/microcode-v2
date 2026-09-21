@@ -15,14 +15,23 @@ namespace microcode {
             basic.pause(500)
 
             const buf = this.load(SAVESLOT_AUTO)
+            let prog: ProgramDefn = undefined
             if (buf) {
-                const prog = ProgramDefn.fromBuffer(new BufferReader(buf))
-                runProgram(prog)
+                try {
+                    prog = ProgramDefn.fromBuffer(new BufferReader(buf))
+                } catch (e) {
+                    console.log("invalid auto-save, clearing")
+                    this.save(SAVESLOT_AUTO, new ProgramDefn().toBuffer())
+                }
             }
 
-            this.host_ = new AppHost(this)
-
-            this.openHome()
+            if (!__screenhelpers.displayPresent()) {
+                if (prog) runProgram(prog)
+            }
+            else {
+                this.host_ = new AppHost(this)
+                this.openHome()
+            }
         }
 
         public save(slot: string, buf: Buffer) {
@@ -70,8 +79,9 @@ namespace microcode {
         const wasRunning = isProgramRunning()
         if (wasRunning) stopProgram()
         settings.writeBuffer(SAVESLOT_AUTO, buf)
-        if (wasRunning)
+        if (wasRunning) {
             runProgram(ProgramDefn.fromBuffer(new BufferReader(buf)))
+        }
     }
 
     export function stopProgram() {
