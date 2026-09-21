@@ -946,7 +946,8 @@ bffffffffffffffffffffffffffffffb
         return numberToDecimalImage(i, false)
     }
 
-    // Not packable: screens/editor.ts sets the run button to this const directly.
+    //% packable
+    //% whenUsed
     export const run = bmp`
         . . . . . . . . . . . . . . . .
         . . . . . . . . . . . . . . . .
@@ -966,7 +967,8 @@ bffffffffffffffffffffffffffffffb
         . . . . . . . . . . . . . . . .
     `
 
-    // Not packable: screens/editor.ts sets the run button to this const directly.
+    //% packable
+    //% whenUsed
     export const runDisabled = bmp`
         . . . . . . . . . . . . . . . .
         . . . . . . . . . . . . . . . .
@@ -986,7 +988,8 @@ bffffffffffffffffffffffffffffffb
         . . . . . . . . . . . . . . . .
     `
 
-    // Not packable: screens/editor.ts and robot.ts use this const directly.
+    //% packable
+    //% whenUsed
     export const stop = bmp`
 . . . . . . . . . . . . . . . . 
 . . . . . d d d d d d . . . . . 
@@ -1006,7 +1009,8 @@ bffffffffffffffffffffffffffffffb
 . . . . . . . . . . . . . . . . 
 `
 
-    // Not packable: screens/editor.ts sets the stop button to this const directly.
+    //% packable
+    //% whenUsed
     export const stopDisabled = bmp`
         . . . . . . . . . . . . . . . .
         . . . . . d d d d d d . . . . .

@@ -3470,10 +3470,12 @@ namespace microcode {
 
         private updateProgramControls(): void {
             const running = isProgramRunning()
-            this.runControl_.bitmap = running ? icondb.runDisabled : icondb.run
+            this.runControl_.bitmap = running
+                ? icons.get("runDisabled")
+                : icons.get("run")
             this.stopControl_.bitmap = running
-                ? icondb.stop
-                : icondb.stopDisabled
+                ? icons.get("stop")
+                : icons.get("stopDisabled")
             this.pageControl_.bitmapId = PAGE_IDS()[this.getPage_()]
         }
 
