@@ -12,22 +12,6 @@ namespace microcode {
         if (name == Tid.TID_MODIFIER_CAR_SPIN_LEFT) return icondb.car_left_spin
         if (name == Tid.TID_MODIFIER_CAR_SPIN_RIGHT)
             return icondb.car_right_spin
-        if (name == Tid.TID_MODIFIER_CAR_LED_COLOR_1)
-            return icondb.tile_color_red
-        if (
-            name == Tid.TID_MODIFIER_CAR_LED_COLOR_2 ||
-            name == Tid.TID_MODIFIER_ON ||
-            name == Tid.TID_FILTER_ON
-        )
-            return icondb.tile_color_green
-        if (name == Tid.TID_MODIFIER_CAR_LED_COLOR_3)
-            return icondb.tile_color_blue
-        if (
-            name == Tid.TID_MODIFIER_CAR_LED_COLOR_4 ||
-            name == Tid.TID_MODIFIER_OFF ||
-            name == Tid.TID_FILTER_OFF
-        )
-            return icondb.tile_color_black
         if (name == Tid.TID_MODIFIER_CAR_ARM_OPEN) return icondb.arm_open
         if (name == Tid.TID_MODIFIER_CAR_ARM_CLOSE) return icondb.arm_close
         if (name == Tid.TID_SENSOR_CAR_WALL) return icondb.car_wall
