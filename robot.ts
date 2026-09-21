@@ -1,4 +1,5 @@
 namespace microcode {
+    /*
     export function carImages(name: string | number) {
         if (name == Tid.TID_ACTUATOR_CAR) return icondb.car
         if (name == Tid.TID_MODIFIER_CAR_FORWARD) return icondb.car_forward
@@ -40,7 +41,7 @@ namespace microcode {
             return icondb.line_none_from_right
         return null
     }
-
+*/
     export function getCarParam(tile: Tile) {
         const tid = getTid(tile)
         switch (tid) {
@@ -78,7 +79,7 @@ namespace microcode {
 }
 
 namespace icondb {
-    // Not packable: carImages returns this const directly.
+    //% packable whenUsed
     export const car = bmp`
     . . . . . . . . . . . . . . . .
     . . . . . . . . . . . . . . . .
@@ -98,7 +99,7 @@ namespace icondb {
     . . . . . . . . . . . . . . . .
 `
 
-    // Not packable: carImages returns this const directly.
+    //% packable whenUsed
     export const car_forward = bmp`
     . . . . . . . . . . . . . . . .
     . . . . . . . c . . . . . . . .
@@ -117,7 +118,7 @@ namespace icondb {
     . . . . . . . . . . . . . . . .
     . . . . . . . . . . . . . . . .
 `
-    // Not packable: carImages returns this const directly.
+    //% packable whenUsed
     export const car_forward_fast = bmp`
     . . . . . . . c . . . . . . . .
     . . . . . . c 7 c . . . . . . .
@@ -137,7 +138,7 @@ namespace icondb {
     . . . . . c 7 7 7 c d . . . . .    
     `
 
-    // Not packable: carImages returns this const directly.
+    //% packable whenUsed
     export const car_reverse = bmp`
     . . . . . . . . . . . . . . . .
     . . . . . . . . . . . . . . . .
@@ -157,7 +158,7 @@ namespace icondb {
     . . . . . . . . . . . . . . . .
 `
 
-    // Not packable: carImages returns this const directly.
+    //% packable whenUsed
     export const car_left_turn = bmp`
     . . . . . . . . . . . . . . . .
     . . . . . c c c . . . . . . . .
@@ -177,7 +178,7 @@ namespace icondb {
     . . . . . . . . . . . . . . . .
 `
 
-    // Not packable: carImages returns this const directly.
+    //% packable whenUsed
     export const car_left_spin = bmp`
     . . . . . . . . . . . . . . . .
     . . . . . . . . . . . . . . . .
@@ -197,7 +198,7 @@ namespace icondb {
     . . . . . . . . . . . . . . . .    
     `
 
-    // Not packable: carImages returns this const directly.
+    //% packable whenUsed
     export const car_wall = bmp`
     . . . . . . . . . . . . . . . .
     d d d d d d d d d d d d d d d d
@@ -217,7 +218,7 @@ namespace icondb {
     . . . . . . . . . f . . . . f .
 `
 
-    // Not packable: carImages returns this const directly.
+    //% packable whenUsed
     export const line_sensor = bmp`
     . . . . . . . . . . . . . . . .
     . b d d d d c f f c d d d d b .
@@ -236,7 +237,7 @@ namespace icondb {
     . b d d d d c c f f f f f f f f
     . . . . . . . . . f . . . . f .
 `
-    // Not packable: carImages returns this const directly.
+    //% packable whenUsed
     export const line_neither_on = bmp`
 . . . . . . . . . . . . . . . .
 . . . . . . . . . . . . . . . .
@@ -255,7 +256,7 @@ namespace icondb {
 . d d . . . . . . . . . d d . .
 . . . . . . . . . . . . . . . .
 `
-    // Not packable: carImages returns this const directly.
+    //% packable whenUsed
     export const line_left_on = bmp`
     . c f f f c . . . . . . . . . .
     . c f f f c . . . . . . . . . .
@@ -273,7 +274,7 @@ namespace icondb {
     . d 7 d f c . . . . . d 1 d . .
     . d d f f c . . . . . . d d . .
     . b f f f c . . . . . . . . . .`
-    // Not packable: carImages returns this const directly.
+    //% packable whenUsed
     export const line_right_on = bmp`
     . . . . . . . . . c f f f c . .
     . . . . . . . . . c f f f c . .
@@ -292,7 +293,7 @@ namespace icondb {
     . d d . . . . . . c f f d d . .
     . . . . . . . . . c f f f b . .
 `
-    // Not packable: carImages returns this const directly.
+    //% packable whenUsed
     export const line_both_on = bmp`
     . . . . . c f f f c . . . . . .
     . . . . . c f f f c . . . . . .
@@ -312,7 +313,7 @@ namespace icondb {
     . . . . . c f f f c . . . . . .
 `
 
-    // Not packable: carImages returns this const directly.
+    //% packable whenUsed
     export const line_none_from_left = bmp`
 . c f f f c . . . . . . . . . .
 . c f f f c . . . . . . . . . .
@@ -332,7 +333,7 @@ namespace icondb {
 . c f f f c . . . . . . . . . .
 `
 
-    // Not packable: carImages returns this const directly.
+    //% packable whenUsed
     export const line_none_from_right = bmp`
     . . . . . . . . . . c f f f c .
     . . . . . . . . . . c f f f c .

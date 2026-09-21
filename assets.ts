@@ -217,7 +217,7 @@ namespace icondb {
     })
     */
 
-    // Not packable: carImages in robot.ts returns this const directly.
+    //% packable whenUsed
     export const arm_open = bmp`
     . . . . . . . . . . c c c . . .
     . . . . . . . . c c b b b c c .
@@ -237,7 +237,7 @@ namespace icondb {
     . . . . . . . . . . c c c . . .
     `
 
-    // Not packable: carImages in robot.ts returns this const directly.
+    //% packable whenUsed
     export const arm_close = bmp`
     . . . . . . . . . . . . . . . .
     . . . . . . . . . . . . . . . .
