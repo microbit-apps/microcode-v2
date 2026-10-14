@@ -2,6 +2,16 @@ namespace microcode {
     export const UI_SCREEN_WIDTH = 160
     export const UI_SCREEN_HEIGHT = 120
 
+    /**
+     * Milliseconds a controller button is held before repeat events start.
+     */
+    const CONTROLLER_REPEAT_DELAY_MS = 200
+
+    /**
+     * Milliseconds between controller button repeat events.
+     */
+    const CONTROLLER_REPEAT_INTERVAL_MS = 40
+
     class AppAssetResolver implements ui.UiAssetResolver {
         public getBitmap(
             id: string | number,
@@ -34,6 +44,10 @@ namespace microcode {
             this.runtime_ = new ui.UiRuntime(
                 new ui.DisplayShieldFrameAdapter(),
                 new AppAssetResolver(),
+            )
+            controller.setRepeatDefault(
+                CONTROLLER_REPEAT_DELAY_MS,
+                CONTROLLER_REPEAT_INTERVAL_MS,
             )
         }
 
