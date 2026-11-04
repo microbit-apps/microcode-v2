@@ -1,6 +1,6 @@
 {
     "name": "microcode",
-    "version": "2.5.48",
+    "version": "2.5.49",
     "description": "Physical computing library for micro:bit V2",
     "dependencies": {
         "core": "*",
@@ -46,6 +46,8 @@
         "target": "7.1.13",
         "targetId": "microbit"
     },
-    "supportedTargets": ["microbit"],
+    "supportedTargets": [
+        "microbit"
+    ],
     "preferredEditor": "tsprj"
 }
